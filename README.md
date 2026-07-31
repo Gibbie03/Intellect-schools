@@ -17,17 +17,11 @@ Open <http://localhost:3000> in your browser.
 npm run build
 ```
 
-## Check code quality
-
-```bash
-npm run lint
-```
-
 ## Deploy on Vercel
 
 1. Push this repository to GitHub.
 2. Import the repository in Vercel.
-3. Keep the default Next.js settings. The project requires Node.js 20.9 or newer, which is declared in `package.json`.
+3. Keep the default Next.js settings.
 4. Click **Deploy**.
 
 The main routes are:

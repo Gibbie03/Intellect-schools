@@ -1,78 +1,111 @@
 'use client';
 
-import Link from 'next/link';
-import { FormEvent, useMemo, useState } from 'react';
-
-type Result = { subject: string; score: number; grade: string; term: string; remark: string };
-
-const demoResults: Result[] = [
-  { subject: 'Mathematics', score: 85, grade: 'A', term: 'First Term 2026/2027', remark: 'Excellent' },
-  { subject: 'English Language', score: 78, grade: 'B', term: 'First Term 2026/2027', remark: 'Very good' },
-  { subject: 'Physics', score: 92, grade: 'A', term: 'First Term 2026/2027', remark: 'Excellent' },
-  { subject: 'Chemistry', score: 71, grade: 'A', term: 'First Term 2026/2027', remark: 'Strong performance' },
-  { subject: 'Biology', score: 66, grade: 'B', term: 'First Term 2026/2027', remark: 'Good' },
-];
+import { useState } from 'react';
+type Result = {
+  subject: string;
+  score: number;
+  grade: string;
+  term: string;
+};
 
 export default function StudentPortal() {
   const [loggedIn, setLoggedIn] = useState(false);
   const [studentId, setStudentId] = useState('');
-  const [password, setPassword] = useState('');
+  const [results, setResults] = useState<Result[]>([]);
 
-  const average = useMemo(() => Math.round(demoResults.reduce((sum, result) => sum + result.score, 0) / demoResults.length), []);
-
-  const handleLogin = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (studentId.trim() && password.trim()) setLoggedIn(true);
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // Demo login - any ID works
+    if (studentId) {
+      // Sample results
+      const sampleResults = [
+        { subject: "Mathematics", score: 85, grade: "A", term: "First Term 2025/2026" },
+        { subject: "English Language", score: 78, grade: "B", term: "First Term 2025/2026" },
+        { subject: "Physics", score: 92, grade: "A", term: "First Term 2025/2026" },
+        { subject: "Chemistry", score: 71, grade: "B", term: "First Term 2025/2026" },
+      ];
+      setResults(sampleResults);
+      setLoggedIn(true);
+    }
   };
 
-  if (!loggedIn) {
+  if (loggedIn) {
     return (
-      <main className="min-h-screen bg-slate-50 px-6 py-10">
-        <div className="mx-auto max-w-md rounded-3xl bg-white p-8 shadow-sm">
-          <Link href="/" className="text-sm font-bold text-green-700">← Back to landing page</Link>
-          <h1 className="mt-6 text-3xl font-black">Student Results Portal</h1>
-          <p className="mt-2 text-slate-600">Enter any demo student ID and password to view a sample report card.</p>
-          <form onSubmit={handleLogin} className="mt-8 space-y-4">
-            <input value={studentId} onChange={(event) => setStudentId(event.target.value)} className="w-full rounded-xl border p-3" placeholder="Student ID, e.g. ICS/2026/001" required />
-            <input type="password" value={password} onChange={(event) => setPassword(event.target.value)} className="w-full rounded-xl border p-3" placeholder="Password" required />
-            <button className="w-full rounded-xl bg-green-700 py-3 font-bold text-white hover:bg-green-800">View results</button>
-          </form>
-          <p className="mt-4 rounded-xl bg-green-50 p-3 text-sm text-green-800">Demo access: any student ID and password works.</p>
+      <div className="max-w-4xl mx-auto px-6 py-12">
+        <div className="flex justify-between items-center mb-8">
+          <div>
+            <h1 className="text-3xl font-bold">Welcome, Student {studentId}</h1>
+            <p className="text-gray-600">First Term 2025/2026 Results</p>
+          </div>
+          <button 
+            onClick={() => { setLoggedIn(false); setStudentId(''); setResults([]); }}
+            className="text-sm text-red-600 hover:underline"
+          >
+            Logout
+          </button>
         </div>
-      </main>
+
+        <div className="bg-white rounded-2xl shadow p-8">
+          <h2 className="text-2xl font-semibold mb-6">Your Results</h2>
+          
+          <table className="w-full border-collapse">
+            <thead>
+              <tr className="bg-gray-100">
+                <th className="text-left p-4">Subject</th>
+                <th className="text-center p-4">Score</th>
+                <th className="text-center p-4">Grade</th>
+              </tr>
+            </thead>
+            <tbody>
+              {results.map((result, index) => (
+                <tr key={index} className="border-b">
+                  <td className="p-4 font-medium">{result.subject}</td>
+                  <td className="p-4 text-center">{result.score}</td>
+                  <td className="p-4 text-center">
+                    <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm font-medium">
+                      {result.grade}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+
+          <div className="mt-8 p-4 bg-green-50 rounded-xl text-sm">
+            <strong>Note:</strong> These are demo results. In production, results will be uploaded by your teachers and approved by the admin.
+          </div>
+        </div>
+      </div>
     );
   }
 
   return (
-    <main className="min-h-screen bg-slate-50 px-6 py-10 text-slate-950">
-      <div className="mx-auto max-w-5xl">
-        <div className="mb-8 flex flex-col justify-between gap-4 md:flex-row md:items-center">
-          <div>
-            <Link href="/" className="text-sm font-bold text-green-700">← Back to landing page</Link>
-            <h1 className="mt-3 text-4xl font-black">Welcome, Student {studentId}</h1>
-            <p className="text-slate-600">First Term 2026/2027 approved report card</p>
-          </div>
-          <div className="flex gap-3">
-            <button onClick={() => window.print()} className="rounded-xl border border-slate-300 px-5 py-3 font-bold hover:bg-white">Print report</button>
-            <button onClick={() => { setLoggedIn(false); setStudentId(''); setPassword(''); }} className="rounded-xl bg-red-600 px-5 py-3 font-bold text-white hover:bg-red-700">Logout</button>
-          </div>
-        </div>
+    <div className="max-w-md mx-auto mt-20 p-8 border rounded-3xl">
+      <h1 className="text-3xl font-bold text-center mb-2">Student Results Portal</h1>
+      <p className="text-center text-gray-600 mb-8">Login to view your results</p>
 
-        <div className="mb-8 grid gap-4 md:grid-cols-3">
-          <div className="rounded-2xl bg-white p-6 shadow-sm"><p className="text-sm text-slate-500">Average score</p><p className="text-4xl font-black text-green-700">{average}%</p></div>
-          <div className="rounded-2xl bg-white p-6 shadow-sm"><p className="text-sm text-slate-500">Subjects</p><p className="text-4xl font-black">{demoResults.length}</p></div>
-          <div className="rounded-2xl bg-white p-6 shadow-sm"><p className="text-sm text-slate-500">Position remark</p><p className="text-2xl font-black">Excellent progress</p></div>
-        </div>
+      <form onSubmit={handleLogin} className="space-y-4">
+        <input 
+          type="text" 
+          placeholder="Student ID (e.g. ICS/2025/001)" 
+          value={studentId}
+          onChange={(e) => setStudentId(e.target.value)}
+          className="w-full border p-3 rounded-xl" 
+          required 
+        />
+        <input type="password" placeholder="Password" className="w-full border p-3 rounded-xl" required />
+        <button 
+          type="submit" 
+          className="w-full bg-green-700 text-white py-3 rounded-xl font-semibold hover:bg-green-800"
+        >
+          Login
+        </button>
+      </form>
 
-        <div className="overflow-hidden rounded-3xl bg-white shadow-sm">
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[720px] text-sm">
-              <thead className="bg-slate-100 text-left"><tr><th className="p-4">Subject</th><th className="p-4 text-center">Score</th><th className="p-4 text-center">Grade</th><th className="p-4">Remark</th><th className="p-4">Term</th></tr></thead>
-              <tbody>{demoResults.map((result) => <tr key={result.subject} className="border-t"><td className="p-4 font-bold">{result.subject}</td><td className="p-4 text-center">{result.score}</td><td className="p-4 text-center"><span className="rounded-full bg-green-100 px-3 py-1 font-bold text-green-700">{result.grade}</span></td><td className="p-4">{result.remark}</td><td className="p-4 text-slate-600">{result.term}</td></tr>)}</tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    </main>
+      <p className="text-center text-sm mt-4 text-gray-500">
+        Demo: Enter any Student ID to login
+      </p>
+    </div>
   );
 }
