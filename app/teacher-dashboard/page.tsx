@@ -2,8 +2,17 @@
 
 import { useState } from 'react';
 
+type UploadedResult = {
+  studentId: string;
+  subject: string;
+  score: string;
+  term: string;
+  grade: string;
+  uploadedAt: string;
+};
+
 export default function TeacherDashboard() {
-  const [uploadedResults, setUploadedResults] = useState<any[]>([]);
+  const [uploadedResults, setUploadedResults] = useState<UploadedResult[]>([]);
   const [showForm, setShowForm] = useState(false);
 
   const [newResult, setNewResult] = useState({
@@ -119,7 +128,7 @@ export default function TeacherDashboard() {
         <h2 className="text-2xl font-semibold mb-6">Recently Uploaded Results ({uploadedResults.length})</h2>
         
         {uploadedResults.length === 0 ? (
-          <p className="text-gray-500">No results uploaded yet. Click "Upload New Result" to add one.</p>
+          <p className="text-gray-500">No results uploaded yet. Use the Upload New Result button to add one.</p>
         ) : (
           <table className="w-full">
             <thead>
