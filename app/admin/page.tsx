@@ -3,8 +3,16 @@
 import { useState } from 'react';
 import Link from 'next/link';
 
+type Result = {
+  studentId: string;
+  subject: string;
+  score: number;
+  grade: string;
+  status: 'Approved' | 'Pending';
+};
+
 export default function AdminDashboard() {
-  const [results, setResults] = useState([
+  const [results] = useState<Result[]>([
     { studentId: "ICS/2025/045", subject: "Mathematics", score: 85, grade: "A", status: "Approved" },
     { studentId: "ICS/2025/012", subject: "Physics", score: 78, grade: "B", status: "Pending" },
   ]);
