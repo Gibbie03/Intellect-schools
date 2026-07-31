@@ -2,8 +2,17 @@
 
 import { useState } from 'react';
 
+type UploadedResult = {
+  studentId: string;
+  subject: string;
+  score: string;
+  term: string;
+  grade: string;
+  uploadedAt: string;
+};
+
 export default function TeacherDashboard() {
-  const [uploadedResults, setUploadedResults] = useState<any[]>([]);
+  const [uploadedResults, setUploadedResults] = useState<UploadedResult[]>([]);
   const [showForm, setShowForm] = useState(false);
 
   const [newResult, setNewResult] = useState({

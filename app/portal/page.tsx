@@ -1,12 +1,17 @@
 'use client';
 
 import { useState } from 'react';
-import Link from 'next/link';
+type Result = {
+  subject: string;
+  score: number;
+  grade: string;
+  term: string;
+};
 
 export default function StudentPortal() {
   const [loggedIn, setLoggedIn] = useState(false);
   const [studentId, setStudentId] = useState('');
-  const [results, setResults] = useState<any[]>([]);
+  const [results, setResults] = useState<Result[]>([]);
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
