@@ -8,5 +8,12 @@ export async function verifyPassword(password: string, hash: string): Promise<bo
   return bcrypt.compare(password, hash);
 }
 
-export { SESSION_COOKIE, signSession, verifySession } from './session';
+export {
+  SESSION_COOKIE,
+  PLATFORM_SESSION_COOKIE,
+  signSession,
+  verifySession,
+  signOwnerSession,
+  verifyOwnerSession,
+} from './session';
 export type { SessionPayload } from './session';

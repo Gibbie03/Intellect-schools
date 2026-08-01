@@ -675,6 +675,17 @@ type TeacherRow = {
 
 const emptyStaffForm = { staffId: '', fullName: '', role: STAFF_ROLES[0], subject: '', email: '', phone: '' };
 
+type AccountRow = {
+  id: string;
+  email: string;
+  role: 'admin' | 'teacher';
+  full_name: string;
+  teacher_id: string | null;
+  status: 'Active' | 'Inactive';
+};
+
+const emptyAccountForm = { email: '', password: '', fullName: '', role: 'teacher' as 'admin' | 'teacher', teacherId: '' };
+
 function StaffSection() {
   const [teachers, setTeachers] = useState<TeacherRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -682,6 +693,12 @@ function StaffSection() {
   const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState(emptyStaffForm);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+
+  const [accounts, setAccounts] = useState<AccountRow[]>([]);
+  const [accountsLoading, setAccountsLoading] = useState(true);
+  const [accountsError, setAccountsError] = useState('');
+  const [accountSubmitting, setAccountSubmitting] = useState(false);
+  const [accountForm, setAccountForm] = useState(emptyAccountForm);
 
   const load = () => {
     setLoading(true);
@@ -695,7 +712,43 @@ function StaffSection() {
       .finally(() => setLoading(false));
   };
 
+  const loadAccounts = () => {
+    setAccountsLoading(true);
+    fetch('/api/school-users')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.error) throw new Error(data.error);
+        setAccounts(data.users);
+      })
+      .catch((err) => setAccountsError(err.message))
+      .finally(() => setAccountsLoading(false));
+  };
+
   useEffect(load, []);
+  useEffect(loadAccounts, []);
+
+  const handleCreateAccount = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!accountForm.email || !accountForm.password || !accountForm.fullName) return;
+
+    setAccountSubmitting(true);
+    setAccountsError('');
+    try {
+      const res = await fetch('/api/school-users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...accountForm, teacherId: accountForm.teacherId || undefined }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to create login account.');
+      setAccountForm(emptyAccountForm);
+      loadAccounts();
+    } catch (err) {
+      setAccountsError((err as Error).message);
+    } finally {
+      setAccountSubmitting(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -868,6 +921,99 @@ function StaffSection() {
                       <option value="Inactive">Inactive (Terminated)</option>
                     </select>
                   </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+
+      <div className="bg-white rounded-2xl shadow p-8 mt-8">
+        <h2 className="text-xl font-semibold mb-2">Staff Login Accounts</h2>
+        <p className="text-sm text-gray-500 mb-6">
+          Issue a login for a staff member so they can sign in to the Admin Dashboard or Teacher Dashboard.
+        </p>
+
+        <form
+          onSubmit={handleCreateAccount}
+          className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8 border-b border-gray-100 pb-8"
+        >
+          <input
+            type="text"
+            placeholder="Full Name"
+            value={accountForm.fullName}
+            onChange={(e) => setAccountForm({ ...accountForm, fullName: e.target.value })}
+            className="w-full rounded-xl border p-3"
+            required
+          />
+          <input
+            type="email"
+            placeholder="Login Email"
+            value={accountForm.email}
+            onChange={(e) => setAccountForm({ ...accountForm, email: e.target.value })}
+            className="w-full rounded-xl border p-3"
+            required
+          />
+          <input
+            type="password"
+            placeholder="Password (min. 8 characters)"
+            value={accountForm.password}
+            onChange={(e) => setAccountForm({ ...accountForm, password: e.target.value })}
+            className="w-full rounded-xl border p-3"
+            minLength={8}
+            required
+          />
+          <select
+            value={accountForm.role}
+            onChange={(e) => setAccountForm({ ...accountForm, role: e.target.value as 'admin' | 'teacher' })}
+            className="w-full rounded-xl border p-3"
+          >
+            <option value="teacher">Teacher</option>
+            <option value="admin">Admin</option>
+          </select>
+          <select
+            value={accountForm.teacherId}
+            onChange={(e) => setAccountForm({ ...accountForm, teacherId: e.target.value })}
+            className="w-full rounded-xl border p-3 md:col-span-2"
+          >
+            <option value="">Not linked to a staff directory profile</option>
+            {teachers.map((t) => (
+              <option key={t.id} value={t.id}>
+                {t.full_name} ({t.staff_id})
+              </option>
+            ))}
+          </select>
+          {accountsError && <p className="md:col-span-2 text-sm text-red-600">{accountsError}</p>}
+          <button
+            type="submit"
+            disabled={accountSubmitting}
+            className="md:col-span-2 w-full rounded-xl bg-green-700 py-3 font-semibold text-white hover:bg-green-800 disabled:opacity-60"
+          >
+            {accountSubmitting ? 'Creating...' : 'Create Login Account'}
+          </button>
+        </form>
+
+        {accountsLoading ? (
+          <p className="text-gray-500">Loading...</p>
+        ) : accounts.length === 0 ? (
+          <p className="text-gray-500">No login accounts yet.</p>
+        ) : (
+          <table className="w-full">
+            <thead>
+              <tr className="bg-gray-100">
+                <th className="text-left p-4">Name</th>
+                <th className="text-left p-4">Email</th>
+                <th className="text-center p-4">Role</th>
+                <th className="text-center p-4">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {accounts.map((a) => (
+                <tr key={a.id} className="border-b">
+                  <td className="p-4">{a.full_name}</td>
+                  <td className="p-4">{a.email}</td>
+                  <td className="p-4 text-center capitalize">{a.role}</td>
+                  <td className="p-4 text-center">{a.status}</td>
                 </tr>
               ))}
             </tbody>

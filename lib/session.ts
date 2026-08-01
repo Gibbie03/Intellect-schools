@@ -1,6 +1,7 @@
 import { SignJWT, jwtVerify } from 'jose';
 
 export const SESSION_COOKIE = 'session';
+export const PLATFORM_SESSION_COOKIE = 'platform_session';
 
 export type SessionPayload = {
   userId: string;
@@ -44,5 +45,22 @@ export async function verifySession(token: string): Promise<SessionPayload | nul
     return null;
   } catch {
     return null;
+  }
+}
+
+export async function signOwnerSession(): Promise<string> {
+  return new SignJWT({ owner: true })
+    .setProtectedHeader({ alg: 'HS256' })
+    .setIssuedAt()
+    .setExpirationTime('7d')
+    .sign(getSecretKey());
+}
+
+export async function verifyOwnerSession(token: string): Promise<boolean> {
+  try {
+    const { payload } = await jwtVerify(token, getSecretKey());
+    return payload.owner === true;
+  } catch {
+    return false;
   }
 }
