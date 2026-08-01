@@ -4,7 +4,9 @@ const features = [
   'Student results portal',
   'Teacher result uploads',
   'Admin approvals dashboard',
-  'Admissions and school information',
+  'Admissions applications',
+  'News & events',
+  'Photo gallery',
 ];
 
 export default function Home() {
@@ -22,14 +24,14 @@ export default function Home() {
             Intellect Schools combines academic excellence, digital learning, and transparent result management for students, parents, teachers, and administrators.
           </p>
           <div className="mt-8 flex flex-wrap gap-4">
-            <Link href="/portal" className="rounded-xl bg-green-700 px-6 py-3 font-semibold text-white shadow hover:bg-green-800">
+            <Link href="/admissions" className="rounded-xl bg-green-700 px-6 py-3 font-semibold text-white shadow hover:bg-green-800">
+              Apply for Admission
+            </Link>
+            <Link href="/portal" className="rounded-xl border border-green-700 px-6 py-3 font-semibold text-green-800 hover:bg-green-50">
               Student Portal
             </Link>
-            <Link href="/teacher-dashboard" className="rounded-xl border border-green-700 px-6 py-3 font-semibold text-green-800 hover:bg-green-50">
-              Teacher Dashboard
-            </Link>
-            <Link href="/admin" className="rounded-xl border border-gray-300 px-6 py-3 font-semibold text-gray-800 hover:bg-white">
-              Admin Dashboard
+            <Link href="/contact" className="rounded-xl border border-gray-300 px-6 py-3 font-semibold text-gray-800 hover:bg-white">
+              Contact Us
             </Link>
           </div>
         </div>
