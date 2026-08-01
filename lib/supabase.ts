@@ -7,15 +7,13 @@ export function getSupabaseClient() {
   if (client) return client;
 
   const url = process.env.SUPABASE_URL;
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const secretKey = process.env.SUPABASE_SECRET_KEY;
 
-  if (!url || !serviceRoleKey) {
-    throw new Error(
-      'Supabase is not configured. Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in your environment.'
-    );
+  if (!url || !secretKey) {
+    throw new Error('Supabase is not configured. Set SUPABASE_URL and SUPABASE_SECRET_KEY in your environment.');
   }
 
-  client = createClient<Database>(url, serviceRoleKey, {
+  client = createClient<Database>(url, secretKey, {
     auth: { persistSession: false },
   });
 
