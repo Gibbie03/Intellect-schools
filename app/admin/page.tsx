@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { STAFF_ROLES } from '@/lib/constants';
 
 type Tab = 'dashboard' | 'results' | 'admissions' | 'students' | 'staff' | 'news' | 'gallery' | 'contact';
@@ -17,11 +18,35 @@ const TABS: { id: Tab; label: string }[] = [
 ];
 
 export default function AdminDashboard() {
+  const router = useRouter();
   const [tab, setTab] = useState<Tab>('dashboard');
+  const [adminName, setAdminName] = useState('');
+
+  useEffect(() => {
+    fetch('/api/auth/me')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.fullName) setAdminName(data.fullName);
+      });
+  }, []);
+
+  const handleLogout = async () => {
+    await fetch('/api/auth/logout', { method: 'POST' });
+    router.push('/login');
+    router.refresh();
+  };
 
   return (
     <div className="max-w-6xl mx-auto px-6 py-10">
-      <h1 className="text-4xl font-bold mb-6">Admin Dashboard</h1>
+      <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
+        <h1 className="text-4xl font-bold">Admin Dashboard</h1>
+        <div className="flex items-center gap-3 text-sm">
+          <span className="text-gray-500">Signed in as {adminName || '...'}</span>
+          <button onClick={handleLogout} className="text-red-600 hover:underline">
+            Logout
+          </button>
+        </div>
+      </div>
 
       <div className="flex flex-wrap gap-2 mb-8 border-b border-gray-200 pb-4">
         {TABS.map((t) => (

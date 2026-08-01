@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { SUBJECTS, TERMS, SESSIONS, CURRENT_SESSION } from '@/lib/grade';
 import { CLASSES } from '@/lib/constants';
 
@@ -22,9 +23,9 @@ type RosterStudent = {
   full_name: string;
 };
 
-const TEACHER_NAME = 'Mr. Adebayo Okoro (Mathematics)';
-
 export default function TeacherDashboard() {
+  const router = useRouter();
+  const [teacherName, setTeacherName] = useState('');
   const [uploadedResults, setUploadedResults] = useState<UploadedResult[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [showBatch, setShowBatch] = useState(false);
@@ -72,7 +73,18 @@ export default function TeacherDashboard() {
 
   useEffect(() => {
     loadResults();
+    fetch('/api/auth/me')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.fullName) setTeacherName(data.fullName);
+      });
   }, []);
+
+  const handleLogout = async () => {
+    await fetch('/api/auth/logout', { method: 'POST' });
+    router.push('/login');
+    router.refresh();
+  };
 
   const handleUpload = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -86,7 +98,7 @@ export default function TeacherDashboard() {
       const res = await fetch('/api/results', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...newResult, uploadedBy: TEACHER_NAME }),
+        body: JSON.stringify({ ...newResult, uploadedBy: teacherName }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to upload result.');
@@ -148,7 +160,7 @@ export default function TeacherDashboard() {
           subject: batchSetup.subject,
           session: batchSetup.session,
           term: batchSetup.term,
-          uploadedBy: TEACHER_NAME,
+          uploadedBy: teacherName,
           entries,
         }),
       });
@@ -169,9 +181,12 @@ export default function TeacherDashboard() {
       <div className="flex flex-wrap justify-between items-center gap-4 mb-8">
         <div>
           <h1 className="text-4xl font-bold">Teacher Dashboard</h1>
-          <p className="text-gray-600">Welcome, {TEACHER_NAME}</p>
+          <p className="text-gray-600">Welcome, {teacherName || '...'}</p>
         </div>
         <div className="flex gap-3">
+          <button onClick={handleLogout} className="text-sm text-red-600 hover:underline self-center">
+            Logout
+          </button>
           <button
             onClick={() => {
               setShowBatch(!showBatch);
