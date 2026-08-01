@@ -3,9 +3,10 @@ import { getSupabaseClient } from '@/lib/supabase';
 
 export const dynamic = 'force-dynamic';
 
-export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const supabase = getSupabaseClient();
+    const { id } = await params;
     const { status } = await request.json();
 
     if (!['Approved', 'Rejected', 'Pending'].includes(status)) {
@@ -15,7 +16,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
     const { data, error } = await supabase
       .from('results')
       .update({ status })
-      .eq('id', params.id)
+      .eq('id', id)
       .select()
       .single();
 

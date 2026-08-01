@@ -4,9 +4,10 @@ import { generateStudentId } from '@/lib/studentId';
 
 export const dynamic = 'force-dynamic';
 
-export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const supabase = getSupabaseClient();
+    const { id } = await params;
     const { status } = await request.json();
 
     if (!['Pending', 'Reviewed', 'Accepted', 'Rejected'].includes(status)) {
@@ -16,7 +17,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
     const { data: admission, error: fetchError } = await supabase
       .from('admissions')
       .select('*')
-      .eq('id', params.id)
+      .eq('id', id)
       .single();
 
     if (fetchError) throw fetchError;
@@ -54,7 +55,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
     const { data, error } = await supabase
       .from('admissions')
       .update(issuedStudentId ? { status, student_id: issuedStudentId } : { status })
-      .eq('id', params.id)
+      .eq('id', id)
       .select()
       .single();
 

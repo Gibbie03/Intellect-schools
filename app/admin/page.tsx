@@ -540,6 +540,7 @@ function StudentsSection() {
             Upload an .xlsx file with columns: Student ID, Full Name, Class, Gender, Date of Birth, Parent Name,
             Parent Email, Parent Phone, Address.
           </p>
+          {/* eslint-disable-next-line @next/next/no-html-link-for-pages -- file download, not a page route */}
           <a href="/api/students/template" className="inline-block text-sm font-medium text-green-700 hover:underline">
             Download template
           </a>

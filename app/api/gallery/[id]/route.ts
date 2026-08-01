@@ -5,17 +5,18 @@ export const dynamic = 'force-dynamic';
 
 const BUCKET = 'gallery';
 
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const supabase = getSupabaseClient();
+    const { id } = await params;
 
     const { data: image } = await supabase
       .from('gallery_images')
       .select('image_url')
-      .eq('id', params.id)
+      .eq('id', id)
       .single();
 
-    const { error } = await supabase.from('gallery_images').delete().eq('id', params.id);
+    const { error } = await supabase.from('gallery_images').delete().eq('id', id);
     if (error) throw error;
 
     if (image?.image_url) {

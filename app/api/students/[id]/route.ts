@@ -6,9 +6,10 @@ export const dynamic = 'force-dynamic';
 
 type StudentUpdate = Database['public']['Tables']['students']['Update'];
 
-export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const supabase = getSupabaseClient();
+    const { id } = await params;
     const body = await request.json();
     const update: StudentUpdate = {};
 
@@ -30,7 +31,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
     const { data, error } = await supabase
       .from('students')
       .update(update)
-      .eq('id', params.id)
+      .eq('id', id)
       .select()
       .single();
 
