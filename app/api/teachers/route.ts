@@ -1,15 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseClient } from '@/lib/supabase';
 import { STAFF_ROLES } from '@/lib/constants';
+import { getSchoolFromHost } from '@/lib/tenant';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     const supabase = getSupabaseClient();
+    const school = await getSchoolFromHost(request.headers.get('host'));
+    if (!school) return NextResponse.json({ error: 'School not found for this domain.' }, { status: 404 });
+
     const { data, error } = await supabase
       .from('teachers')
       .select('*')
+      .eq('school_id', school.id)
       .order('created_at', { ascending: false });
 
     if (error) throw error;
@@ -23,6 +28,9 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const supabase = getSupabaseClient();
+    const school = await getSchoolFromHost(request.headers.get('host'));
+    if (!school) return NextResponse.json({ error: 'School not found for this domain.' }, { status: 404 });
+
     const { staffId, fullName, role, subject, email, phone } = await request.json();
 
     if (!staffId || !fullName) {
@@ -35,6 +43,7 @@ export async function POST(request: NextRequest) {
     const { data, error } = await supabase
       .from('teachers')
       .insert({
+        school_id: school.id,
         staff_id: staffId,
         full_name: fullName,
         role: role || 'Teacher',

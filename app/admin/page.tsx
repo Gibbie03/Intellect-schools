@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { STAFF_ROLES } from '@/lib/constants';
 
 type Tab = 'dashboard' | 'results' | 'admissions' | 'students' | 'staff' | 'news' | 'gallery' | 'contact';
@@ -17,11 +18,35 @@ const TABS: { id: Tab; label: string }[] = [
 ];
 
 export default function AdminDashboard() {
+  const router = useRouter();
   const [tab, setTab] = useState<Tab>('dashboard');
+  const [adminName, setAdminName] = useState('');
+
+  useEffect(() => {
+    fetch('/api/auth/me')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.fullName) setAdminName(data.fullName);
+      });
+  }, []);
+
+  const handleLogout = async () => {
+    await fetch('/api/auth/logout', { method: 'POST' });
+    router.push('/login');
+    router.refresh();
+  };
 
   return (
     <div className="max-w-6xl mx-auto px-6 py-10">
-      <h1 className="text-4xl font-bold mb-6">Admin Dashboard</h1>
+      <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
+        <h1 className="text-4xl font-bold">Admin Dashboard</h1>
+        <div className="flex items-center gap-3 text-sm">
+          <span className="text-gray-500">Signed in as {adminName || '...'}</span>
+          <button onClick={handleLogout} className="text-red-600 hover:underline">
+            Logout
+          </button>
+        </div>
+      </div>
 
       <div className="flex flex-wrap gap-2 mb-8 border-b border-gray-200 pb-4">
         {TABS.map((t) => (
@@ -53,8 +78,8 @@ export default function AdminDashboard() {
 
 function DashboardOverview() {
   const [counts, setCounts] = useState<{
-    pendingResults: number;
-    approvedResults: number;
+    uploadedLast24h: number;
+    flaggedResults: number;
     pendingAdmissions: number;
     unreadMessages: number;
   } | null>(null);
@@ -62,20 +87,18 @@ function DashboardOverview() {
 
   useEffect(() => {
     Promise.all([
-      fetch('/api/results?status=Pending').then((r) => r.json()),
-      fetch('/api/results?status=Approved').then((r) => r.json()),
+      fetch('/api/results/stats').then((r) => r.json()),
       fetch('/api/admissions').then((r) => r.json()),
       fetch('/api/contact').then((r) => r.json()),
     ])
-      .then(([pending, approved, admissions, messages]) => {
-        if (pending.error) throw new Error(pending.error);
-        if (approved.error) throw new Error(approved.error);
+      .then(([resultStats, admissions, messages]) => {
+        if (resultStats.error) throw new Error(resultStats.error);
         if (admissions.error) throw new Error(admissions.error);
         if (messages.error) throw new Error(messages.error);
 
         setCounts({
-          pendingResults: pending.results.length,
-          approvedResults: approved.results.length,
+          uploadedLast24h: resultStats.uploadedLast24h,
+          flaggedResults: resultStats.flagged,
           pendingAdmissions: admissions.admissions.filter((a: { status: string }) => a.status === 'Pending').length,
           unreadMessages: messages.messages.filter((m: { status: string }) => m.status === 'New').length,
         });
@@ -93,8 +116,8 @@ function DashboardOverview() {
 
       {counts && (
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <StatCard label="Results Pending Approval" value={counts.pendingResults} color="text-orange-600" />
-          <StatCard label="Approved Results" value={counts.approvedResults} color="text-green-700" />
+          <StatCard label="Results Uploaded (Last 24h)" value={counts.uploadedLast24h} color="text-green-700" />
+          <StatCard label="Results Flagged for Review" value={counts.flaggedResults} color="text-red-600" />
           <StatCard label="Admissions Awaiting Review" value={counts.pendingAdmissions} color="text-orange-600" />
           <StatCard label="Unread Messages" value={counts.unreadMessages} color="text-red-600" />
         </div>
@@ -163,7 +186,11 @@ function ResultsSection() {
 
   return (
     <div>
-      <h1 className="text-4xl font-bold mb-8">Manage Results</h1>
+      <h1 className="text-4xl font-bold mb-2">Manage Results</h1>
+      <p className="text-sm text-gray-500 mb-6">
+        Results are live in student portals as soon as a teacher uploads them. Flag a result here if it needs to
+        be pulled down for correction.
+      </p>
       {error && <div className="mb-6 rounded-xl bg-red-50 p-4 text-sm text-red-700">{error}</div>}
 
       <div className="bg-white rounded-2xl shadow p-8">
@@ -210,7 +237,25 @@ function ResultsSection() {
                     </span>
                   </td>
                   <td className="p-4 text-center">
-                    {r.status === 'Pending' ? (
+                    {r.status === 'Approved' && (
+                      <button
+                        disabled={updatingId === r.id}
+                        onClick={() => updateStatus(r.id, 'Rejected')}
+                        className="rounded-lg bg-red-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-700 disabled:opacity-60"
+                      >
+                        Flag as Incorrect
+                      </button>
+                    )}
+                    {r.status === 'Rejected' && (
+                      <button
+                        disabled={updatingId === r.id}
+                        onClick={() => updateStatus(r.id, 'Approved')}
+                        className="rounded-lg bg-green-700 px-3 py-1.5 text-xs font-semibold text-white hover:bg-green-800 disabled:opacity-60"
+                      >
+                        Restore
+                      </button>
+                    )}
+                    {r.status === 'Pending' && (
                       <div className="flex justify-center gap-2">
                         <button
                           disabled={updatingId === r.id}
@@ -227,8 +272,6 @@ function ResultsSection() {
                           Reject
                         </button>
                       </div>
-                    ) : (
-                      <span className="text-xs text-gray-400">&mdash;</span>
                     )}
                   </td>
                 </tr>
@@ -540,6 +583,7 @@ function StudentsSection() {
             Upload an .xlsx file with columns: Student ID, Full Name, Class, Gender, Date of Birth, Parent Name,
             Parent Email, Parent Phone, Address.
           </p>
+          {/* eslint-disable-next-line @next/next/no-html-link-for-pages -- file download, not a page route */}
           <a href="/api/students/template" className="inline-block text-sm font-medium text-green-700 hover:underline">
             Download template
           </a>
@@ -631,6 +675,17 @@ type TeacherRow = {
 
 const emptyStaffForm = { staffId: '', fullName: '', role: STAFF_ROLES[0], subject: '', email: '', phone: '' };
 
+type AccountRow = {
+  id: string;
+  email: string;
+  role: 'admin' | 'teacher';
+  full_name: string;
+  teacher_id: string | null;
+  status: 'Active' | 'Inactive';
+};
+
+const emptyAccountForm = { email: '', password: '', fullName: '', role: 'teacher' as 'admin' | 'teacher', teacherId: '' };
+
 function StaffSection() {
   const [teachers, setTeachers] = useState<TeacherRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -638,6 +693,12 @@ function StaffSection() {
   const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState(emptyStaffForm);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+
+  const [accounts, setAccounts] = useState<AccountRow[]>([]);
+  const [accountsLoading, setAccountsLoading] = useState(true);
+  const [accountsError, setAccountsError] = useState('');
+  const [accountSubmitting, setAccountSubmitting] = useState(false);
+  const [accountForm, setAccountForm] = useState(emptyAccountForm);
 
   const load = () => {
     setLoading(true);
@@ -651,7 +712,43 @@ function StaffSection() {
       .finally(() => setLoading(false));
   };
 
+  const loadAccounts = () => {
+    setAccountsLoading(true);
+    fetch('/api/school-users')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.error) throw new Error(data.error);
+        setAccounts(data.users);
+      })
+      .catch((err) => setAccountsError(err.message))
+      .finally(() => setAccountsLoading(false));
+  };
+
   useEffect(load, []);
+  useEffect(loadAccounts, []);
+
+  const handleCreateAccount = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!accountForm.email || !accountForm.password || !accountForm.fullName) return;
+
+    setAccountSubmitting(true);
+    setAccountsError('');
+    try {
+      const res = await fetch('/api/school-users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...accountForm, teacherId: accountForm.teacherId || undefined }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to create login account.');
+      setAccountForm(emptyAccountForm);
+      loadAccounts();
+    } catch (err) {
+      setAccountsError((err as Error).message);
+    } finally {
+      setAccountSubmitting(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -824,6 +921,99 @@ function StaffSection() {
                       <option value="Inactive">Inactive (Terminated)</option>
                     </select>
                   </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+
+      <div className="bg-white rounded-2xl shadow p-8 mt-8">
+        <h2 className="text-xl font-semibold mb-2">Staff Login Accounts</h2>
+        <p className="text-sm text-gray-500 mb-6">
+          Issue a login for a staff member so they can sign in to the Admin Dashboard or Teacher Dashboard.
+        </p>
+
+        <form
+          onSubmit={handleCreateAccount}
+          className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8 border-b border-gray-100 pb-8"
+        >
+          <input
+            type="text"
+            placeholder="Full Name"
+            value={accountForm.fullName}
+            onChange={(e) => setAccountForm({ ...accountForm, fullName: e.target.value })}
+            className="w-full rounded-xl border p-3"
+            required
+          />
+          <input
+            type="email"
+            placeholder="Login Email"
+            value={accountForm.email}
+            onChange={(e) => setAccountForm({ ...accountForm, email: e.target.value })}
+            className="w-full rounded-xl border p-3"
+            required
+          />
+          <input
+            type="password"
+            placeholder="Password (min. 8 characters)"
+            value={accountForm.password}
+            onChange={(e) => setAccountForm({ ...accountForm, password: e.target.value })}
+            className="w-full rounded-xl border p-3"
+            minLength={8}
+            required
+          />
+          <select
+            value={accountForm.role}
+            onChange={(e) => setAccountForm({ ...accountForm, role: e.target.value as 'admin' | 'teacher' })}
+            className="w-full rounded-xl border p-3"
+          >
+            <option value="teacher">Teacher</option>
+            <option value="admin">Admin</option>
+          </select>
+          <select
+            value={accountForm.teacherId}
+            onChange={(e) => setAccountForm({ ...accountForm, teacherId: e.target.value })}
+            className="w-full rounded-xl border p-3 md:col-span-2"
+          >
+            <option value="">Not linked to a staff directory profile</option>
+            {teachers.map((t) => (
+              <option key={t.id} value={t.id}>
+                {t.full_name} ({t.staff_id})
+              </option>
+            ))}
+          </select>
+          {accountsError && <p className="md:col-span-2 text-sm text-red-600">{accountsError}</p>}
+          <button
+            type="submit"
+            disabled={accountSubmitting}
+            className="md:col-span-2 w-full rounded-xl bg-green-700 py-3 font-semibold text-white hover:bg-green-800 disabled:opacity-60"
+          >
+            {accountSubmitting ? 'Creating...' : 'Create Login Account'}
+          </button>
+        </form>
+
+        {accountsLoading ? (
+          <p className="text-gray-500">Loading...</p>
+        ) : accounts.length === 0 ? (
+          <p className="text-gray-500">No login accounts yet.</p>
+        ) : (
+          <table className="w-full">
+            <thead>
+              <tr className="bg-gray-100">
+                <th className="text-left p-4">Name</th>
+                <th className="text-left p-4">Email</th>
+                <th className="text-center p-4">Role</th>
+                <th className="text-center p-4">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {accounts.map((a) => (
+                <tr key={a.id} className="border-b">
+                  <td className="p-4">{a.full_name}</td>
+                  <td className="p-4">{a.email}</td>
+                  <td className="p-4 text-center capitalize">{a.role}</td>
+                  <td className="p-4 text-center">{a.status}</td>
                 </tr>
               ))}
             </tbody>

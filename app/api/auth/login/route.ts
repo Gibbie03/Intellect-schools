@@ -1,0 +1,57 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { getSupabaseClient } from '@/lib/supabase';
+import { getSchoolFromHost } from '@/lib/tenant';
+import { verifyPassword, signSession, SESSION_COOKIE } from '@/lib/auth';
+
+export const dynamic = 'force-dynamic';
+
+export async function POST(request: NextRequest) {
+  try {
+    const supabase = getSupabaseClient();
+    const school = await getSchoolFromHost(request.headers.get('host'));
+    if (!school) return NextResponse.json({ error: 'School not found for this domain.' }, { status: 404 });
+
+    const { email, password } = await request.json();
+    if (!email || !password) {
+      return NextResponse.json({ error: 'email and password are required.' }, { status: 400 });
+    }
+
+    const { data: user, error } = await supabase
+      .from('school_users')
+      .select('*')
+      .eq('school_id', school.id)
+      .eq('email', email)
+      .eq('status', 'Active')
+      .maybeSingle();
+
+    if (error) throw error;
+    if (!user) {
+      return NextResponse.json({ error: 'Invalid email or password.' }, { status: 401 });
+    }
+
+    const valid = await verifyPassword(password, user.password_hash);
+    if (!valid) {
+      return NextResponse.json({ error: 'Invalid email or password.' }, { status: 401 });
+    }
+
+    const token = await signSession({
+      userId: user.id,
+      role: user.role,
+      schoolSubdomain: school.subdomain,
+      fullName: user.full_name,
+    });
+
+    const response = NextResponse.json({ role: user.role, fullName: user.full_name });
+    response.cookies.set(SESSION_COOKIE, token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 60 * 60 * 24 * 30,
+    });
+
+    return response;
+  } catch (error) {
+    return NextResponse.json({ error: (error as Error).message }, { status: 500 });
+  }
+}

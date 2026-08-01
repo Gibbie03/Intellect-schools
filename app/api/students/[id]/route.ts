@@ -1,14 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseClient } from '@/lib/supabase';
 import { Database } from '@/lib/database.types';
+import { getSchoolFromHost } from '@/lib/tenant';
 
 export const dynamic = 'force-dynamic';
 
 type StudentUpdate = Database['public']['Tables']['students']['Update'];
 
-export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const supabase = getSupabaseClient();
+    const school = await getSchoolFromHost(request.headers.get('host'));
+    if (!school) return NextResponse.json({ error: 'School not found for this domain.' }, { status: 404 });
+
+    const { id } = await params;
     const body = await request.json();
     const update: StudentUpdate = {};
 
@@ -30,7 +35,8 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
     const { data, error } = await supabase
       .from('students')
       .update(update)
-      .eq('id', params.id)
+      .eq('id', id)
+      .eq('school_id', school.id)
       .select()
       .single();
 

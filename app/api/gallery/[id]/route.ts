@@ -1,21 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseClient } from '@/lib/supabase';
+import { getSchoolFromHost } from '@/lib/tenant';
 
 export const dynamic = 'force-dynamic';
 
 const BUCKET = 'gallery';
 
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const supabase = getSupabaseClient();
+    const school = await getSchoolFromHost(request.headers.get('host'));
+    if (!school) return NextResponse.json({ error: 'School not found for this domain.' }, { status: 404 });
+
+    const { id } = await params;
 
     const { data: image } = await supabase
       .from('gallery_images')
       .select('image_url')
-      .eq('id', params.id)
+      .eq('id', id)
+      .eq('school_id', school.id)
       .single();
 
-    const { error } = await supabase.from('gallery_images').delete().eq('id', params.id);
+    const { error } = await supabase.from('gallery_images').delete().eq('id', id).eq('school_id', school.id);
     if (error) throw error;
 
     if (image?.image_url) {

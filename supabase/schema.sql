@@ -1,10 +1,41 @@
--- Intellect Schools database schema
+-- Intellect Schools platform database schema
 -- Run this once in the Supabase SQL Editor (Project > SQL Editor > New query)
 
 create extension if not exists "pgcrypto";
 
+create table if not exists schools (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  subdomain text not null unique,
+  custom_domain text unique,
+  id_prefix text not null,
+  logo_url text,
+  primary_color text,
+  contact_email text,
+  contact_phone text,
+  address text,
+  status text not null default 'Active' check (status in ('Active', 'Suspended')),
+  plan text not null default 'Standard',
+  features jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists school_users (
+  id uuid primary key default gen_random_uuid(),
+  school_id uuid not null references schools(id) on delete cascade,
+  email text not null,
+  password_hash text not null,
+  role text not null check (role in ('admin', 'teacher')),
+  full_name text not null,
+  teacher_id uuid references teachers(id) on delete set null,
+  status text not null default 'Active' check (status in ('Active', 'Inactive')),
+  created_at timestamptz not null default now(),
+  unique (school_id, email)
+);
+
 create table if not exists results (
   id uuid primary key default gen_random_uuid(),
+  school_id uuid not null references schools(id) on delete cascade,
   student_id text not null,
   subject text not null,
   score int not null check (score >= 0 and score <= 100),
@@ -16,11 +47,13 @@ create table if not exists results (
   created_at timestamptz not null default now()
 );
 
+create index if not exists results_school_id_idx on results (school_id);
 create index if not exists results_student_id_idx on results (student_id);
 create index if not exists results_status_idx on results (status);
 
 create table if not exists admissions (
   id uuid primary key default gen_random_uuid(),
+  school_id uuid not null references schools(id) on delete cascade,
   student_name text not null,
   date_of_birth date,
   gender text,
@@ -35,36 +68,49 @@ create table if not exists admissions (
   created_at timestamptz not null default now()
 );
 
+create index if not exists admissions_school_id_idx on admissions (school_id);
+
 create table if not exists news_events (
   id uuid primary key default gen_random_uuid(),
+  school_id uuid not null references schools(id) on delete cascade,
   title text not null,
   content text not null,
   event_date date,
   created_at timestamptz not null default now()
 );
 
+create index if not exists news_events_school_id_idx on news_events (school_id);
+
 create table if not exists gallery_images (
   id uuid primary key default gen_random_uuid(),
+  school_id uuid not null references schools(id) on delete cascade,
   image_url text not null,
   caption text,
   created_at timestamptz not null default now()
 );
 
+create index if not exists gallery_images_school_id_idx on gallery_images (school_id);
+
 create table if not exists teachers (
   id uuid primary key default gen_random_uuid(),
-  staff_id text not null unique,
+  school_id uuid not null references schools(id) on delete cascade,
+  staff_id text not null,
   full_name text not null,
   role text not null default 'Teacher' check (role in ('Teacher', 'Head Teacher', 'Admin', 'Bursar', 'Non-Teaching Staff')),
   subject text,
   email text,
   phone text,
   status text not null default 'Active' check (status in ('Active', 'Inactive')),
-  created_at timestamptz not null default now()
+  created_at timestamptz not null default now(),
+  unique (school_id, staff_id)
 );
+
+create index if not exists teachers_school_id_idx on teachers (school_id);
 
 create table if not exists students (
   id uuid primary key default gen_random_uuid(),
-  student_id text not null unique,
+  school_id uuid not null references schools(id) on delete cascade,
+  student_id text not null,
   full_name text not null,
   class text not null,
   gender text,
@@ -74,13 +120,16 @@ create table if not exists students (
   parent_phone text,
   address text,
   status text not null default 'Active' check (status in ('Active', 'Inactive')),
-  created_at timestamptz not null default now()
+  created_at timestamptz not null default now(),
+  unique (school_id, student_id)
 );
 
+create index if not exists students_school_id_idx on students (school_id);
 create index if not exists students_student_id_idx on students (student_id);
 
 create table if not exists contact_messages (
   id uuid primary key default gen_random_uuid(),
+  school_id uuid not null references schools(id) on delete cascade,
   name text not null,
   email text not null,
   phone text,
@@ -90,10 +139,14 @@ create table if not exists contact_messages (
   created_at timestamptz not null default now()
 );
 
+create index if not exists contact_messages_school_id_idx on contact_messages (school_id);
+
 -- Row Level Security: all access from this app goes through Next.js API
 -- routes using the service role key (which bypasses RLS), so no client-side
 -- policies are required. RLS is enabled anyway as defense-in-depth in case
 -- the anon key is ever used directly.
+alter table schools enable row level security;
+alter table school_users enable row level security;
 alter table results enable row level security;
 alter table admissions enable row level security;
 alter table news_events enable row level security;

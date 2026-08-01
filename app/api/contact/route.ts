@@ -1,14 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseClient } from '@/lib/supabase';
+import { getSchoolFromHost } from '@/lib/tenant';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     const supabase = getSupabaseClient();
+    const school = await getSchoolFromHost(request.headers.get('host'));
+    if (!school) return NextResponse.json({ error: 'School not found for this domain.' }, { status: 404 });
+
     const { data, error } = await supabase
       .from('contact_messages')
       .select('*')
+      .eq('school_id', school.id)
       .order('created_at', { ascending: false });
 
     if (error) throw error;
@@ -22,6 +27,9 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const supabase = getSupabaseClient();
+    const school = await getSchoolFromHost(request.headers.get('host'));
+    if (!school) return NextResponse.json({ error: 'School not found for this domain.' }, { status: 404 });
+
     const { name, email, phone, subject, message } = await request.json();
 
     if (!name || !email || !message) {
@@ -30,7 +38,15 @@ export async function POST(request: NextRequest) {
 
     const { data, error } = await supabase
       .from('contact_messages')
-      .insert({ name, email, phone: phone || null, subject: subject || null, message, status: 'New' })
+      .insert({
+        school_id: school.id,
+        name,
+        email,
+        phone: phone || null,
+        subject: subject || null,
+        message,
+        status: 'New',
+      })
       .select()
       .single();
 

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import * as XLSX from 'xlsx';
 import { getSupabaseClient } from '@/lib/supabase';
 import { Database } from '@/lib/database.types';
+import { getSchoolFromHost } from '@/lib/tenant';
 
 export const dynamic = 'force-dynamic';
 
@@ -30,6 +31,9 @@ const HEADER_MAP: Record<string, keyof StudentInsert> = {
 export async function POST(request: NextRequest) {
   try {
     const supabase = getSupabaseClient();
+    const school = await getSchoolFromHost(request.headers.get('host'));
+    if (!school) return NextResponse.json({ error: 'School not found for this domain.' }, { status: 404 });
+
     const formData = await request.formData();
     const file = formData.get('file');
 
@@ -83,7 +87,7 @@ export async function POST(request: NextRequest) {
       }
       seenIds.add(mapped.student_id);
 
-      toInsert.push({ ...mapped, status: 'Active' } as StudentInsert);
+      toInsert.push({ ...mapped, school_id: school.id, status: 'Active' } as StudentInsert);
     });
 
     let created = 0;
