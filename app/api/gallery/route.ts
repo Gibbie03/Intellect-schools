@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { randomUUID } from 'node:crypto';
 import { getSupabaseClient } from '@/lib/supabase';
+import { getSchoolFromHost } from '@/lib/tenant';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,12 +14,16 @@ async function ensureBucketExists(supabase: ReturnType<typeof getSupabaseClient>
   }
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     const supabase = getSupabaseClient();
+    const school = await getSchoolFromHost(request.headers.get('host'));
+    if (!school) return NextResponse.json({ error: 'School not found for this domain.' }, { status: 404 });
+
     const { data, error } = await supabase
       .from('gallery_images')
       .select('*')
+      .eq('school_id', school.id)
       .order('created_at', { ascending: false });
 
     if (error) throw error;
@@ -32,6 +37,9 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const supabase = getSupabaseClient();
+    const school = await getSchoolFromHost(request.headers.get('host'));
+    if (!school) return NextResponse.json({ error: 'School not found for this domain.' }, { status: 404 });
+
     const formData = await request.formData();
     const file = formData.get('file');
     const caption = formData.get('caption');
@@ -52,7 +60,7 @@ export async function POST(request: NextRequest) {
     await ensureBucketExists(supabase);
 
     const extension = file.name.includes('.') ? file.name.split('.').pop() : file.type.split('/')[1];
-    const path = `${randomUUID()}.${extension}`;
+    const path = `${school.id}/${randomUUID()}.${extension}`;
 
     const { error: uploadError } = await supabase.storage
       .from(BUCKET)
@@ -66,7 +74,11 @@ export async function POST(request: NextRequest) {
 
     const { data, error } = await supabase
       .from('gallery_images')
-      .insert({ image_url: publicUrl, caption: typeof caption === 'string' && caption ? caption : null })
+      .insert({
+        school_id: school.id,
+        image_url: publicUrl,
+        caption: typeof caption === 'string' && caption ? caption : null,
+      })
       .select()
       .single();
 

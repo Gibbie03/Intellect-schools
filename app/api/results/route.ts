@@ -1,18 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseClient } from '@/lib/supabase';
 import { gradeFromScore } from '@/lib/grade';
+import { getSchoolFromHost } from '@/lib/tenant';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
   try {
     const supabase = getSupabaseClient();
+    const school = await getSchoolFromHost(request.headers.get('host'));
+    if (!school) return NextResponse.json({ error: 'School not found for this domain.' }, { status: 404 });
+
     const studentId = request.nextUrl.searchParams.get('studentId');
     const status = request.nextUrl.searchParams.get('status') as 'Pending' | 'Approved' | 'Rejected' | null;
     const session = request.nextUrl.searchParams.get('session');
     const term = request.nextUrl.searchParams.get('term');
 
-    let query = supabase.from('results').select('*').order('created_at', { ascending: false });
+    let query = supabase.from('results').select('*').eq('school_id', school.id).order('created_at', { ascending: false });
     if (studentId) query = query.eq('student_id', studentId);
     if (status) query = query.eq('status', status);
     if (session) query = query.eq('session', session);
@@ -30,6 +34,9 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const supabase = getSupabaseClient();
+    const school = await getSchoolFromHost(request.headers.get('host'));
+    if (!school) return NextResponse.json({ error: 'School not found for this domain.' }, { status: 404 });
+
     const body = await request.json();
     const { studentId, subject, score, session, term, uploadedBy } = body;
 
@@ -48,6 +55,7 @@ export async function POST(request: NextRequest) {
     const { data, error } = await supabase
       .from('results')
       .insert({
+        school_id: school.id,
         student_id: studentId,
         subject,
         score: numericScore,

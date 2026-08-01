@@ -1,14 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseClient } from '@/lib/supabase';
+import { getSchoolFromHost } from '@/lib/tenant';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     const supabase = getSupabaseClient();
+    const school = await getSchoolFromHost(request.headers.get('host'));
+    if (!school) return NextResponse.json({ error: 'School not found for this domain.' }, { status: 404 });
+
     const { data, error } = await supabase
       .from('admissions')
       .select('*')
+      .eq('school_id', school.id)
       .order('created_at', { ascending: false });
 
     if (error) throw error;
@@ -22,6 +27,9 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const supabase = getSupabaseClient();
+    const school = await getSchoolFromHost(request.headers.get('host'));
+    if (!school) return NextResponse.json({ error: 'School not found for this domain.' }, { status: 404 });
+
     const body = await request.json();
     const {
       studentName,
@@ -45,6 +53,7 @@ export async function POST(request: NextRequest) {
     const { data, error } = await supabase
       .from('admissions')
       .insert({
+        school_id: school.id,
         student_name: studentName,
         date_of_birth: dateOfBirth || null,
         gender: gender || null,

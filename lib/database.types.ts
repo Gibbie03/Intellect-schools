@@ -1,9 +1,97 @@
 export type Database = {
   public: {
     Tables: {
+      schools: {
+        Row: {
+          id: string;
+          name: string;
+          subdomain: string;
+          custom_domain: string | null;
+          id_prefix: string;
+          logo_url: string | null;
+          primary_color: string | null;
+          contact_email: string | null;
+          contact_phone: string | null;
+          address: string | null;
+          status: 'Active' | 'Suspended';
+          plan: string;
+          features: Record<string, boolean>;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          name: string;
+          subdomain: string;
+          custom_domain?: string | null;
+          id_prefix: string;
+          logo_url?: string | null;
+          primary_color?: string | null;
+          contact_email?: string | null;
+          contact_phone?: string | null;
+          address?: string | null;
+          status?: 'Active' | 'Suspended';
+          plan?: string;
+          features?: Record<string, boolean>;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          name?: string;
+          subdomain?: string;
+          custom_domain?: string | null;
+          id_prefix?: string;
+          logo_url?: string | null;
+          primary_color?: string | null;
+          contact_email?: string | null;
+          contact_phone?: string | null;
+          address?: string | null;
+          status?: 'Active' | 'Suspended';
+          plan?: string;
+          features?: Record<string, boolean>;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      school_users: {
+        Row: {
+          id: string;
+          school_id: string;
+          email: string;
+          password_hash: string;
+          role: 'admin' | 'teacher';
+          full_name: string;
+          teacher_id: string | null;
+          status: 'Active' | 'Inactive';
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          school_id: string;
+          email: string;
+          password_hash: string;
+          role: 'admin' | 'teacher';
+          full_name: string;
+          teacher_id?: string | null;
+          status?: 'Active' | 'Inactive';
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          school_id?: string;
+          email?: string;
+          password_hash?: string;
+          role?: 'admin' | 'teacher';
+          full_name?: string;
+          teacher_id?: string | null;
+          status?: 'Active' | 'Inactive';
+          created_at?: string;
+        };
+        Relationships: [];
+      };
       results: {
         Row: {
           id: string;
+          school_id: string;
           student_id: string;
           subject: string;
           score: number;
@@ -16,6 +104,7 @@ export type Database = {
         };
         Insert: {
           id?: string;
+          school_id: string;
           student_id: string;
           subject: string;
           score: number;
@@ -28,6 +117,7 @@ export type Database = {
         };
         Update: {
           id?: string;
+          school_id?: string;
           student_id?: string;
           subject?: string;
           score?: number;
@@ -43,6 +133,7 @@ export type Database = {
       admissions: {
         Row: {
           id: string;
+          school_id: string;
           student_name: string;
           date_of_birth: string | null;
           gender: string | null;
@@ -58,6 +149,7 @@ export type Database = {
         };
         Insert: {
           id?: string;
+          school_id: string;
           student_name: string;
           date_of_birth?: string | null;
           gender?: string | null;
@@ -73,6 +165,7 @@ export type Database = {
         };
         Update: {
           id?: string;
+          school_id?: string;
           student_name?: string;
           date_of_birth?: string | null;
           gender?: string | null;
@@ -91,6 +184,7 @@ export type Database = {
       news_events: {
         Row: {
           id: string;
+          school_id: string;
           title: string;
           content: string;
           event_date: string | null;
@@ -98,6 +192,7 @@ export type Database = {
         };
         Insert: {
           id?: string;
+          school_id: string;
           title: string;
           content: string;
           event_date?: string | null;
@@ -105,6 +200,7 @@ export type Database = {
         };
         Update: {
           id?: string;
+          school_id?: string;
           title?: string;
           content?: string;
           event_date?: string | null;
@@ -115,18 +211,21 @@ export type Database = {
       gallery_images: {
         Row: {
           id: string;
+          school_id: string;
           image_url: string;
           caption: string | null;
           created_at: string;
         };
         Insert: {
           id?: string;
+          school_id: string;
           image_url: string;
           caption?: string | null;
           created_at?: string;
         };
         Update: {
           id?: string;
+          school_id?: string;
           image_url?: string;
           caption?: string | null;
           created_at?: string;
@@ -136,6 +235,7 @@ export type Database = {
       teachers: {
         Row: {
           id: string;
+          school_id: string;
           staff_id: string;
           full_name: string;
           role: 'Teacher' | 'Head Teacher' | 'Admin' | 'Bursar' | 'Non-Teaching Staff';
@@ -147,6 +247,7 @@ export type Database = {
         };
         Insert: {
           id?: string;
+          school_id: string;
           staff_id: string;
           full_name: string;
           role?: 'Teacher' | 'Head Teacher' | 'Admin' | 'Bursar' | 'Non-Teaching Staff';
@@ -158,6 +259,7 @@ export type Database = {
         };
         Update: {
           id?: string;
+          school_id?: string;
           staff_id?: string;
           full_name?: string;
           role?: 'Teacher' | 'Head Teacher' | 'Admin' | 'Bursar' | 'Non-Teaching Staff';
@@ -172,6 +274,7 @@ export type Database = {
       students: {
         Row: {
           id: string;
+          school_id: string;
           student_id: string;
           full_name: string;
           class: string;
@@ -186,6 +289,7 @@ export type Database = {
         };
         Insert: {
           id?: string;
+          school_id: string;
           student_id: string;
           full_name: string;
           class: string;
@@ -200,6 +304,7 @@ export type Database = {
         };
         Update: {
           id?: string;
+          school_id?: string;
           student_id?: string;
           full_name?: string;
           class?: string;
@@ -217,6 +322,7 @@ export type Database = {
       contact_messages: {
         Row: {
           id: string;
+          school_id: string;
           name: string;
           email: string;
           phone: string | null;
@@ -227,6 +333,7 @@ export type Database = {
         };
         Insert: {
           id?: string;
+          school_id: string;
           name: string;
           email: string;
           phone?: string | null;
@@ -237,6 +344,7 @@ export type Database = {
         };
         Update: {
           id?: string;
+          school_id?: string;
           name?: string;
           email?: string;
           phone?: string | null;

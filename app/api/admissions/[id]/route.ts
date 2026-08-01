@@ -1,12 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseClient } from '@/lib/supabase';
 import { generateStudentId } from '@/lib/studentId';
+import { getSchoolFromHost } from '@/lib/tenant';
 
 export const dynamic = 'force-dynamic';
 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const supabase = getSupabaseClient();
+    const school = await getSchoolFromHost(request.headers.get('host'));
+    if (!school) return NextResponse.json({ error: 'School not found for this domain.' }, { status: 404 });
+
     const { id } = await params;
     const { status } = await request.json();
 
@@ -18,6 +22,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       .from('admissions')
       .select('*')
       .eq('id', id)
+      .eq('school_id', school.id)
       .single();
 
     if (fetchError) throw fetchError;
@@ -26,8 +31,9 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
     if (status === 'Accepted' && !admission.student_id) {
       for (let attempt = 0; attempt < 5; attempt++) {
-        const candidateId = await generateStudentId(supabase);
+        const candidateId = await generateStudentId(supabase, school);
         const { error: studentError } = await supabase.from('students').insert({
+          school_id: school.id,
           student_id: candidateId,
           full_name: admission.student_name,
           class: admission.class_applying_for,
@@ -56,6 +62,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       .from('admissions')
       .update(issuedStudentId ? { status, student_id: issuedStudentId } : { status })
       .eq('id', id)
+      .eq('school_id', school.id)
       .select()
       .single();
 
