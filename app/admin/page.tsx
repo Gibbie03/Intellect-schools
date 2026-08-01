@@ -18,49 +18,26 @@ const TABS: { id: Tab; label: string }[] = [
 
 export default function AdminDashboard() {
   const [tab, setTab] = useState<Tab>('dashboard');
-  const [collapsed, setCollapsed] = useState(false);
 
   return (
-    <div className="flex min-h-screen">
-      <div
-        className={`shrink-0 bg-gray-900 text-white p-4 transition-all duration-200 ${
-          collapsed ? 'w-16' : 'w-64 p-6'
-        }`}
-      >
-        <div className="flex items-center justify-between mb-8">
-          {!collapsed && <h2 className="font-bold text-xl">Admin Dashboard</h2>}
+    <div className="max-w-6xl mx-auto px-6 py-10">
+      <h1 className="text-4xl font-bold mb-6">Admin Dashboard</h1>
+
+      <div className="flex flex-wrap gap-2 mb-8 border-b border-gray-200 pb-4">
+        {TABS.map((t) => (
           <button
-            onClick={() => setCollapsed(!collapsed)}
-            aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-            className="rounded p-2 text-white hover:bg-white/10"
+            key={t.id}
+            onClick={() => setTab(t.id)}
+            className={`rounded-xl px-4 py-2 text-sm font-medium ${
+              tab === t.id ? 'bg-green-700 text-white' : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'
+            }`}
           >
-            {collapsed ? '»' : '«'}
+            {t.label}
           </button>
-        </div>
-        <nav className="space-y-1 text-sm">
-          {TABS.map((t) => (
-            <button
-              key={t.id}
-              onClick={() => setTab(t.id)}
-              title={t.label}
-              className={`w-full rounded px-4 py-2 ${collapsed ? 'text-center' : 'text-left'} ${
-                tab === t.id ? 'bg-white/10' : 'hover:bg-white/10'
-              }`}
-            >
-              {collapsed
-                ? t.label
-                    .split(/[\s&]+/)
-                    .filter(Boolean)
-                    .map((word) => word[0])
-                    .slice(0, 2)
-                    .join('')
-                : t.label}
-            </button>
-          ))}
-        </nav>
+        ))}
       </div>
 
-      <div className="flex-1 p-10">
+      <div>
         {tab === 'dashboard' && <DashboardOverview />}
         {tab === 'results' && <ResultsSection />}
         {tab === 'admissions' && <AdmissionsSection />}
