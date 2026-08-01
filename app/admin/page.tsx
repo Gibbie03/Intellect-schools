@@ -699,6 +699,9 @@ function StaffSection() {
   const [accountsError, setAccountsError] = useState('');
   const [accountSubmitting, setAccountSubmitting] = useState(false);
   const [accountForm, setAccountForm] = useState(emptyAccountForm);
+  const [resetTarget, setResetTarget] = useState<string | null>(null);
+  const [resetPassword, setResetPassword] = useState('');
+  const [resetSubmitting, setResetSubmitting] = useState(false);
 
   const load = () => {
     setLoading(true);
@@ -747,6 +750,29 @@ function StaffSection() {
       setAccountsError((err as Error).message);
     } finally {
       setAccountSubmitting(false);
+    }
+  };
+
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!resetTarget || resetPassword.length < 8) return;
+
+    setResetSubmitting(true);
+    setAccountsError('');
+    try {
+      const res = await fetch(`/api/school-users/${resetTarget}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: resetPassword }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to reset password.');
+      setResetTarget(null);
+      setResetPassword('');
+    } catch (err) {
+      setAccountsError((err as Error).message);
+    } finally {
+      setResetSubmitting(false);
     }
   };
 
@@ -1005,6 +1031,7 @@ function StaffSection() {
                 <th className="text-left p-4">Email</th>
                 <th className="text-center p-4">Role</th>
                 <th className="text-center p-4">Status</th>
+                <th className="text-center p-4">Action</th>
               </tr>
             </thead>
             <tbody>
@@ -1014,6 +1041,37 @@ function StaffSection() {
                   <td className="p-4">{a.email}</td>
                   <td className="p-4 text-center capitalize">{a.role}</td>
                   <td className="p-4 text-center">{a.status}</td>
+                  <td className="p-4 text-center">
+                    <button
+                      onClick={() => {
+                        setResetTarget(resetTarget === a.id ? null : a.id);
+                        setResetPassword('');
+                      }}
+                      className="text-sm text-[var(--brand-color)] hover:underline"
+                    >
+                      {resetTarget === a.id ? 'Cancel' : 'Reset Password'}
+                    </button>
+                    {resetTarget === a.id && (
+                      <form onSubmit={handleResetPassword} className="mt-2 flex gap-2 justify-center">
+                        <input
+                          type="password"
+                          placeholder="New password"
+                          value={resetPassword}
+                          onChange={(e) => setResetPassword(e.target.value)}
+                          className="rounded-lg border p-2 text-sm"
+                          minLength={8}
+                          required
+                        />
+                        <button
+                          type="submit"
+                          disabled={resetSubmitting}
+                          className="rounded-lg bg-gray-900 px-3 py-2 text-xs font-semibold text-white disabled:opacity-60"
+                        >
+                          {resetSubmitting ? 'Saving...' : 'Save'}
+                        </button>
+                      </form>
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>
