@@ -93,7 +93,7 @@ export default function TeacherDashboard() {
 
       setNewResult({ studentId: '', subject: SUBJECTS[0], score: '', session: CURRENT_SESSION, term: TERMS[0] });
       setShowForm(false);
-      setNotice('Result uploaded and sent to the admin for approval.');
+      setNotice('Result uploaded and is now visible in the student portal.');
       loadResults();
     } catch (err) {
       setError((err as Error).message);
@@ -352,7 +352,8 @@ export default function TeacherDashboard() {
           {batchResult && (
             <div className="mb-6 rounded-xl bg-green-50 p-4 text-sm text-green-800">
               <p>
-                Uploaded {batchResult.created} result{batchResult.created === 1 ? '' : 's'} for approval.
+                Uploaded {batchResult.created} result{batchResult.created === 1 ? '' : 's'}. Visible in student
+                portals now.
                 {batchResult.skipped > 0 && ` ${batchResult.skipped} row(s) skipped.`}
               </p>
               {batchResult.errors.length > 0 && (
@@ -471,7 +472,8 @@ export default function TeacherDashboard() {
       </div>
 
       <div className="mt-8 text-sm text-gray-500">
-        Uploaded results go to the admin for approval before they appear in student portals.
+        Results are visible in student portals immediately after upload. The admin is notified and can flag any
+        result that needs correction.
       </div>
     </div>
   );

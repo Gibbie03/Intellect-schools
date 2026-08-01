@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
         grade: gradeFromScore(numericScore),
         session,
         term,
-        status: 'Pending',
+        status: 'Approved',
         uploaded_by: uploadedBy ?? null,
       })
       .select()

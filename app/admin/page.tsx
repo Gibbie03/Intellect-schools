@@ -53,8 +53,8 @@ export default function AdminDashboard() {
 
 function DashboardOverview() {
   const [counts, setCounts] = useState<{
-    pendingResults: number;
-    approvedResults: number;
+    uploadedLast24h: number;
+    flaggedResults: number;
     pendingAdmissions: number;
     unreadMessages: number;
   } | null>(null);
@@ -62,20 +62,18 @@ function DashboardOverview() {
 
   useEffect(() => {
     Promise.all([
-      fetch('/api/results?status=Pending').then((r) => r.json()),
-      fetch('/api/results?status=Approved').then((r) => r.json()),
+      fetch('/api/results/stats').then((r) => r.json()),
       fetch('/api/admissions').then((r) => r.json()),
       fetch('/api/contact').then((r) => r.json()),
     ])
-      .then(([pending, approved, admissions, messages]) => {
-        if (pending.error) throw new Error(pending.error);
-        if (approved.error) throw new Error(approved.error);
+      .then(([resultStats, admissions, messages]) => {
+        if (resultStats.error) throw new Error(resultStats.error);
         if (admissions.error) throw new Error(admissions.error);
         if (messages.error) throw new Error(messages.error);
 
         setCounts({
-          pendingResults: pending.results.length,
-          approvedResults: approved.results.length,
+          uploadedLast24h: resultStats.uploadedLast24h,
+          flaggedResults: resultStats.flagged,
           pendingAdmissions: admissions.admissions.filter((a: { status: string }) => a.status === 'Pending').length,
           unreadMessages: messages.messages.filter((m: { status: string }) => m.status === 'New').length,
         });
@@ -93,8 +91,8 @@ function DashboardOverview() {
 
       {counts && (
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <StatCard label="Results Pending Approval" value={counts.pendingResults} color="text-orange-600" />
-          <StatCard label="Approved Results" value={counts.approvedResults} color="text-green-700" />
+          <StatCard label="Results Uploaded (Last 24h)" value={counts.uploadedLast24h} color="text-green-700" />
+          <StatCard label="Results Flagged for Review" value={counts.flaggedResults} color="text-red-600" />
           <StatCard label="Admissions Awaiting Review" value={counts.pendingAdmissions} color="text-orange-600" />
           <StatCard label="Unread Messages" value={counts.unreadMessages} color="text-red-600" />
         </div>
@@ -163,7 +161,11 @@ function ResultsSection() {
 
   return (
     <div>
-      <h1 className="text-4xl font-bold mb-8">Manage Results</h1>
+      <h1 className="text-4xl font-bold mb-2">Manage Results</h1>
+      <p className="text-sm text-gray-500 mb-6">
+        Results are live in student portals as soon as a teacher uploads them. Flag a result here if it needs to
+        be pulled down for correction.
+      </p>
       {error && <div className="mb-6 rounded-xl bg-red-50 p-4 text-sm text-red-700">{error}</div>}
 
       <div className="bg-white rounded-2xl shadow p-8">
@@ -210,7 +212,25 @@ function ResultsSection() {
                     </span>
                   </td>
                   <td className="p-4 text-center">
-                    {r.status === 'Pending' ? (
+                    {r.status === 'Approved' && (
+                      <button
+                        disabled={updatingId === r.id}
+                        onClick={() => updateStatus(r.id, 'Rejected')}
+                        className="rounded-lg bg-red-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-700 disabled:opacity-60"
+                      >
+                        Flag as Incorrect
+                      </button>
+                    )}
+                    {r.status === 'Rejected' && (
+                      <button
+                        disabled={updatingId === r.id}
+                        onClick={() => updateStatus(r.id, 'Approved')}
+                        className="rounded-lg bg-green-700 px-3 py-1.5 text-xs font-semibold text-white hover:bg-green-800 disabled:opacity-60"
+                      >
+                        Restore
+                      </button>
+                    )}
+                    {r.status === 'Pending' && (
                       <div className="flex justify-center gap-2">
                         <button
                           disabled={updatingId === r.id}
@@ -227,8 +247,6 @@ function ResultsSection() {
                           Reject
                         </button>
                       </div>
-                    ) : (
-                      <span className="text-xs text-gray-400">&mdash;</span>
                     )}
                   </td>
                 </tr>
