@@ -3,14 +3,17 @@ import { getSupabaseClient } from '@/lib/supabase';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     const supabase = getSupabaseClient();
-    const { data, error } = await supabase
-      .from('students')
-      .select('*')
-      .order('created_at', { ascending: false });
+    const className = request.nextUrl.searchParams.get('class');
+    const status = request.nextUrl.searchParams.get('status') as 'Active' | 'Inactive' | null;
 
+    let query = supabase.from('students').select('*').order('full_name', { ascending: true });
+    if (className) query = query.eq('class', className);
+    if (status) query = query.eq('status', status);
+
+    const { data, error } = await query;
     if (error) throw error;
 
     return NextResponse.json({ students: data });
