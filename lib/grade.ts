@@ -17,4 +17,8 @@ export const SUBJECTS = [
   'Civic Education',
 ];
 
-export const TERMS = ['First Term 2025/2026', 'Second Term 2025/2026', 'Third Term 2025/2026'];
+export const TERMS = ['First Term', 'Second Term', 'Third Term'];
+
+export const SESSIONS = ['2024/2025', '2025/2026', '2026/2027'];
+
+export const CURRENT_SESSION = '2025/2026';

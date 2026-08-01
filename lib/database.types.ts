@@ -8,6 +8,7 @@ export type Database = {
           subject: string;
           score: number;
           grade: string;
+          session: string;
           term: string;
           status: 'Pending' | 'Approved' | 'Rejected';
           uploaded_by: string | null;
@@ -19,6 +20,7 @@ export type Database = {
           subject: string;
           score: number;
           grade: string;
+          session: string;
           term: string;
           status?: 'Pending' | 'Approved' | 'Rejected';
           uploaded_by?: string | null;
@@ -30,6 +32,7 @@ export type Database = {
           subject?: string;
           score?: number;
           grade?: string;
+          session?: string;
           term?: string;
           status?: 'Pending' | 'Approved' | 'Rejected';
           uploaded_by?: string | null;
@@ -50,6 +53,7 @@ export type Database = {
           address: string | null;
           notes: string | null;
           status: 'Pending' | 'Reviewed' | 'Accepted' | 'Rejected';
+          student_id: string | null;
           created_at: string;
         };
         Insert: {
@@ -64,6 +68,7 @@ export type Database = {
           address?: string | null;
           notes?: string | null;
           status?: 'Pending' | 'Reviewed' | 'Accepted' | 'Rejected';
+          student_id?: string | null;
           created_at?: string;
         };
         Update: {
@@ -78,6 +83,7 @@ export type Database = {
           address?: string | null;
           notes?: string | null;
           status?: 'Pending' | 'Reviewed' | 'Accepted' | 'Rejected';
+          student_id?: string | null;
           created_at?: string;
         };
         Relationships: [];

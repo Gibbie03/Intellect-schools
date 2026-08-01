@@ -1,7 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { randomUUID } from 'node:crypto';
 import { getSupabaseClient } from '@/lib/supabase';
 
 export const dynamic = 'force-dynamic';
+
+const BUCKET = 'gallery';
+
+async function ensureBucketExists(supabase: ReturnType<typeof getSupabaseClient>) {
+  const { data: bucket } = await supabase.storage.getBucket(BUCKET);
+  if (!bucket) {
+    await supabase.storage.createBucket(BUCKET, { public: true });
+  }
+}
 
 export async function GET() {
   try {
@@ -22,25 +32,41 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const supabase = getSupabaseClient();
-    const { imageUrl, caption } = await request.json();
+    const formData = await request.formData();
+    const file = formData.get('file');
+    const caption = formData.get('caption');
 
-    if (!imageUrl) {
-      return NextResponse.json({ error: 'imageUrl is required.' }, { status: 400 });
+    if (!file || typeof file === 'string') {
+      return NextResponse.json({ error: 'An image file is required.' }, { status: 400 });
     }
 
-    let parsed: URL;
-    try {
-      parsed = new URL(imageUrl);
-    } catch {
-      return NextResponse.json({ error: 'imageUrl must be a valid URL.' }, { status: 400 });
+    if (!file.type.startsWith('image/')) {
+      return NextResponse.json({ error: 'Only image files are allowed.' }, { status: 400 });
     }
-    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
-      return NextResponse.json({ error: 'imageUrl must use http or https.' }, { status: 400 });
+
+    const MAX_BYTES = 8 * 1024 * 1024;
+    if (file.size > MAX_BYTES) {
+      return NextResponse.json({ error: 'Image must be smaller than 8MB.' }, { status: 400 });
     }
+
+    await ensureBucketExists(supabase);
+
+    const extension = file.name.includes('.') ? file.name.split('.').pop() : file.type.split('/')[1];
+    const path = `${randomUUID()}.${extension}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from(BUCKET)
+      .upload(path, await file.arrayBuffer(), { contentType: file.type });
+
+    if (uploadError) throw uploadError;
+
+    const {
+      data: { publicUrl },
+    } = supabase.storage.from(BUCKET).getPublicUrl(path);
 
     const { data, error } = await supabase
       .from('gallery_images')
-      .insert({ image_url: imageUrl, caption: caption || null })
+      .insert({ image_url: publicUrl, caption: typeof caption === 'string' && caption ? caption : null })
       .select()
       .single();
 

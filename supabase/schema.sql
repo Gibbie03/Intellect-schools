@@ -9,7 +9,8 @@ create table if not exists results (
   subject text not null,
   score int not null check (score >= 0 and score <= 100),
   grade text not null,
-  term text not null,
+  session text not null,
+  term text not null check (term in ('First Term', 'Second Term', 'Third Term')),
   status text not null default 'Pending' check (status in ('Pending', 'Approved', 'Rejected')),
   uploaded_by text,
   created_at timestamptz not null default now()
@@ -30,6 +31,7 @@ create table if not exists admissions (
   address text,
   notes text,
   status text not null default 'Pending' check (status in ('Pending', 'Reviewed', 'Accepted', 'Rejected')),
+  student_id text,
   created_at timestamptz not null default now()
 );
 

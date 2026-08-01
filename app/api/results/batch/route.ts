@@ -10,11 +10,11 @@ type ResultInsert = Database['public']['Tables']['results']['Insert'];
 export async function POST(request: NextRequest) {
   try {
     const supabase = getSupabaseClient();
-    const { subject, term, uploadedBy, entries } = await request.json();
+    const { subject, session, term, uploadedBy, entries } = await request.json();
 
-    if (!subject || !term || !Array.isArray(entries) || entries.length === 0) {
+    if (!subject || !session || !term || !Array.isArray(entries) || entries.length === 0) {
       return NextResponse.json(
-        { error: 'subject, term, and a non-empty entries array are required.' },
+        { error: 'subject, session, term, and a non-empty entries array are required.' },
         { status: 400 }
       );
     }
@@ -40,6 +40,7 @@ export async function POST(request: NextRequest) {
         subject,
         score,
         grade: gradeFromScore(score),
+        session,
         term,
         status: 'Pending',
         uploaded_by: uploadedBy ?? null,

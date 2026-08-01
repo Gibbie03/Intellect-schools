@@ -9,10 +9,14 @@ export async function GET(request: NextRequest) {
     const supabase = getSupabaseClient();
     const studentId = request.nextUrl.searchParams.get('studentId');
     const status = request.nextUrl.searchParams.get('status') as 'Pending' | 'Approved' | 'Rejected' | null;
+    const session = request.nextUrl.searchParams.get('session');
+    const term = request.nextUrl.searchParams.get('term');
 
     let query = supabase.from('results').select('*').order('created_at', { ascending: false });
     if (studentId) query = query.eq('student_id', studentId);
     if (status) query = query.eq('status', status);
+    if (session) query = query.eq('session', session);
+    if (term) query = query.eq('term', term);
 
     const { data, error } = await query;
     if (error) throw error;
@@ -27,10 +31,13 @@ export async function POST(request: NextRequest) {
   try {
     const supabase = getSupabaseClient();
     const body = await request.json();
-    const { studentId, subject, score, term, uploadedBy } = body;
+    const { studentId, subject, score, session, term, uploadedBy } = body;
 
-    if (!studentId || !subject || score === undefined || score === null || !term) {
-      return NextResponse.json({ error: 'studentId, subject, score, and term are required.' }, { status: 400 });
+    if (!studentId || !subject || score === undefined || score === null || !session || !term) {
+      return NextResponse.json(
+        { error: 'studentId, subject, score, session, and term are required.' },
+        { status: 400 }
+      );
     }
 
     const numericScore = Number(score);
@@ -45,6 +52,7 @@ export async function POST(request: NextRequest) {
         subject,
         score: numericScore,
         grade: gradeFromScore(numericScore),
+        session,
         term,
         status: 'Pending',
         uploaded_by: uploadedBy ?? null,

@@ -8,10 +8,12 @@ export async function GET(request: NextRequest) {
     const supabase = getSupabaseClient();
     const className = request.nextUrl.searchParams.get('class');
     const status = request.nextUrl.searchParams.get('status') as 'Active' | 'Inactive' | null;
+    const studentId = request.nextUrl.searchParams.get('studentId');
 
     let query = supabase.from('students').select('*').order('full_name', { ascending: true });
     if (className) query = query.eq('class', className);
     if (status) query = query.eq('status', status);
+    if (studentId) query = query.eq('student_id', studentId);
 
     const { data, error } = await query;
     if (error) throw error;

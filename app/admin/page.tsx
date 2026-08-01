@@ -118,6 +118,7 @@ type ResultRow = {
   subject: string;
   score: number;
   grade: string;
+  session: string;
   term: string;
   status: 'Pending' | 'Approved' | 'Rejected';
 };
@@ -178,6 +179,7 @@ function ResultsSection() {
                 <th className="text-left p-4">Subject</th>
                 <th className="text-center p-4">Score</th>
                 <th className="text-center p-4">Grade</th>
+                <th className="text-left p-4">Session</th>
                 <th className="text-left p-4">Term</th>
                 <th className="text-center p-4">Status</th>
                 <th className="text-center p-4">Action</th>
@@ -192,6 +194,7 @@ function ResultsSection() {
                   <td className="p-4 text-center">
                     <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm">{r.grade}</span>
                   </td>
+                  <td className="p-4 text-sm text-gray-600">{r.session}</td>
                   <td className="p-4 text-sm text-gray-600">{r.term}</td>
                   <td className="p-4 text-center">
                     <span
@@ -968,7 +971,8 @@ function GallerySection() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const [form, setForm] = useState({ imageUrl: '', caption: '' });
+  const [file, setFile] = useState<File | null>(null);
+  const [caption, setCaption] = useState('');
 
   const load = () => {
     setLoading(true);
@@ -986,19 +990,20 @@ function GallerySection() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.imageUrl) return;
+    if (!file) return;
 
     setSubmitting(true);
     setError('');
     try {
-      const res = await fetch('/api/gallery', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
-      });
+      const formData = new FormData();
+      formData.append('file', file);
+      if (caption) formData.append('caption', caption);
+
+      const res = await fetch('/api/gallery', { method: 'POST', body: formData });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to add image.');
-      setForm({ imageUrl: '', caption: '' });
+      setFile(null);
+      setCaption('');
       load();
     } catch (err) {
       setError((err as Error).message);
@@ -1026,26 +1031,25 @@ function GallerySection() {
       <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow p-8 mb-8 space-y-4">
         <h2 className="text-xl font-semibold">Add a Photo</h2>
         <input
-          type="url"
-          placeholder="Image URL (https://...)"
-          value={form.imageUrl}
-          onChange={(e) => setForm({ ...form, imageUrl: e.target.value })}
+          type="file"
+          accept="image/*"
+          onChange={(e) => setFile(e.target.files?.[0] ?? null)}
           className="w-full rounded-xl border p-3"
           required
         />
         <input
           type="text"
           placeholder="Caption (optional)"
-          value={form.caption}
-          onChange={(e) => setForm({ ...form, caption: e.target.value })}
+          value={caption}
+          onChange={(e) => setCaption(e.target.value)}
           className="w-full rounded-xl border p-3"
         />
         <button
           type="submit"
-          disabled={submitting}
+          disabled={submitting || !file}
           className="rounded-xl bg-green-700 px-6 py-3 font-semibold text-white hover:bg-green-800 disabled:opacity-60"
         >
-          {submitting ? 'Adding...' : 'Add Photo'}
+          {submitting ? 'Uploading...' : 'Add Photo'}
         </button>
       </form>
 

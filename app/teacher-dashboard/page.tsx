@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { SUBJECTS, TERMS } from '@/lib/grade';
+import { SUBJECTS, TERMS, SESSIONS, CURRENT_SESSION } from '@/lib/grade';
 import { CLASSES } from '@/lib/constants';
 
 type UploadedResult = {
@@ -9,6 +9,7 @@ type UploadedResult = {
   student_id: string;
   subject: string;
   score: number;
+  session: string;
   term: string;
   grade: string;
   status: 'Pending' | 'Approved' | 'Rejected';
@@ -36,10 +37,16 @@ export default function TeacherDashboard() {
     studentId: '',
     subject: SUBJECTS[0],
     score: '',
+    session: CURRENT_SESSION,
     term: TERMS[0],
   });
 
-  const [batchSetup, setBatchSetup] = useState({ className: CLASSES[0], subject: SUBJECTS[0], term: TERMS[0] });
+  const [batchSetup, setBatchSetup] = useState({
+    className: CLASSES[0],
+    subject: SUBJECTS[0],
+    session: CURRENT_SESSION,
+    term: TERMS[0],
+  });
   const [roster, setRoster] = useState<RosterStudent[] | null>(null);
   const [rosterLoading, setRosterLoading] = useState(false);
   const [rosterError, setRosterError] = useState('');
@@ -84,7 +91,7 @@ export default function TeacherDashboard() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to upload result.');
 
-      setNewResult({ studentId: '', subject: SUBJECTS[0], score: '', term: TERMS[0] });
+      setNewResult({ studentId: '', subject: SUBJECTS[0], score: '', session: CURRENT_SESSION, term: TERMS[0] });
       setShowForm(false);
       setNotice('Result uploaded and sent to the admin for approval.');
       loadResults();
@@ -139,6 +146,7 @@ export default function TeacherDashboard() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           subject: batchSetup.subject,
+          session: batchSetup.session,
           term: batchSetup.term,
           uploadedBy: TEACHER_NAME,
           entries,
@@ -233,6 +241,19 @@ export default function TeacherDashboard() {
             </div>
 
             <div>
+              <label className="block text-sm font-medium mb-2">Session</label>
+              <select
+                value={newResult.session}
+                onChange={(e) => setNewResult({ ...newResult, session: e.target.value })}
+                className="w-full border p-3 rounded-xl"
+              >
+                {SESSIONS.map((s) => (
+                  <option key={s}>{s}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
               <label className="block text-sm font-medium mb-2">Term</label>
               <select
                 value={newResult.term}
@@ -267,7 +288,7 @@ export default function TeacherDashboard() {
             student blank to skip them.
           </p>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
             <div>
               <label className="block text-sm font-medium mb-2">Class</label>
               <select
@@ -288,6 +309,18 @@ export default function TeacherDashboard() {
                 className="w-full border p-3 rounded-xl"
               >
                 {SUBJECTS.map((s) => (
+                  <option key={s}>{s}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-2">Session</label>
+              <select
+                value={batchSetup.session}
+                onChange={(e) => setBatchSetup({ ...batchSetup, session: e.target.value })}
+                className="w-full border p-3 rounded-xl"
+              >
+                {SESSIONS.map((s) => (
                   <option key={s}>{s}</option>
                 ))}
               </select>
@@ -399,6 +432,7 @@ export default function TeacherDashboard() {
                 <th className="text-left p-4">Subject</th>
                 <th className="text-center p-4">Score</th>
                 <th className="text-center p-4">Grade</th>
+                <th className="text-left p-4">Session</th>
                 <th className="text-left p-4">Term</th>
                 <th className="text-center p-4">Status</th>
               </tr>
@@ -414,6 +448,7 @@ export default function TeacherDashboard() {
                       {result.grade}
                     </span>
                   </td>
+                  <td className="p-4 text-sm text-gray-600">{result.session}</td>
                   <td className="p-4 text-sm text-gray-600">{result.term}</td>
                   <td className="p-4 text-center">
                     <span
