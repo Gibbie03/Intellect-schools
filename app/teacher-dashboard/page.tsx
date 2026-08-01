@@ -128,7 +128,7 @@ export default function TeacherDashboard() {
         <h2 className="text-2xl font-semibold mb-6">Recently Uploaded Results ({uploadedResults.length})</h2>
         
         {uploadedResults.length === 0 ? (
-          <p className="text-gray-500">No results uploaded yet. Click "Upload New Result" to add one.</p>
+          <p className="text-gray-500">No results uploaded yet. Click &quot;Upload New Result&quot; to add one.</p>
         ) : (
           <table className="w-full">
             <thead>
