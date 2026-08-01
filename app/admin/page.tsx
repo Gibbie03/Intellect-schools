@@ -18,21 +18,43 @@ const TABS: { id: Tab; label: string }[] = [
 
 export default function AdminDashboard() {
   const [tab, setTab] = useState<Tab>('dashboard');
+  const [collapsed, setCollapsed] = useState(false);
 
   return (
     <div className="flex min-h-screen">
-      <div className="w-64 bg-gray-900 text-white p-6">
-        <h2 className="font-bold text-xl mb-8">Admin Dashboard</h2>
+      <div
+        className={`shrink-0 bg-gray-900 text-white p-4 transition-all duration-200 ${
+          collapsed ? 'w-16' : 'w-64 p-6'
+        }`}
+      >
+        <div className="flex items-center justify-between mb-8">
+          {!collapsed && <h2 className="font-bold text-xl">Admin Dashboard</h2>}
+          <button
+            onClick={() => setCollapsed(!collapsed)}
+            aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            className="rounded p-2 text-white hover:bg-white/10"
+          >
+            {collapsed ? '»' : '«'}
+          </button>
+        </div>
         <nav className="space-y-1 text-sm">
           {TABS.map((t) => (
             <button
               key={t.id}
               onClick={() => setTab(t.id)}
-              className={`w-full text-left px-4 py-2 rounded ${
+              title={t.label}
+              className={`w-full rounded px-4 py-2 ${collapsed ? 'text-center' : 'text-left'} ${
                 tab === t.id ? 'bg-white/10' : 'hover:bg-white/10'
               }`}
             >
-              {t.label}
+              {collapsed
+                ? t.label
+                    .split(/[\s&]+/)
+                    .filter(Boolean)
+                    .map((word) => word[0])
+                    .slice(0, 2)
+                    .join('')
+                : t.label}
             </button>
           ))}
         </nav>
