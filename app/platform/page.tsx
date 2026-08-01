@@ -119,7 +119,7 @@ export default function PlatformDashboard() {
   return (
     <div className="max-w-5xl mx-auto px-6 py-12">
       <div className="flex flex-wrap items-center justify-between gap-4 mb-8">
-        <h1 className="text-4xl font-bold">Platform Owner</h1>
+        <h1 className="text-4xl font-bold">SchoolOS &mdash; Platform Admin</h1>
         <button onClick={handleLogout} className="text-sm text-red-600 hover:underline">
           Logout
         </button>

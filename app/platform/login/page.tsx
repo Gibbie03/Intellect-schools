@@ -34,8 +34,8 @@ export default function PlatformLoginPage() {
 
   return (
     <div className="max-w-md mx-auto mt-20 p-8 border rounded-3xl">
-      <h1 className="text-3xl font-bold text-center mb-2">Platform Owner Login</h1>
-      <p className="text-center text-gray-600 mb-8">Manage the schools on this platform</p>
+      <h1 className="text-3xl font-bold text-center mb-2">SchoolOS</h1>
+      <p className="text-center text-gray-600 mb-8">Platform owner login &mdash; manage the schools on this platform</p>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <input

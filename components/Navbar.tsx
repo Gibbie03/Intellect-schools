@@ -19,6 +19,17 @@ export default function Navbar({ schoolName }: { schoolName: string }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
 
+  if (pathname?.startsWith('/platform')) {
+    return (
+      <header className="sticky top-0 z-50 border-b border-gray-100 bg-white/90 backdrop-blur">
+        <nav className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
+          <span className="text-lg font-extrabold text-gray-900">SchoolOS</span>
+          <span className="text-sm text-gray-500">Platform Admin</span>
+        </nav>
+      </header>
+    );
+  }
+
   return (
     <header className="sticky top-0 z-50 border-b border-gray-100 bg-white/90 backdrop-blur">
       <nav className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
