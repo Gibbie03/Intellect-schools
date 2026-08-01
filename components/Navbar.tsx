@@ -15,15 +15,15 @@ const links = [
   { href: '/admin', label: 'Admin' },
 ];
 
-export default function Navbar() {
+export default function Navbar({ schoolName }: { schoolName: string }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
 
   return (
     <header className="sticky top-0 z-50 border-b border-gray-100 bg-white/90 backdrop-blur">
       <nav className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-        <Link href="/" className="text-lg font-extrabold text-green-800">
-          Intellect Schools
+        <Link href="/" className="text-lg font-extrabold text-[var(--brand-color)]">
+          {schoolName}
         </Link>
 
         <button
@@ -41,7 +41,9 @@ export default function Navbar() {
               key={link.href}
               href={link.href}
               className={`rounded-lg px-3 py-2 text-sm font-medium ${
-                pathname === link.href ? 'bg-green-100 text-green-800' : 'text-gray-600 hover:bg-gray-100'
+                pathname === link.href
+                  ? 'bg-[var(--brand-color)] text-white'
+                  : 'text-gray-600 hover:bg-gray-100'
               }`}
             >
               {link.label}
@@ -58,7 +60,9 @@ export default function Navbar() {
               href={link.href}
               onClick={() => setOpen(false)}
               className={`rounded-lg px-3 py-2 text-sm font-medium ${
-                pathname === link.href ? 'bg-green-100 text-green-800' : 'text-gray-600 hover:bg-gray-100'
+                pathname === link.href
+                  ? 'bg-[var(--brand-color)] text-white'
+                  : 'text-gray-600 hover:bg-gray-100'
               }`}
             >
               {link.label}

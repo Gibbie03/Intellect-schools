@@ -18,6 +18,13 @@ function stripPort(host: string) {
  *   existing Vercel preview/production URL keeps working during rollout.
  *   Once PLATFORM_ROOT_DOMAIN is set, an unmatched host resolves to null
  *   (no silent fallback) so real customers can't cross-resolve by mistake.
+ *
+ * Deliberately not memoized: this is called from both Server Components and
+ * plain Route Handlers, and the two don't share the same request-scoping
+ * guarantees for React's cache() — for a multi-tenant lookup, a caching bug
+ * that leaked one request's resolved school into another's would be a real
+ * security issue, not just a performance one. The lookup itself is a single
+ * indexed query, so there's no real cost to calling it fresh each time.
  */
 export async function getSchoolFromHost(hostHeader: string | null): Promise<School | null> {
   const supabase = getSupabaseClient();
