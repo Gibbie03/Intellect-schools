@@ -20,7 +20,8 @@ type Tab =
   | 'timetables'
   | 'fees'
   | 'messages'
-  | 'spotlight';
+  | 'spotlight'
+  | 'calendar';
 
 const TABS: { id: Tab; label: string }[] = [
   { id: 'dashboard', label: 'Dashboard' },
@@ -37,6 +38,7 @@ const TABS: { id: Tab; label: string }[] = [
   { id: 'fees', label: 'Fees' },
   { id: 'messages', label: 'Message Parents' },
   { id: 'spotlight', label: 'Spotlight' },
+  { id: 'calendar', label: 'Academic Calendar' },
 ];
 
 export default function AdminDashboard() {
@@ -99,6 +101,7 @@ export default function AdminDashboard() {
         {tab === 'fees' && <FeesSection />}
         {tab === 'messages' && <MessagesSection />}
         {tab === 'spotlight' && <SpotlightSection />}
+        {tab === 'calendar' && <CalendarSection />}
       </div>
     </div>
   );
@@ -2971,6 +2974,208 @@ function SpotlightSection() {
               </div>
             ))}
           </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+const EVENT_TYPES = ['Resumption', 'Midterm Break', 'Closing', 'Holiday', 'Other'] as const;
+
+type CalendarRow = {
+  id: string;
+  session: string;
+  term: string | null;
+  title: string;
+  event_type: (typeof EVENT_TYPES)[number];
+  start_date: string;
+  end_date: string | null;
+};
+
+function CalendarSection() {
+  const [selectedSession, setSelectedSession] = useState(CURRENT_SESSION);
+  const [entries, setEntries] = useState<CalendarRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [form, setForm] = useState({
+    term: '',
+    title: '',
+    eventType: EVENT_TYPES[0] as (typeof EVENT_TYPES)[number],
+    startDate: '',
+    endDate: '',
+  });
+
+  const load = () => {
+    setLoading(true);
+    fetch(`/api/academic-calendar?session=${encodeURIComponent(selectedSession)}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.error) throw new Error(data.error);
+        setEntries(data.entries);
+      })
+      .catch((err) => setError(err.message))
+      .finally(() => setLoading(false));
+  };
+
+  useEffect(load, [selectedSession]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.title || !form.startDate) return;
+
+    setSubmitting(true);
+    setError('');
+    try {
+      const res = await fetch('/api/academic-calendar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          session: selectedSession,
+          term: form.term || null,
+          title: form.title,
+          eventType: form.eventType,
+          startDate: form.startDate,
+          endDate: form.endDate || null,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to add calendar entry.');
+      setForm({ term: '', title: '', eventType: EVENT_TYPES[0], startDate: '', endDate: '' });
+      load();
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    try {
+      const res = await fetch(`/api/academic-calendar/${id}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to delete.');
+      setEntries((prev) => prev.filter((e) => e.id !== id));
+    } catch (err) {
+      setError((err as Error).message);
+    }
+  };
+
+  return (
+    <div>
+      <h1 className="text-4xl font-bold mb-2">Academic Calendar</h1>
+      <p className="text-gray-600 mb-8">
+        Publish resumption and closing dates, mid-term breaks, and holidays for parents and students to see &mdash;
+        separate from the exam timetable.
+      </p>
+      {error && <div className="mb-6 rounded-xl bg-red-50 p-4 text-sm text-red-700">{error}</div>}
+
+      <div className="mb-6">
+        <select
+          value={selectedSession}
+          onChange={(e) => setSelectedSession(e.target.value)}
+          className="rounded-xl border p-3"
+        >
+          {SESSIONS.map((s) => (
+            <option key={s}>{s}</option>
+          ))}
+        </select>
+      </div>
+
+      <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow p-8 mb-8 grid grid-cols-1 md:grid-cols-2 gap-4">
+        <h2 className="md:col-span-2 text-xl font-semibold">Add an Entry for {selectedSession}</h2>
+        <input
+          type="text"
+          placeholder="Title (e.g. First Term Resumption)"
+          value={form.title}
+          onChange={(e) => setForm({ ...form, title: e.target.value })}
+          className="w-full rounded-xl border p-3 md:col-span-2"
+          required
+        />
+        <select
+          value={form.eventType}
+          onChange={(e) => setForm({ ...form, eventType: e.target.value as (typeof EVENT_TYPES)[number] })}
+          className="w-full rounded-xl border p-3"
+        >
+          {EVENT_TYPES.map((t) => (
+            <option key={t}>{t}</option>
+          ))}
+        </select>
+        <select
+          value={form.term}
+          onChange={(e) => setForm({ ...form, term: e.target.value })}
+          className="w-full rounded-xl border p-3"
+        >
+          <option value="">Whole Session (no specific term)</option>
+          {TERMS.map((t) => (
+            <option key={t}>{t}</option>
+          ))}
+        </select>
+        <label className="flex flex-col gap-1 text-sm text-gray-600">
+          Start Date
+          <input
+            type="date"
+            value={form.startDate}
+            onChange={(e) => setForm({ ...form, startDate: e.target.value })}
+            className="w-full rounded-xl border p-3"
+            required
+          />
+        </label>
+        <label className="flex flex-col gap-1 text-sm text-gray-600">
+          End Date (optional, for a range like a break)
+          <input
+            type="date"
+            value={form.endDate}
+            onChange={(e) => setForm({ ...form, endDate: e.target.value })}
+            className="w-full rounded-xl border p-3"
+          />
+        </label>
+        <button
+          type="submit"
+          disabled={submitting}
+          className="md:col-span-2 rounded-xl bg-[var(--brand-color)] px-6 py-3 font-semibold text-white hover:brightness-90 disabled:opacity-60"
+        >
+          {submitting ? 'Adding...' : 'Add Entry'}
+        </button>
+      </form>
+
+      <div className="bg-white rounded-2xl shadow p-8">
+        <h2 className="text-xl font-semibold mb-6">{selectedSession} Calendar ({entries.length})</h2>
+        {loading ? (
+          <p className="text-gray-500">Loading...</p>
+        ) : entries.length === 0 ? (
+          <p className="text-gray-500">No calendar entries added yet for this session.</p>
+        ) : (
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-gray-100">
+                <th className="text-left p-3">Title</th>
+                <th className="text-left p-3">Type</th>
+                <th className="text-left p-3">Term</th>
+                <th className="text-left p-3">Dates</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {entries.map((e) => (
+                <tr key={e.id} className="border-b">
+                  <td className="p-3 font-medium">{e.title}</td>
+                  <td className="p-3">{e.event_type}</td>
+                  <td className="p-3">{e.term || 'Whole Session'}</td>
+                  <td className="p-3">
+                    {new Date(e.start_date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                    {e.end_date &&
+                      ` – ${new Date(e.end_date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}`}
+                  </td>
+                  <td className="p-3 text-right">
+                    <button onClick={() => handleDelete(e.id)} className="text-xs text-red-600 hover:underline">
+                      Delete
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         )}
       </div>
     </div>

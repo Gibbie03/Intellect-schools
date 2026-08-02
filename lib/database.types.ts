@@ -631,6 +631,42 @@ export type Database = {
         };
         Relationships: [];
       };
+      academic_calendar: {
+        Row: {
+          id: string;
+          school_id: string;
+          session: string;
+          term: string | null;
+          title: string;
+          event_type: 'Resumption' | 'Midterm Break' | 'Closing' | 'Holiday' | 'Other';
+          start_date: string;
+          end_date: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          school_id: string;
+          session: string;
+          term?: string | null;
+          title: string;
+          event_type: 'Resumption' | 'Midterm Break' | 'Closing' | 'Holiday' | 'Other';
+          start_date: string;
+          end_date?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          school_id?: string;
+          session?: string;
+          term?: string | null;
+          title?: string;
+          event_type?: 'Resumption' | 'Midterm Break' | 'Closing' | 'Holiday' | 'Other';
+          start_date?: string;
+          end_date?: string | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;
