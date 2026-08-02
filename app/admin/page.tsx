@@ -537,6 +537,22 @@ function StudentsSection() {
     }
   };
 
+  const handleDelete = async (student: StudentRow) => {
+    if (!confirm(`Delete ${student.full_name} (${student.student_id})? This cannot be undone.`)) return;
+
+    setUpdatingId(student.id);
+    try {
+      const res = await fetch(`/api/students/${student.id}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to delete student.');
+      setStudents((prev) => prev.filter((s) => s.id !== student.id));
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setUpdatingId(null);
+    }
+  };
+
   const updateClass = async (id: string, className: string) => {
     setUpdatingId(id);
     try {
@@ -782,6 +798,7 @@ function StudentsSection() {
                 <th className="text-left p-4">Name</th>
                 <th className="text-left p-4">Class</th>
                 <th className="text-center p-4">Status</th>
+                <th className="text-center p-4">Action</th>
               </tr>
             </thead>
             <tbody>
@@ -818,6 +835,15 @@ function StudentsSection() {
                       <option value="Active">Active</option>
                       <option value="Inactive">Inactive</option>
                     </select>
+                  </td>
+                  <td className="p-4 text-center">
+                    <button
+                      onClick={() => handleDelete(s)}
+                      disabled={updatingId === s.id}
+                      className="text-xs text-red-600 hover:underline disabled:text-gray-300 disabled:no-underline"
+                    >
+                      Delete
+                    </button>
                   </td>
                 </tr>
               ))}

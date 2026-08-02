@@ -52,3 +52,28 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     return NextResponse.json({ error: (error as Error).message }, { status: 500 });
   }
 }
+
+// Removes the student profile itself (expulsion, or a duplicate/mistaken
+// entry). Historical records tied to their student_id -- results, report
+// cards, attendance, fees -- are intentionally left in place rather than
+// cascade-deleted, since those are academic/financial records the school
+// may still need after the profile is gone; "Inactive" status is the right
+// choice for a normal leaver/graduate, this is for removing the record
+// entirely.
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  try {
+    const staff = await requireSchoolSession(request, ['admin']);
+    if (!staff) return NextResponse.json({ error: 'Not authenticated.' }, { status: 401 });
+    const { school } = staff;
+
+    const supabase = getSupabaseClient();
+    const { id } = await params;
+
+    const { error } = await supabase.from('students').delete().eq('id', id).eq('school_id', school.id);
+    if (error) throw error;
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    return NextResponse.json({ error: (error as Error).message }, { status: 500 });
+  }
+}
