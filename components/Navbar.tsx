@@ -129,7 +129,7 @@ export default function Navbar({
       className="sticky top-0 z-50 bg-[var(--paper)]/95 backdrop-blur"
       style={{ borderBottom: '3px solid var(--gold)' }}
     >
-      <nav className="wrap flex flex-wrap items-center justify-between gap-x-4 gap-y-4 py-8">
+      <nav className="wrap flex flex-wrap items-center justify-between gap-x-4 gap-y-[14px] py-[29px]">
         <Link href="/" className="flex shrink-0 items-center gap-3">
           {logoUrl && (
             // eslint-disable-next-line @next/next/no-img-element
