@@ -4,6 +4,9 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { SUBJECTS, TERMS, SESSIONS, CURRENT_SESSION, CONDUCT_RATINGS } from '@/lib/grade';
 import { CLASSES } from '@/lib/constants';
+import DashboardShell from '@/components/DashboardShell';
+
+type Panel = 'none' | 'upload' | 'batch' | 'photo' | 'report-card' | 'attendance' | 'security';
 
 type UploadedResult = {
   id: string;
@@ -40,12 +43,7 @@ export default function TeacherDashboard() {
   const router = useRouter();
   const [teacherName, setTeacherName] = useState('');
   const [uploadedResults, setUploadedResults] = useState<UploadedResult[]>([]);
-  const [showForm, setShowForm] = useState(false);
-  const [showBatch, setShowBatch] = useState(false);
-  const [showPhoto, setShowPhoto] = useState(false);
-  const [showReportCard, setShowReportCard] = useState(false);
-  const [showAttendance, setShowAttendance] = useState(false);
-  const [showSecurity, setShowSecurity] = useState(false);
+  const [panel, setPanel] = useState<Panel>('none');
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -192,7 +190,7 @@ export default function TeacherDashboard() {
       if (!res.ok) throw new Error(data.error || 'Failed to upload result.');
 
       setNewResult({ studentId: '', subject: SUBJECTS[0], caScore: '', examScore: '', session: CURRENT_SESSION, term: TERMS[0] });
-      setShowForm(false);
+      setPanel('none');
       setNotice('Result uploaded. It will appear on the student portal once the class teacher publishes this term’s report card.');
       loadResults();
     } catch (err) {
@@ -500,7 +498,7 @@ export default function TeacherDashboard() {
   };
 
   useEffect(() => {
-    if (!showAttendance || !classTeacherOf) return;
+    if (panel !== 'attendance' || !classTeacherOf) return;
 
     setAttLoading(true);
     setAttError('');
@@ -520,7 +518,7 @@ export default function TeacherDashboard() {
       })
       .catch((err) => setAttError(err.message))
       .finally(() => setAttLoading(false));
-  }, [showAttendance, classTeacherOf, attDate]);
+  }, [panel, classTeacherOf, attDate]);
 
   const saveAttendance = async () => {
     if (!classTeacherOf) return;
@@ -544,105 +542,23 @@ export default function TeacherDashboard() {
     }
   };
 
-  return (
-    <div className="max-w-6xl mx-auto px-6 py-12">
-      <div className="flex flex-wrap justify-between items-center gap-4 mb-8">
-        <div>
-          <h1 className="text-4xl font-bold">Teacher Dashboard</h1>
-          <p className="text-gray-600">Welcome, {teacherName || '...'}</p>
-        </div>
-        <div className="flex flex-wrap gap-3">
-          <button onClick={handleLogout} className="text-sm text-red-600 hover:underline self-center">
-            Logout
-          </button>
-          <button
-            onClick={() => {
-              setShowReportCard(!showReportCard);
-              setShowForm(false);
-              setShowBatch(false);
-              setShowPhoto(false);
-              setShowAttendance(false);
-              setShowSecurity(false);
-            }}
-            className="bg-white border border-gray-300 text-gray-700 px-6 py-3 rounded-xl font-semibold"
-          >
-            {showReportCard ? 'Cancel' : 'Report Card Comments'}
-          </button>
-          {classTeacherOf && (
-            <button
-              onClick={() => {
-                setShowAttendance(!showAttendance);
-                setShowForm(false);
-                setShowBatch(false);
-                setShowPhoto(false);
-                setShowReportCard(false);
-                setShowSecurity(false);
-              }}
-              className="bg-white border border-gray-300 text-gray-700 px-6 py-3 rounded-xl font-semibold"
-            >
-              {showAttendance ? 'Cancel' : 'Take Attendance'}
-            </button>
-          )}
-          <button
-            onClick={() => {
-              setShowSecurity(!showSecurity);
-              setShowForm(false);
-              setShowBatch(false);
-              setShowPhoto(false);
-              setShowReportCard(false);
-              setShowAttendance(false);
-            }}
-            className="bg-white border border-gray-300 text-gray-700 px-6 py-3 rounded-xl font-semibold"
-          >
-            {showSecurity ? 'Cancel' : 'Security'}
-          </button>
-          <button
-            onClick={() => {
-              setShowPhoto(!showPhoto);
-              setShowForm(false);
-              setShowBatch(false);
-              setShowReportCard(false);
-              setShowAttendance(false);
-              setShowSecurity(false);
-            }}
-            className="bg-white border border-gray-300 text-gray-700 px-6 py-3 rounded-xl font-semibold"
-          >
-            {showPhoto ? 'Cancel' : 'Upload from Photo'}
-          </button>
-          <button
-            onClick={() => {
-              setShowBatch(!showBatch);
-              setShowForm(false);
-              setShowPhoto(false);
-              setShowReportCard(false);
-              setShowAttendance(false);
-              setShowSecurity(false);
-            }}
-            className="bg-white border border-[var(--brand-color)] text-[var(--brand-color)] px-6 py-3 rounded-xl font-semibold"
-          >
-            {showBatch ? 'Cancel' : 'Upload Results for a Class'}
-          </button>
-          <button
-            onClick={() => {
-              setShowForm(!showForm);
-              setShowBatch(false);
-              setShowPhoto(false);
-              setShowReportCard(false);
-              setShowAttendance(false);
-              setShowSecurity(false);
-            }}
-            className="bg-[var(--brand-color)] text-white px-6 py-3 rounded-xl font-semibold"
-          >
-            {showForm ? 'Cancel' : '+ Upload New Result'}
-          </button>
-        </div>
-      </div>
+  const TABS: { id: Panel; label: string }[] = [
+    { id: 'none', label: 'Dashboard' },
+    { id: 'upload', label: 'Upload New Result' },
+    { id: 'batch', label: 'Upload Results for a Class' },
+    { id: 'photo', label: 'Upload from Photo' },
+    { id: 'report-card', label: 'Report Card Comments' },
+    ...(classTeacherOf ? ([{ id: 'attendance', label: 'Take Attendance' }] as { id: Panel; label: string }[]) : []),
+    { id: 'security', label: 'Security' },
+  ];
 
+  return (
+    <DashboardShell brandLabel="Teacher Dashboard" tabs={TABS} activeTab={panel} onTabChange={setPanel} userLabel={teacherName} onLogout={handleLogout}>
       {notice && <div className="mb-6 rounded-xl bg-green-50 p-4 text-sm text-green-800">{notice}</div>}
       {error && <div className="mb-6 rounded-xl bg-red-50 p-4 text-sm text-red-700">{error}</div>}
 
       {/* Single Upload Form */}
-      {showForm && (
+      {panel === 'upload' && (
         <div className="bg-white p-8 rounded-2xl shadow mb-10 border">
           <h2 className="text-2xl font-semibold mb-6">Upload Student Result</h2>
 
@@ -738,7 +654,7 @@ export default function TeacherDashboard() {
       )}
 
       {/* Batch Upload for a Class */}
-      {showBatch && (
+      {panel === 'batch' && (
         <div className="bg-white p-8 rounded-2xl shadow mb-10 border">
           <h2 className="text-2xl font-semibold mb-2">Upload Results for a Class</h2>
           <p className="text-sm text-gray-500 mb-6">
@@ -895,7 +811,7 @@ export default function TeacherDashboard() {
       )}
 
       {/* Upload from Photo */}
-      {showPhoto && (
+      {panel === 'photo' && (
         <div className="bg-white p-8 rounded-2xl shadow mb-10 border">
           <h2 className="text-2xl font-semibold mb-2">Upload from Photo</h2>
           <p className="text-sm text-gray-500 mb-6">
@@ -1067,7 +983,7 @@ export default function TeacherDashboard() {
       )}
 
       {/* Report Card Comments */}
-      {showReportCard && (
+      {panel === 'report-card' && (
         <div className="bg-white p-8 rounded-2xl shadow mb-10 border">
           <h2 className="text-2xl font-semibold mb-2">Report Card Comments</h2>
           <p className="text-sm text-gray-500 mb-6">
@@ -1233,7 +1149,7 @@ export default function TeacherDashboard() {
       )}
 
       {/* Take Attendance */}
-      {showAttendance && classTeacherOf && (
+      {panel === 'attendance' && classTeacherOf && (
         <div className="bg-white p-8 rounded-2xl shadow mb-10 border">
           <h2 className="text-2xl font-semibold mb-2">Take Attendance &mdash; {classTeacherOf}</h2>
           <p className="text-sm text-gray-500 mb-6">Feeds the &quot;days present&quot; figure on report cards.</p>
@@ -1318,7 +1234,7 @@ export default function TeacherDashboard() {
       )}
 
       {/* Security */}
-      {showSecurity && (
+      {panel === 'security' && (
         <div className="bg-white p-8 rounded-2xl shadow mb-10 border max-w-xl">
           <h2 className="text-2xl font-semibold mb-2">Security</h2>
           <p className="text-sm text-gray-500 mb-6">
@@ -1468,6 +1384,6 @@ export default function TeacherDashboard() {
         Results are saved immediately, but only appear on the student portal once the class teacher compiles and
         publishes that term&apos;s report card (see Report Card Comments above).
       </div>
-    </div>
+    </DashboardShell>
   );
 }
