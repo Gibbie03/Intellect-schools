@@ -41,6 +41,8 @@ create table if not exists results (
   student_id text not null,
   subject text not null,
   score int not null check (score >= 0 and score <= 100),
+  ca_score numeric,
+  exam_score numeric,
   grade text not null,
   session text not null,
   term text not null check (term in ('First Term', 'Second Term', 'Third Term')),
@@ -52,6 +54,30 @@ create table if not exists results (
 create index if not exists results_school_id_idx on results (school_id);
 create index if not exists results_student_id_idx on results (student_id);
 create index if not exists results_status_idx on results (status);
+
+-- One row per student per session/term: the whole-term parts of a report
+-- card (attendance, conduct, teacher's/principal's comments) that don't
+-- belong to any single subject. Joined with `results` to render a full
+-- report card.
+create table if not exists report_cards (
+  id uuid primary key default gen_random_uuid(),
+  school_id uuid not null references schools(id) on delete cascade,
+  student_id text not null,
+  session text not null,
+  term text not null,
+  days_school_opened int,
+  days_present int,
+  times_punctual int,
+  conduct_rating text check (conduct_rating in ('Excellent', 'Very Good', 'Good', 'Fair', 'Poor')),
+  teacher_comment text,
+  principal_comment text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique (school_id, student_id, session, term)
+);
+
+create index if not exists report_cards_school_id_idx on report_cards (school_id);
+create index if not exists report_cards_lookup_idx on report_cards (school_id, student_id, session, term);
 
 create table if not exists admissions (
   id uuid primary key default gen_random_uuid(),
@@ -178,3 +204,4 @@ alter table contact_messages enable row level security;
 alter table teachers enable row level security;
 alter table students enable row level security;
 alter table result_pins enable row level security;
+alter table report_cards enable row level security;

@@ -61,6 +61,13 @@ export async function POST(request: NextRequest) {
       .order('created_at', { ascending: false });
     if (resultsError) throw resultsError;
 
+    const { data: reportCards, error: reportCardsError } = await supabase
+      .from('report_cards')
+      .select('*')
+      .eq('school_id', school.id)
+      .eq('student_id', studentId);
+    if (reportCardsError) throw reportCardsError;
+
     const { error: updateError } = await supabase
       .from('result_pins')
       .update({ uses_count: card.uses_count + 1 })
@@ -70,6 +77,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       student: { studentId: student.student_id, fullName: student.full_name, class: student.class },
       results,
+      reportCards,
       usesRemaining: card.max_uses - (card.uses_count + 1),
     });
   } catch (error) {

@@ -5,7 +5,17 @@ import { useRouter } from 'next/navigation';
 import { STAFF_ROLES } from '@/lib/constants';
 import { SESSIONS, TERMS, CURRENT_SESSION } from '@/lib/grade';
 
-type Tab = 'dashboard' | 'results' | 'admissions' | 'students' | 'staff' | 'news' | 'gallery' | 'contact' | 'result-pins';
+type Tab =
+  | 'dashboard'
+  | 'results'
+  | 'admissions'
+  | 'students'
+  | 'staff'
+  | 'news'
+  | 'gallery'
+  | 'contact'
+  | 'result-pins'
+  | 'report-cards';
 
 const TABS: { id: Tab; label: string }[] = [
   { id: 'dashboard', label: 'Dashboard' },
@@ -17,6 +27,7 @@ const TABS: { id: Tab; label: string }[] = [
   { id: 'gallery', label: 'Gallery' },
   { id: 'contact', label: 'Contact Messages' },
   { id: 'result-pins', label: 'Result Checker Cards' },
+  { id: 'report-cards', label: 'Report Cards' },
 ];
 
 export default function AdminDashboard() {
@@ -74,6 +85,7 @@ export default function AdminDashboard() {
         {tab === 'gallery' && <GallerySection />}
         {tab === 'contact' && <ContactSection />}
         {tab === 'result-pins' && <ResultPinsSection />}
+        {tab === 'report-cards' && <ReportCardsSection />}
       </div>
     </div>
   );
@@ -1723,6 +1735,205 @@ function ResultPinsSection() {
             </tbody>
           </table>
         )}
+      </div>
+    </div>
+  );
+}
+
+function ReportCardsSection() {
+  const [lookup, setLookup] = useState({ studentId: '', session: CURRENT_SESSION, term: TERMS[0] });
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+  const [notice, setNotice] = useState('');
+  const [form, setForm] = useState({
+    daysSchoolOpened: '',
+    daysPresent: '',
+    timesPunctual: '',
+    conductRating: '',
+    teacherComment: '',
+    principalComment: '',
+  });
+
+  const load = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!lookup.studentId) return;
+
+    setLoading(true);
+    setError('');
+    setNotice('');
+
+    try {
+      const res = await fetch(
+        `/api/report-cards?studentId=${encodeURIComponent(lookup.studentId)}&session=${encodeURIComponent(lookup.session)}&term=${encodeURIComponent(lookup.term)}`
+      );
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to load report card.');
+      const rc = data.reportCard;
+      setForm({
+        daysSchoolOpened: rc?.days_school_opened?.toString() ?? '',
+        daysPresent: rc?.days_present?.toString() ?? '',
+        timesPunctual: rc?.times_punctual?.toString() ?? '',
+        conductRating: rc?.conduct_rating ?? '',
+        teacherComment: rc?.teacher_comment ?? '',
+        principalComment: rc?.principal_comment ?? '',
+      });
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const save = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!lookup.studentId) return;
+
+    setSaving(true);
+    setError('');
+    setNotice('');
+
+    try {
+      const res = await fetch('/api/report-cards', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          studentId: lookup.studentId,
+          session: lookup.session,
+          term: lookup.term,
+          ...form,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to save report card.');
+      setNotice('Saved. This will show on the student portal alongside their results.');
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div>
+      <h1 className="text-4xl font-bold mb-2">Report Cards</h1>
+      <p className="text-gray-600 mb-8">
+        Attendance, conduct, and comments for one student&apos;s term &mdash; shown on the printable report card and
+        the student portal alongside subject results.
+      </p>
+
+      <div className="bg-white rounded-2xl shadow p-8">
+        <form onSubmit={load} className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+          <input
+            type="text"
+            placeholder="Student ID"
+            value={lookup.studentId}
+            onChange={(e) => setLookup({ ...lookup, studentId: e.target.value })}
+            className="w-full border p-3 rounded-xl"
+            required
+          />
+          <select
+            value={lookup.session}
+            onChange={(e) => setLookup({ ...lookup, session: e.target.value })}
+            className="w-full border p-3 rounded-xl"
+          >
+            {SESSIONS.map((s) => (
+              <option key={s}>{s}</option>
+            ))}
+          </select>
+          <select
+            value={lookup.term}
+            onChange={(e) => setLookup({ ...lookup, term: e.target.value })}
+            className="w-full border p-3 rounded-xl"
+          >
+            {TERMS.map((t) => (
+              <option key={t}>{t}</option>
+            ))}
+          </select>
+          <button
+            type="submit"
+            disabled={loading}
+            className="rounded-xl bg-gray-900 text-white px-6 py-3 font-semibold disabled:opacity-60"
+          >
+            {loading ? 'Loading...' : 'Load'}
+          </button>
+        </form>
+
+        {error && <div className="mb-6 rounded-xl bg-red-50 p-4 text-sm text-red-700">{error}</div>}
+        {notice && <div className="mb-6 rounded-xl bg-green-50 p-4 text-sm text-green-800">{notice}</div>}
+
+        <form onSubmit={save} className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <label className="block text-sm font-medium mb-2">Days School Opened</label>
+            <input
+              type="number"
+              min="0"
+              value={form.daysSchoolOpened}
+              onChange={(e) => setForm({ ...form, daysSchoolOpened: e.target.value })}
+              className="w-full border p-3 rounded-xl"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-2">Days Present</label>
+            <input
+              type="number"
+              min="0"
+              value={form.daysPresent}
+              onChange={(e) => setForm({ ...form, daysPresent: e.target.value })}
+              className="w-full border p-3 rounded-xl"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-2">Times Punctual</label>
+            <input
+              type="number"
+              min="0"
+              value={form.timesPunctual}
+              onChange={(e) => setForm({ ...form, timesPunctual: e.target.value })}
+              className="w-full border p-3 rounded-xl"
+            />
+          </div>
+          <div className="md:col-span-3">
+            <label className="block text-sm font-medium mb-2">Conduct</label>
+            <select
+              value={form.conductRating}
+              onChange={(e) => setForm({ ...form, conductRating: e.target.value })}
+              className="w-full border p-3 rounded-xl"
+            >
+              <option value="">— Not set —</option>
+              {['Excellent', 'Very Good', 'Good', 'Fair', 'Poor'].map((c) => (
+                <option key={c}>{c}</option>
+              ))}
+            </select>
+          </div>
+          <div className="md:col-span-3">
+            <label className="block text-sm font-medium mb-2">Class Teacher&apos;s Comment</label>
+            <textarea
+              value={form.teacherComment}
+              onChange={(e) => setForm({ ...form, teacherComment: e.target.value })}
+              className="w-full border p-3 rounded-xl"
+              rows={3}
+            />
+          </div>
+          <div className="md:col-span-3">
+            <label className="block text-sm font-medium mb-2">Principal&apos;s Comment</label>
+            <textarea
+              value={form.principalComment}
+              onChange={(e) => setForm({ ...form, principalComment: e.target.value })}
+              className="w-full border p-3 rounded-xl"
+              rows={3}
+            />
+          </div>
+          <div className="md:col-span-3">
+            <button
+              type="submit"
+              disabled={saving || !lookup.studentId}
+              className="w-full bg-[var(--brand-color)] hover:brightness-90 text-white py-3 rounded-xl font-semibold disabled:opacity-60"
+            >
+              {saving ? 'Saving...' : 'Save Report Card'}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );

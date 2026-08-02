@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseClient } from '@/lib/supabase';
-import { gradeFromScore } from '@/lib/grade';
+import { gradeFromScore, resolveScore } from '@/lib/grade';
 import { Database } from '@/lib/database.types';
 import { requireSchoolSession } from '@/lib/auth';
 
@@ -29,14 +29,17 @@ export async function POST(request: NextRequest) {
 
     for (const entry of entries) {
       const studentId = entry?.studentId;
-      const score = Number(entry?.score);
 
       if (!studentId) {
         errors.push({ studentId: String(studentId ?? ''), reason: 'Missing student ID.' });
         continue;
       }
-      if (Number.isNaN(score) || score < 0 || score > 100) {
-        errors.push({ studentId, reason: 'Score must be a number between 0 and 100.' });
+
+      let resolved;
+      try {
+        resolved = resolveScore({ score: entry?.score, caScore: entry?.caScore, examScore: entry?.examScore });
+      } catch (err) {
+        errors.push({ studentId, reason: (err as Error).message });
         continue;
       }
 
@@ -44,8 +47,10 @@ export async function POST(request: NextRequest) {
         school_id: school.id,
         student_id: studentId,
         subject,
-        score,
-        grade: gradeFromScore(score),
+        score: resolved.total,
+        ca_score: resolved.caScore,
+        exam_score: resolved.examScore,
+        grade: gradeFromScore(resolved.total),
         session,
         term,
         status: 'Approved',

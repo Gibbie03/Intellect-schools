@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseClient } from '@/lib/supabase';
-import { gradeFromScore } from '@/lib/grade';
+import { gradeFromScore, resolveScore } from '@/lib/grade';
 import { requireSchoolSession } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
@@ -48,18 +48,20 @@ export async function POST(request: NextRequest) {
 
     const supabase = getSupabaseClient();
     const body = await request.json();
-    const { studentId, subject, score, session, term, uploadedBy } = body;
+    const { studentId, subject, score, caScore, examScore, session, term, uploadedBy } = body;
 
-    if (!studentId || !subject || score === undefined || score === null || !session || !term) {
+    if (!studentId || !subject || !session || !term) {
       return NextResponse.json(
-        { error: 'studentId, subject, score, session, and term are required.' },
+        { error: 'studentId, subject, session, and term are required.' },
         { status: 400 }
       );
     }
 
-    const numericScore = Number(score);
-    if (Number.isNaN(numericScore) || numericScore < 0 || numericScore > 100) {
-      return NextResponse.json({ error: 'score must be a number between 0 and 100.' }, { status: 400 });
+    let resolved;
+    try {
+      resolved = resolveScore({ score, caScore, examScore });
+    } catch (err) {
+      return NextResponse.json({ error: (err as Error).message }, { status: 400 });
     }
 
     const { data, error } = await supabase
@@ -68,8 +70,10 @@ export async function POST(request: NextRequest) {
         school_id: school.id,
         student_id: studentId,
         subject,
-        score: numericScore,
-        grade: gradeFromScore(numericScore),
+        score: resolved.total,
+        ca_score: resolved.caScore,
+        exam_score: resolved.examScore,
+        grade: gradeFromScore(resolved.total),
         session,
         term,
         status: 'Approved',
