@@ -2,6 +2,16 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Everything below lives in the same cascade layer as Tailwind's own
+   @tailwind components -- left unlayered, these plain classes would always
+   beat Tailwind utility classes on the same element regardless of source
+   order (that's how CSS cascade layers work: unlayered rules outrank every
+   layered one, no matter the specificity). That silently broke every
+   className="wrap py-*"/"pt-*"/"pb-*" combo across the app: .wrap's own
+   `padding: 0 clamp(...)` shorthand was resetting padding-top/bottom back
+   to 0 no matter what utility was layered alongside it. */
+@layer components {
+
 /*
  * "Classical" design system -- the shared template every school's public
  * site (and admin/teacher dashboard) renders with. --brand-color and
@@ -332,3 +342,5 @@ h1, h2, h3 {
     padding: 10px 22px;
   }
 }
+
+} /* end @layer components */
