@@ -54,7 +54,7 @@ export default function AdminDashboard() {
             key={t.id}
             onClick={() => setTab(t.id)}
             className={`rounded-xl px-4 py-2 text-sm font-medium ${
-              tab === t.id ? 'bg-green-700 text-white' : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'
+              tab === t.id ? 'bg-[var(--brand-color)] text-white' : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'
             }`}
           >
             {t.label}
@@ -571,7 +571,7 @@ function StudentsSection() {
           <button
             type="submit"
             disabled={submitting}
-            className="w-full rounded-xl bg-green-700 py-3 font-semibold text-white hover:bg-green-800 disabled:opacity-60"
+            className="w-full rounded-xl bg-[var(--brand-color)] py-3 font-semibold text-white hover:brightness-90 disabled:opacity-60"
           >
             {submitting ? 'Creating...' : 'Create Profile'}
           </button>
@@ -584,7 +584,7 @@ function StudentsSection() {
             Parent Email, Parent Phone, Address.
           </p>
           {/* eslint-disable-next-line @next/next/no-html-link-for-pages -- file download, not a page route */}
-          <a href="/api/students/template" className="inline-block text-sm font-medium text-green-700 hover:underline">
+          <a href="/api/students/template" className="inline-block text-sm font-medium text-[var(--brand-color)] hover:underline">
             Download template
           </a>
           <input
@@ -614,7 +614,7 @@ function StudentsSection() {
           <button
             type="submit"
             disabled={batchSubmitting || !batchFile}
-            className="w-full rounded-xl bg-green-700 py-3 font-semibold text-white hover:bg-green-800 disabled:opacity-60"
+            className="w-full rounded-xl bg-[var(--brand-color)] py-3 font-semibold text-white hover:brightness-90 disabled:opacity-60"
           >
             {batchSubmitting ? 'Uploading...' : 'Upload & Create'}
           </button>
@@ -893,7 +893,7 @@ function StaffSection() {
         <button
           type="submit"
           disabled={submitting}
-          className="md:col-span-2 w-full rounded-xl bg-green-700 py-3 font-semibold text-white hover:bg-green-800 disabled:opacity-60"
+          className="md:col-span-2 w-full rounded-xl bg-[var(--brand-color)] py-3 font-semibold text-white hover:brightness-90 disabled:opacity-60"
         >
           {submitting ? 'Creating...' : 'Create Staff Profile'}
         </button>
@@ -1013,7 +1013,7 @@ function StaffSection() {
           <button
             type="submit"
             disabled={accountSubmitting}
-            className="md:col-span-2 w-full rounded-xl bg-green-700 py-3 font-semibold text-white hover:bg-green-800 disabled:opacity-60"
+            className="md:col-span-2 w-full rounded-xl bg-[var(--brand-color)] py-3 font-semibold text-white hover:brightness-90 disabled:opacity-60"
           >
             {accountSubmitting ? 'Creating...' : 'Create Login Account'}
           </button>
@@ -1174,7 +1174,7 @@ function NewsSection() {
         <button
           type="submit"
           disabled={submitting}
-          className="rounded-xl bg-green-700 px-6 py-3 font-semibold text-white hover:bg-green-800 disabled:opacity-60"
+          className="rounded-xl bg-[var(--brand-color)] px-6 py-3 font-semibold text-white hover:brightness-90 disabled:opacity-60"
         >
           {submitting ? 'Posting...' : 'Post'}
         </button>
@@ -1295,7 +1295,7 @@ function GallerySection() {
         <button
           type="submit"
           disabled={submitting || !file}
-          className="rounded-xl bg-green-700 px-6 py-3 font-semibold text-white hover:bg-green-800 disabled:opacity-60"
+          className="rounded-xl bg-[var(--brand-color)] px-6 py-3 font-semibold text-white hover:brightness-90 disabled:opacity-60"
         >
           {submitting ? 'Uploading...' : 'Add Photo'}
         </button>
@@ -1407,7 +1407,7 @@ function ContactSection() {
                   {m.status === 'New' && (
                     <button
                       onClick={() => markRead(m.id)}
-                      className="text-sm text-green-700 hover:underline shrink-0"
+                      className="text-sm text-[var(--brand-color)] hover:underline shrink-0"
                     >
                       Mark as read
                     </button>

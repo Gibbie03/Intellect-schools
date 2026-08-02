@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { CLASSES } from '@/lib/constants';
 
 const emptyForm = {
@@ -20,6 +20,15 @@ export default function AdmissionsPage() {
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState('');
+  const [schoolName, setSchoolName] = useState('the school');
+
+  useEffect(() => {
+    fetch('/api/school')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.name) setSchoolName(data.name);
+      });
+  }, []);
 
   const handleChange = (field: keyof typeof emptyForm, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -51,15 +60,15 @@ export default function AdmissionsPage() {
   if (submitted) {
     return (
       <div className="mx-auto max-w-2xl px-6 py-20 text-center">
-        <div className="rounded-3xl bg-green-50 p-10">
-          <h1 className="text-3xl font-bold text-green-800">Application Submitted</h1>
+        <div className="rounded-3xl bg-gray-50 p-10">
+          <h1 className="text-3xl font-bold text-[var(--brand-color)]">Application Submitted</h1>
           <p className="mt-4 text-gray-600">
-            Thank you for applying to Intellect Schools. Our admissions team will review your application and
+            Thank you for applying to {schoolName}. Our admissions team will review your application and
             contact you via the email or phone number provided.
           </p>
           <button
             onClick={() => setSubmitted(false)}
-            className="mt-8 rounded-xl bg-green-700 px-6 py-3 font-semibold text-white hover:bg-green-800"
+            className="mt-8 rounded-xl bg-[var(--brand-color)] px-6 py-3 font-semibold text-white hover:brightness-90"
           >
             Submit another application
           </button>
@@ -72,7 +81,7 @@ export default function AdmissionsPage() {
     <div className="mx-auto max-w-3xl px-6 py-12">
       <h1 className="text-4xl font-bold">Admissions</h1>
       <p className="mt-3 text-gray-600">
-        Apply for admission to Intellect Schools. Fill in the form below and our admissions team will get in
+        Apply for admission to {schoolName}. Fill in the form below and our admissions team will get in
         touch with you.
       </p>
 
@@ -184,7 +193,7 @@ export default function AdmissionsPage() {
           <button
             type="submit"
             disabled={submitting}
-            className="w-full rounded-xl bg-green-700 py-3 font-semibold text-white hover:bg-green-800 disabled:opacity-60"
+            className="w-full rounded-xl bg-[var(--brand-color)] py-3 font-semibold text-white hover:brightness-90 disabled:opacity-60"
           >
             {submitting ? 'Submitting...' : 'Submit Application'}
           </button>

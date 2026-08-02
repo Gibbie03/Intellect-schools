@@ -126,7 +126,7 @@ export default function StudentPortal() {
                     onClick={() => setActiveTerm(term)}
                     className={`rounded-xl px-4 py-2 text-sm font-medium ${
                       activeTerm === term
-                        ? 'bg-green-700 text-white'
+                        ? 'bg-[var(--brand-color)] text-white'
                         : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'
                     }`}
                   >
@@ -191,7 +191,7 @@ export default function StudentPortal() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full bg-green-700 text-white py-3 rounded-xl font-semibold hover:bg-green-800 disabled:opacity-60"
+          className="w-full bg-[var(--brand-color)] text-white py-3 rounded-xl font-semibold hover:brightness-90 disabled:opacity-60"
         >
           {loading ? 'Loading...' : 'Login'}
         </button>

@@ -43,12 +43,12 @@ export default function ContactPage() {
       <p className="mt-3 text-gray-600">Have a question? Send us a message and we&apos;ll get back to you.</p>
 
       {submitted ? (
-        <div className="mt-10 rounded-2xl bg-green-50 p-8 text-center">
-          <h2 className="text-xl font-semibold text-green-800">Message Sent</h2>
+        <div className="mt-10 rounded-2xl bg-gray-50 p-8 text-center">
+          <h2 className="text-xl font-semibold text-[var(--brand-color)]">Message Sent</h2>
           <p className="mt-2 text-gray-600">Thank you for reaching out. We will respond as soon as possible.</p>
           <button
             onClick={() => setSubmitted(false)}
-            className="mt-6 rounded-xl bg-green-700 px-6 py-3 font-semibold text-white hover:bg-green-800"
+            className="mt-6 rounded-xl bg-[var(--brand-color)] px-6 py-3 font-semibold text-white hover:brightness-90"
           >
             Send another message
           </button>
@@ -113,7 +113,7 @@ export default function ContactPage() {
           <button
             type="submit"
             disabled={submitting}
-            className="w-full rounded-xl bg-green-700 py-3 font-semibold text-white hover:bg-green-800 disabled:opacity-60"
+            className="w-full rounded-xl bg-[var(--brand-color)] py-3 font-semibold text-white hover:brightness-90 disabled:opacity-60"
           >
             {submitting ? 'Sending...' : 'Send Message'}
           </button>
