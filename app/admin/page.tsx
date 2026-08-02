@@ -1789,6 +1789,7 @@ function ResultPinsSection() {
 
 function ReportCardsSection() {
   const [lookup, setLookup] = useState({ studentId: '', session: CURRENT_SESSION, term: TERMS[0] });
+  const [status, setStatus] = useState<'Draft' | 'Published' | null>(null);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -1825,6 +1826,7 @@ function ReportCardsSection() {
         teacherComment: rc?.teacher_comment ?? '',
         principalComment: rc?.principal_comment ?? '',
       });
+      setStatus(rc?.status ?? 'Draft');
     } catch (err) {
       setError((err as Error).message);
     } finally {
@@ -1832,8 +1834,7 @@ function ReportCardsSection() {
     }
   };
 
-  const save = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const persist = async (publish?: boolean) => {
     if (!lookup.studentId) return;
 
     setSaving(true);
@@ -1849,16 +1850,29 @@ function ReportCardsSection() {
           session: lookup.session,
           term: lookup.term,
           ...form,
+          ...(publish !== undefined ? { publish } : {}),
         }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to save report card.');
-      setNotice('Saved. This will show on the student portal alongside their results.');
+      setStatus(data.reportCard?.status ?? 'Draft');
+      setNotice(
+        publish === true
+          ? 'Published — this term is now visible on the student portal.'
+          : publish === false
+          ? 'Reverted to Draft — no longer visible on the student portal.'
+          : 'Saved as Draft.'
+      );
     } catch (err) {
       setError((err as Error).message);
     } finally {
       setSaving(false);
     }
+  };
+
+  const save = (e: React.FormEvent) => {
+    e.preventDefault();
+    persist();
   };
 
   return (
@@ -1908,6 +1922,15 @@ function ReportCardsSection() {
 
         {error && <div className="mb-6 rounded-xl bg-red-50 p-4 text-sm text-red-700">{error}</div>}
         {notice && <div className="mb-6 rounded-xl bg-green-50 p-4 text-sm text-green-800">{notice}</div>}
+        {status && (
+          <p className="text-sm mb-4">
+            Status:{' '}
+            <span className={status === 'Published' ? 'text-green-700 font-medium' : 'text-orange-600 font-medium'}>
+              {status}
+            </span>
+            {status === 'Draft' && ' — not yet visible to the student.'}
+          </p>
+        )}
 
         <form onSubmit={save} className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
@@ -1971,14 +1994,32 @@ function ReportCardsSection() {
               rows={3}
             />
           </div>
-          <div className="md:col-span-3">
+          <div className="md:col-span-3 flex flex-wrap gap-3">
             <button
               type="submit"
               disabled={saving || !lookup.studentId}
-              className="w-full bg-[var(--brand-color)] hover:brightness-90 text-white py-3 rounded-xl font-semibold disabled:opacity-60"
+              className="flex-1 bg-white border border-gray-300 hover:bg-gray-50 text-gray-800 py-3 rounded-xl font-semibold disabled:opacity-60"
             >
-              {saving ? 'Saving...' : 'Save Report Card'}
+              {saving ? 'Saving...' : 'Save Draft'}
             </button>
+            <button
+              type="button"
+              onClick={() => persist(true)}
+              disabled={saving || !lookup.studentId}
+              className="flex-1 bg-[var(--brand-color)] hover:brightness-90 text-white py-3 rounded-xl font-semibold disabled:opacity-60"
+            >
+              {saving ? 'Saving...' : 'Publish Report Card'}
+            </button>
+            {status === 'Published' && (
+              <button
+                type="button"
+                onClick={() => persist(false)}
+                disabled={saving}
+                className="rounded-xl border border-gray-300 px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50"
+              >
+                Revert to Draft
+              </button>
+            )}
           </div>
         </form>
       </div>

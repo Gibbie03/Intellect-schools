@@ -155,6 +155,8 @@ export type Database = {
           conduct_rating: 'Excellent' | 'Very Good' | 'Good' | 'Fair' | 'Poor' | null;
           teacher_comment: string | null;
           principal_comment: string | null;
+          status: 'Draft' | 'Published';
+          published_at: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -170,6 +172,8 @@ export type Database = {
           conduct_rating?: 'Excellent' | 'Very Good' | 'Good' | 'Fair' | 'Poor' | null;
           teacher_comment?: string | null;
           principal_comment?: string | null;
+          status?: 'Draft' | 'Published';
+          published_at?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -185,6 +189,8 @@ export type Database = {
           conduct_rating?: 'Excellent' | 'Very Good' | 'Good' | 'Fair' | 'Poor' | null;
           teacher_comment?: string | null;
           principal_comment?: string | null;
+          status?: 'Draft' | 'Published';
+          published_at?: string | null;
           created_at?: string;
           updated_at?: string;
         };

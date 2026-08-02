@@ -97,6 +97,7 @@ export default function TeacherDashboard() {
   const [classTeacherOf, setClassTeacherOf] = useState<string | null>(null);
   const [rcRoster, setRcRoster] = useState<RosterStudent[]>([]);
   const [rcLookup, setRcLookup] = useState({ studentId: '', session: CURRENT_SESSION, term: TERMS[0] });
+  const [rcStatus, setRcStatus] = useState<'Draft' | 'Published' | null>(null);
   const [rcLoading, setRcLoading] = useState(false);
   const [rcSaving, setRcSaving] = useState(false);
   const [rcError, setRcError] = useState('');
@@ -166,7 +167,7 @@ export default function TeacherDashboard() {
 
       setNewResult({ studentId: '', subject: SUBJECTS[0], caScore: '', examScore: '', session: CURRENT_SESSION, term: TERMS[0] });
       setShowForm(false);
-      setNotice('Result uploaded and is now visible in the student portal.');
+      setNotice('Result uploaded. It will appear on the student portal once the class teacher publishes this term’s report card.');
       loadResults();
     } catch (err) {
       setError((err as Error).message);
@@ -338,6 +339,7 @@ export default function TeacherDashboard() {
         conductRating: rc?.conduct_rating ?? '',
         teacherComment: rc?.teacher_comment ?? '',
       });
+      setRcStatus(rc?.status ?? 'Draft');
     } catch (err) {
       setRcError((err as Error).message);
     } finally {
@@ -345,8 +347,7 @@ export default function TeacherDashboard() {
     }
   };
 
-  const saveReportCard = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const persistReportCard = async (publish?: boolean) => {
     if (!rcLookup.studentId) return;
 
     setRcSaving(true);
@@ -366,16 +367,29 @@ export default function TeacherDashboard() {
           timesPunctual: rcForm.timesPunctual,
           conductRating: rcForm.conductRating,
           teacherComment: rcForm.teacherComment,
+          ...(publish !== undefined ? { publish } : {}),
         }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to save report card.');
-      setRcNotice('Saved. This will show on the student portal alongside their results.');
+      setRcStatus(data.reportCard?.status ?? 'Draft');
+      setRcNotice(
+        publish === true
+          ? 'Published — this term is now visible on the student portal.'
+          : publish === false
+          ? 'Reverted to Draft — no longer visible on the student portal.'
+          : 'Saved as Draft.'
+      );
     } catch (err) {
       setRcError((err as Error).message);
     } finally {
       setRcSaving(false);
     }
+  };
+
+  const saveReportCard = (e: React.FormEvent) => {
+    e.preventDefault();
+    persistReportCard();
   };
 
   return (
@@ -608,8 +622,8 @@ export default function TeacherDashboard() {
           {batchResult && (
             <div className="mb-6 rounded-xl bg-green-50 p-4 text-sm text-green-800">
               <p>
-                Uploaded {batchResult.created} result{batchResult.created === 1 ? '' : 's'}. Visible in student
-                portals now.
+                Uploaded {batchResult.created} result{batchResult.created === 1 ? '' : 's'}. They&apos;ll appear on
+                student portals once the class teacher publishes this term&apos;s report card.
                 {batchResult.skipped > 0 && ` ${batchResult.skipped} row(s) skipped.`}
               </p>
               {batchResult.errors.length > 0 && (
@@ -926,6 +940,15 @@ export default function TeacherDashboard() {
 
           {rcError && <p className="text-sm text-red-600 mb-4">{rcError}</p>}
           {rcNotice && <p className="text-sm text-green-700 mb-4">{rcNotice}</p>}
+          {rcStatus && (
+            <p className="text-sm mb-4">
+              Status:{' '}
+              <span className={rcStatus === 'Published' ? 'text-green-700 font-medium' : 'text-orange-600 font-medium'}>
+                {rcStatus}
+              </span>
+              {rcStatus === 'Draft' && ' — not yet visible to the student.'}
+            </p>
+          )}
 
           <form onSubmit={saveReportCard} className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
@@ -980,14 +1003,32 @@ export default function TeacherDashboard() {
                 rows={3}
               />
             </div>
-            <div className="md:col-span-3">
+            <div className="md:col-span-3 flex flex-wrap gap-3">
               <button
                 type="submit"
                 disabled={rcSaving || !rcLookup.studentId}
-                className="w-full bg-[var(--brand-color)] hover:brightness-90 text-white py-3 rounded-xl font-semibold disabled:opacity-60"
+                className="flex-1 bg-white border border-gray-300 hover:bg-gray-50 text-gray-800 py-3 rounded-xl font-semibold disabled:opacity-60"
               >
-                {rcSaving ? 'Saving...' : 'Save Report Card Comments'}
+                {rcSaving ? 'Saving...' : 'Save Draft'}
               </button>
+              <button
+                type="button"
+                onClick={() => persistReportCard(true)}
+                disabled={rcSaving || !rcLookup.studentId}
+                className="flex-1 bg-[var(--brand-color)] hover:brightness-90 text-white py-3 rounded-xl font-semibold disabled:opacity-60"
+              >
+                {rcSaving ? 'Saving...' : 'Publish Report Card'}
+              </button>
+              {rcStatus === 'Published' && (
+                <button
+                  type="button"
+                  onClick={() => persistReportCard(false)}
+                  disabled={rcSaving}
+                  className="rounded-xl border border-gray-300 px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                >
+                  Revert to Draft
+                </button>
+              )}
             </div>
           </form>
             </>
@@ -1054,8 +1095,8 @@ export default function TeacherDashboard() {
       </div>
 
       <div className="mt-8 text-sm text-gray-500">
-        Results are visible in student portals immediately after upload. The admin is notified and can flag any
-        result that needs correction.
+        Results are saved immediately, but only appear on the student portal once the class teacher compiles and
+        publishes that term&apos;s report card (see Report Card Comments above).
       </div>
     </div>
   );

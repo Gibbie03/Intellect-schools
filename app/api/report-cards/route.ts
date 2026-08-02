@@ -97,6 +97,7 @@ export async function POST(request: NextRequest) {
       conductRating,
       teacherComment,
       principalComment,
+      publish,
     } = body;
 
     if (!studentId || !session || !term) {
@@ -127,6 +128,19 @@ export async function POST(request: NextRequest) {
     if (conductRating !== undefined) update.conduct_rating = conductRating || null;
     if (teacherComment !== undefined) update.teacher_comment = teacherComment || null;
     if (principalComment !== undefined) update.principal_comment = principalComment || null;
+
+    // publish: true finalizes the report card so it becomes visible on the
+    // student portal; publish: false reverts it to Draft (e.g. to fix a
+    // mistake spotted after publishing). Omitting it leaves the current
+    // status untouched, so editing fields on an already-published card
+    // doesn't silently unpublish it.
+    if (publish === true) {
+      update.status = 'Published';
+      update.published_at = new Date().toISOString();
+    } else if (publish === false) {
+      update.status = 'Draft';
+      update.published_at = null;
+    }
 
     const { data, error } = await supabase
       .from('report_cards')

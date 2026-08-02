@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
     if (studentError) throw studentError;
     if (!student) return NextResponse.json({ error: genericError }, { status: 401 });
 
-    const { data: results, error: resultsError } = await supabase
+    const { data: allResults, error: resultsError } = await supabase
       .from('results')
       .select('*')
       .eq('school_id', school.id)
@@ -61,12 +61,21 @@ export async function POST(request: NextRequest) {
       .order('created_at', { ascending: false });
     if (resultsError) throw resultsError;
 
-    const { data: reportCards, error: reportCardsError } = await supabase
+    const { data: allReportCards, error: reportCardsError } = await supabase
       .from('report_cards')
       .select('*')
       .eq('school_id', school.id)
       .eq('student_id', studentId);
     if (reportCardsError) throw reportCardsError;
+
+    // A term's results are only visible on the portal once the class
+    // teacher has compiled and published that term's report card --
+    // uploading a score makes it "Approved" immediately (no admin
+    // bottleneck), but publishing the report card is the parent-facing
+    // release gate.
+    const publishedReportCards = (allReportCards ?? []).filter((rc) => rc.status === 'Published');
+    const publishedTerms = new Set(publishedReportCards.map((rc) => `${rc.session}|${rc.term}`));
+    const results = (allResults ?? []).filter((r) => publishedTerms.has(`${r.session}|${r.term}`));
 
     const { error: updateError } = await supabase
       .from('result_pins')
@@ -77,7 +86,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       student: { studentId: student.student_id, fullName: student.full_name, class: student.class },
       results,
-      reportCards,
+      reportCards: publishedReportCards,
       usesRemaining: card.max_uses - (card.uses_count + 1),
     });
   } catch (error) {

@@ -71,6 +71,8 @@ create table if not exists report_cards (
   conduct_rating text check (conduct_rating in ('Excellent', 'Very Good', 'Good', 'Fair', 'Poor')),
   teacher_comment text,
   principal_comment text,
+  status text not null default 'Draft' check (status in ('Draft', 'Published')),
+  published_at timestamptz,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   unique (school_id, student_id, session, term)
