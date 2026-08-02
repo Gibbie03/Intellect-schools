@@ -81,7 +81,7 @@ export default function ContactPage() {
           <h1 className="text-white" style={{ fontSize: 'clamp(28px, 4vw, 42px)' }}>
             Contact us
           </h1>
-          <p className="mt-3.5 text-[15.5px] text-white/82">
+          <p className="mt-3.5 text-[15.5px] text-white/80">
             Have a question, suggestion or complaint? Send us a message and we&apos;ll get back to you.
           </p>
         </div>

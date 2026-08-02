@@ -70,7 +70,7 @@ export default function NewsPage() {
           <h1 className="text-white" style={{ fontSize: 'clamp(28px, 4vw, 42px)' }}>
             Stay up to date
           </h1>
-          <p className="mt-3.5 max-w-[56ch] text-[15.5px] text-white/82">
+          <p className="mt-3.5 max-w-[56ch] text-[15.5px] text-white/80">
             Announcements and upcoming events at {schoolName}.
           </p>
         </div>

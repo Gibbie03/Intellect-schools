@@ -82,7 +82,7 @@ export default function LandingPage() {
           <h1 className="font-display text-white" style={{ fontSize: 'clamp(32px, 5vw, 54px)', lineHeight: 1.1 }}>
             The all-in-one platform to run your school online
           </h1>
-          <p className="mx-auto mt-5 max-w-[56ch] text-[17px] leading-[1.65] text-white/78">
+          <p className="mx-auto mt-5 max-w-[56ch] text-[17px] leading-[1.65] text-white/80">
             Your own branded school website, admissions, results and staff logins, all on your own custom domain,
             and live in as little as 48 hours.
           </p>

@@ -120,7 +120,7 @@ export default function AdmissionsPage() {
           <h1 className="max-w-[18ch] text-white" style={{ fontSize: 'clamp(30px, 4.5vw, 48px)', lineHeight: 1.12 }}>
             We take as much care choosing you as you take choosing us.
           </h1>
-          <p className="mt-5 max-w-[58ch] text-[16.5px] leading-[1.65] text-white/82">
+          <p className="mt-5 max-w-[58ch] text-[16.5px] leading-[1.65] text-white/80">
             Apply for admission to {schoolName}. Our process is unhurried and personal — here&apos;s how a family
             moves from first inquiry to a first day of school.
           </p>

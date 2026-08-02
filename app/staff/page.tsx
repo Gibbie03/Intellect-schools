@@ -38,7 +38,7 @@ export default function StaffDirectoryPage() {
           <h1 className="text-white" style={{ fontSize: 'clamp(28px, 4vw, 42px)' }}>
             Meet the teachers
           </h1>
-          <p className="mt-3.5 text-[15.5px] text-white/82">The people behind the classroom.</p>
+          <p className="mt-3.5 text-[15.5px] text-white/80">The people behind the classroom.</p>
         </div>
       </section>
 

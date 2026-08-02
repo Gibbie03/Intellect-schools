@@ -36,7 +36,7 @@ export default function GalleryPage() {
           <h1 className="text-white" style={{ fontSize: 'clamp(30px, 4.5vw, 46px)', lineHeight: 1.1 }}>
             A term, in pictures
           </h1>
-          <p className="mt-4 max-w-[60ch] text-base leading-[1.6] text-white/82">
+          <p className="mt-4 max-w-[60ch] text-base leading-[1.6] text-white/80">
             Academics, athletics, performances and the everyday life of the school.
           </p>
         </div>
