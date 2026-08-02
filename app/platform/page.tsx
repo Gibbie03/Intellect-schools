@@ -9,9 +9,14 @@ type School = {
   subdomain: string;
   custom_domain: string | null;
   id_prefix: string;
+  logo_url: string | null;
   primary_color: string | null;
+  secondary_color: string | null;
   tagline: string | null;
   hero_image_url: string | null;
+  contact_email: string | null;
+  contact_phone: string | null;
+  address: string | null;
   whatsapp_number: string | null;
   principal_welcome_message: string | null;
   principal_photo_url: string | null;
@@ -64,9 +69,14 @@ export default function PlatformDashboard() {
     subdomain: '',
     customDomain: '',
     idPrefix: '',
+    logoUrl: '',
     primaryColor: '',
+    secondaryColor: '',
     tagline: '',
     heroImageUrl: '',
+    contactEmail: '',
+    contactPhone: '',
+    address: '',
     whatsappNumber: '',
     principalWelcomeMessage: '',
     principalPhotoUrl: '',
@@ -169,9 +179,14 @@ export default function PlatformDashboard() {
       subdomain: school.subdomain,
       customDomain: school.custom_domain ?? '',
       idPrefix: school.id_prefix,
+      logoUrl: school.logo_url ?? '',
       primaryColor: school.primary_color ?? '',
+      secondaryColor: school.secondary_color ?? '',
       tagline: school.tagline ?? '',
       heroImageUrl: school.hero_image_url ?? '',
+      contactEmail: school.contact_email ?? '',
+      contactPhone: school.contact_phone ?? '',
+      address: school.address ?? '',
       whatsappNumber: school.whatsapp_number ?? '',
       principalWelcomeMessage: school.principal_welcome_message ?? '',
       principalPhotoUrl: school.principal_photo_url ?? '',
@@ -513,10 +528,24 @@ export default function PlatformDashboard() {
                           />
                           <input
                             type="text"
-                            placeholder="Brand Color (hex)"
+                            placeholder="Primary Brand Color (hex, e.g. #0e6b39)"
                             value={editForm.primaryColor}
                             onChange={(e) => setEditForm({ ...editForm, primaryColor: e.target.value })}
                             className="w-full rounded-xl border p-3"
+                          />
+                          <input
+                            type="text"
+                            placeholder="Secondary Brand Color (hex, optional, e.g. #b23324)"
+                            value={editForm.secondaryColor}
+                            onChange={(e) => setEditForm({ ...editForm, secondaryColor: e.target.value })}
+                            className="w-full rounded-xl border p-3"
+                          />
+                          <input
+                            type="text"
+                            placeholder="Logo URL (optional, shown in the site header)"
+                            value={editForm.logoUrl}
+                            onChange={(e) => setEditForm({ ...editForm, logoUrl: e.target.value })}
+                            className="w-full rounded-xl border p-3 md:col-span-2"
                           />
                           <input
                             type="text"
@@ -530,6 +559,27 @@ export default function PlatformDashboard() {
                             placeholder="Hero Image URL"
                             value={editForm.heroImageUrl}
                             onChange={(e) => setEditForm({ ...editForm, heroImageUrl: e.target.value })}
+                            className="w-full rounded-xl border p-3 md:col-span-2"
+                          />
+                          <input
+                            type="email"
+                            placeholder="Contact Email (optional)"
+                            value={editForm.contactEmail}
+                            onChange={(e) => setEditForm({ ...editForm, contactEmail: e.target.value })}
+                            className="w-full rounded-xl border p-3"
+                          />
+                          <input
+                            type="text"
+                            placeholder="Contact Phone (optional)"
+                            value={editForm.contactPhone}
+                            onChange={(e) => setEditForm({ ...editForm, contactPhone: e.target.value })}
+                            className="w-full rounded-xl border p-3"
+                          />
+                          <input
+                            type="text"
+                            placeholder="Address (optional, shown on Contact + map)"
+                            value={editForm.address}
+                            onChange={(e) => setEditForm({ ...editForm, address: e.target.value })}
                             className="w-full rounded-xl border p-3 md:col-span-2"
                           />
                           <input

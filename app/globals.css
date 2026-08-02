@@ -2,11 +2,134 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * "Classical" design system -- the shared template every school's public
+ * site (and admin/teacher dashboard) renders with. --brand-color and
+ * --brand-color-2 are set per-request in app/layout.tsx from each school's
+ * primary_color/secondary_color; everything else here is a fixed neutral
+ * "paper" base shared across schools, with light tints derived from the
+ * brand colors via color-mix() rather than needing extra DB fields.
+ */
 :root {
   color-scheme: light;
+  --ink: #15201a;
+  --cream: #faf6ee;
+  --paper: #ffffff;
+  --line: #e4ddd0;
+  --muted: #6d7568;
+  --gold: #c9a35a;
+  --brand-tint: color-mix(in srgb, var(--brand-color) 12%, white);
+  --brand-2-tint: color-mix(in srgb, var(--brand-color-2) 12%, white);
 }
 
 body {
-  background: #f8fafc;
-  color: #111827;
+  background: var(--cream);
+  color: var(--ink);
+  font-family: var(--font-inter), system-ui, sans-serif;
+}
+
+h1, h2, h3 {
+  font-family: var(--font-manrope), system-ui, sans-serif;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.wrap {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 clamp(24px, 5vw, 72px);
+}
+
+.tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-manrope), system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 12.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--brand-color-2);
+  margin-bottom: 16px;
+}
+.tag-light {
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  font-family: var(--font-manrope), system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 15px;
+  padding: 15px 30px;
+  cursor: pointer;
+  border: none;
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 16px), calc(100% - 16px) 100%, 0 100%);
+}
+.btn-primary {
+  background: var(--brand-color);
+  color: #fff;
+}
+.btn-primary:hover {
+  filter: brightness(0.88);
+}
+.btn-secondary {
+  background: var(--brand-color-2);
+  color: #fff;
+}
+.btn-secondary:hover {
+  filter: brightness(0.88);
+}
+.btn-outline {
+  clip-path: none;
+  border: 1.5px solid var(--ink);
+  color: var(--ink);
+  background: transparent;
+  padding: 13.5px 28px;
+}
+.btn-outline:hover {
+  background: var(--ink);
+  color: #fff;
+}
+.btn-ghost {
+  clip-path: none;
+  border: 1.5px solid rgba(255, 255, 255, 0.55);
+  color: #fff;
+  background: transparent;
+  padding: 13.5px 28px;
+}
+.btn-ghost:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.card {
+  background: var(--paper);
+  border-left: 4px solid var(--brand-color);
+  padding: 26px;
+}
+.card-accent {
+  border-left-color: var(--brand-color-2);
+}
+
+.frame {
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 28px), calc(100% - 28px) 100%, 0 100%);
+}
+
+.pill {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 5px 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+@keyframes marquee-scroll {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
 }

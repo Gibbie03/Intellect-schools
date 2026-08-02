@@ -12,6 +12,7 @@ export type Database = {
           hero_image_url: string | null;
           tagline: string | null;
           primary_color: string | null;
+          secondary_color: string | null;
           contact_email: string | null;
           contact_phone: string | null;
           address: string | null;
@@ -19,6 +20,7 @@ export type Database = {
           principal_welcome_message: string | null;
           principal_photo_url: string | null;
           prospectus_url: string | null;
+          template: string;
           status: 'Active' | 'Suspended';
           plan: string;
           features: Record<string, boolean>;
@@ -34,6 +36,7 @@ export type Database = {
           hero_image_url?: string | null;
           tagline?: string | null;
           primary_color?: string | null;
+          secondary_color?: string | null;
           contact_email?: string | null;
           contact_phone?: string | null;
           address?: string | null;
@@ -41,6 +44,7 @@ export type Database = {
           principal_welcome_message?: string | null;
           principal_photo_url?: string | null;
           prospectus_url?: string | null;
+          template?: string;
           status?: 'Active' | 'Suspended';
           plan?: string;
           features?: Record<string, boolean>;
@@ -56,6 +60,7 @@ export type Database = {
           hero_image_url?: string | null;
           tagline?: string | null;
           primary_color?: string | null;
+          secondary_color?: string | null;
           contact_email?: string | null;
           contact_phone?: string | null;
           address?: string | null;
@@ -63,6 +68,7 @@ export type Database = {
           principal_welcome_message?: string | null;
           principal_photo_url?: string | null;
           prospectus_url?: string | null;
+          template?: string;
           status?: 'Active' | 'Suspended';
           plan?: string;
           features?: Record<string, boolean>;
