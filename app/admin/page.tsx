@@ -19,7 +19,8 @@ type Tab =
   | 'report-cards'
   | 'timetables'
   | 'fees'
-  | 'messages';
+  | 'messages'
+  | 'spotlight';
 
 const TABS: { id: Tab; label: string }[] = [
   { id: 'dashboard', label: 'Dashboard' },
@@ -35,6 +36,7 @@ const TABS: { id: Tab; label: string }[] = [
   { id: 'timetables', label: 'Timetables' },
   { id: 'fees', label: 'Fees' },
   { id: 'messages', label: 'Message Parents' },
+  { id: 'spotlight', label: 'Spotlight' },
 ];
 
 export default function AdminDashboard() {
@@ -96,6 +98,7 @@ export default function AdminDashboard() {
         {tab === 'timetables' && <TimetablesSection />}
         {tab === 'fees' && <FeesSection />}
         {tab === 'messages' && <MessagesSection />}
+        {tab === 'spotlight' && <SpotlightSection />}
       </div>
     </div>
   );
@@ -2810,6 +2813,164 @@ function MessagesSection() {
               ))}
             </tbody>
           </table>
+        )}
+      </div>
+    </div>
+  );
+}
+
+type SpotlightRow = {
+  id: string;
+  name: string;
+  subtitle: string | null;
+  photo_url: string | null;
+  blurb: string | null;
+  period_label: string | null;
+  created_at: string;
+};
+
+function SpotlightSection() {
+  const [spotlights, setSpotlights] = useState<SpotlightRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [form, setForm] = useState({ name: '', subtitle: '', blurb: '', periodLabel: '' });
+  const [file, setFile] = useState<File | null>(null);
+
+  const load = () => {
+    setLoading(true);
+    fetch('/api/spotlights')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.error) throw new Error(data.error);
+        setSpotlights(data.spotlights);
+      })
+      .catch((err) => setError(err.message))
+      .finally(() => setLoading(false));
+  };
+
+  useEffect(load, []);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.name) return;
+
+    setSubmitting(true);
+    setError('');
+    try {
+      const formData = new FormData();
+      formData.append('name', form.name);
+      if (form.subtitle) formData.append('subtitle', form.subtitle);
+      if (form.blurb) formData.append('blurb', form.blurb);
+      if (form.periodLabel) formData.append('periodLabel', form.periodLabel);
+      if (file) formData.append('file', file);
+
+      const res = await fetch('/api/spotlights', { method: 'POST', body: formData });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to add spotlight.');
+      setForm({ name: '', subtitle: '', blurb: '', periodLabel: '' });
+      setFile(null);
+      load();
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    try {
+      const res = await fetch(`/api/spotlights/${id}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to delete.');
+      setSpotlights((prev) => prev.filter((s) => s.id !== id));
+    } catch (err) {
+      setError((err as Error).message);
+    }
+  };
+
+  return (
+    <div>
+      <h1 className="text-4xl font-bold mb-2">Spotlight</h1>
+      <p className="text-gray-600 mb-8">
+        Feature a &quot;Student/Staff of the Month&quot; on the homepage &mdash; a photo, a short note on why they
+        were picked, and the period it covers.
+      </p>
+      {error && <div className="mb-6 rounded-xl bg-red-50 p-4 text-sm text-red-700">{error}</div>}
+
+      <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow p-8 mb-8 grid grid-cols-1 md:grid-cols-2 gap-4">
+        <h2 className="md:col-span-2 text-xl font-semibold">Add a Spotlight</h2>
+        <input
+          type="text"
+          placeholder="Name"
+          value={form.name}
+          onChange={(e) => setForm({ ...form, name: e.target.value })}
+          className="w-full rounded-xl border p-3"
+          required
+        />
+        <input
+          type="text"
+          placeholder="Subtitle (e.g. SSS 2, or Mathematics Teacher)"
+          value={form.subtitle}
+          onChange={(e) => setForm({ ...form, subtitle: e.target.value })}
+          className="w-full rounded-xl border p-3"
+        />
+        <input
+          type="text"
+          placeholder="Period (e.g. September 2025)"
+          value={form.periodLabel}
+          onChange={(e) => setForm({ ...form, periodLabel: e.target.value })}
+          className="w-full rounded-xl border p-3 md:col-span-2"
+        />
+        <textarea
+          placeholder="Why were they picked?"
+          value={form.blurb}
+          onChange={(e) => setForm({ ...form, blurb: e.target.value })}
+          className="w-full rounded-xl border p-3 md:col-span-2"
+          rows={3}
+        />
+        <input
+          type="file"
+          accept="image/*"
+          onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+          className="w-full rounded-xl border p-3 md:col-span-2"
+        />
+        <button
+          type="submit"
+          disabled={submitting}
+          className="md:col-span-2 rounded-xl bg-[var(--brand-color)] px-6 py-3 font-semibold text-white hover:brightness-90 disabled:opacity-60"
+        >
+          {submitting ? 'Adding...' : 'Add Spotlight'}
+        </button>
+      </form>
+
+      <div className="bg-white rounded-2xl shadow p-8">
+        <h2 className="text-xl font-semibold mb-6">Spotlights ({spotlights.length})</h2>
+        {loading ? (
+          <p className="text-gray-500">Loading...</p>
+        ) : spotlights.length === 0 ? (
+          <p className="text-gray-500">No spotlights added yet.</p>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {spotlights.map((s) => (
+              <div key={s.id} className="overflow-hidden rounded-xl border">
+                {s.photo_url && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={s.photo_url} alt={s.name} className="h-40 w-full object-cover" />
+                )}
+                <div className="p-3">
+                  <div className="flex items-center justify-between">
+                    <span className="font-semibold">{s.name}</span>
+                    <button onClick={() => handleDelete(s.id)} className="text-xs text-red-600 hover:underline shrink-0 ml-2">
+                      Delete
+                    </button>
+                  </div>
+                  {s.subtitle && <p className="text-sm text-gray-500">{s.subtitle}</p>}
+                  {s.period_label && <p className="text-xs text-gray-400 mt-1">{s.period_label}</p>}
+                </div>
+              </div>
+            ))}
+          </div>
         )}
       </div>
     </div>

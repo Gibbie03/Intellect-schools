@@ -8,6 +8,7 @@ const schoolLinks = [
   { href: '/', label: 'Home' },
   { href: '/admissions', label: 'Admissions' },
   { href: '/news', label: 'News & Events' },
+  { href: '/timetable', label: 'Timetable' },
   { href: '/gallery', label: 'Gallery' },
   { href: '/contact', label: 'Contact' },
   { href: '/portal', label: 'Student Portal' },
