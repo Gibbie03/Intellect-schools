@@ -1815,6 +1815,26 @@ function ResultPinsSection() {
     URL.revokeObjectURL(url);
   };
 
+  const handleDeleteBatch = async (batch: ResultPinBatch) => {
+    if (
+      !confirm(
+        `Delete batch "${batch.batchLabel}" (${batch.total} card${batch.total === 1 ? '' : 's'})? This cannot be undone, and any of these codes not yet given out will stop working.`
+      )
+    )
+      return;
+
+    try {
+      const params = new URLSearchParams({ batchLabel: batch.batchLabel, session: batch.session });
+      if (batch.term) params.set('term', batch.term);
+      const res = await fetch(`/api/result-pins?${params.toString()}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to delete batch.');
+      load();
+    } catch (err) {
+      setError((err as Error).message);
+    }
+  };
+
   const handlePrint = () => {
     if (!generated) return;
     const win = window.open('', '_blank');
@@ -2008,6 +2028,7 @@ function ResultPinsSection() {
                 <th className="text-center p-3">Used Up</th>
                 <th className="text-center p-3">Max Uses</th>
                 <th className="text-left p-3">Created</th>
+                <th></th>
               </tr>
             </thead>
             <tbody>
@@ -2023,6 +2044,11 @@ function ResultPinsSection() {
                   <td className="p-3 text-center">{b.exhausted}</td>
                   <td className="p-3 text-center">{b.maxUses}</td>
                   <td className="p-3">{new Date(b.createdAt).toLocaleDateString()}</td>
+                  <td className="p-3 text-right">
+                    <button onClick={() => handleDeleteBatch(b)} className="text-xs text-red-600 hover:underline">
+                      Delete
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>

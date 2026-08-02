@@ -117,3 +117,39 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: (error as Error).message }, { status: 500 });
   }
 }
+
+// Removes every card in a batch. PINs are bcrypt-hashed and shown only once
+// at generation time -- there is no way to recover them afterwards, so this
+// is for clearing out a batch whose codes were lost before being
+// distributed (e.g. a "digital" batch never sent to parents), not for
+// revoking cards already in parents' hands.
+export async function DELETE(request: NextRequest) {
+  const staff = await requireSchoolSession(request, ['admin']);
+  if (!staff) return NextResponse.json({ error: 'Not authenticated.' }, { status: 401 });
+  const { school } = staff;
+
+  try {
+    const batchLabel = request.nextUrl.searchParams.get('batchLabel');
+    const session = request.nextUrl.searchParams.get('session');
+    const term = request.nextUrl.searchParams.get('term');
+    if (!batchLabel || !session) {
+      return NextResponse.json({ error: 'batchLabel and session are required.' }, { status: 400 });
+    }
+
+    const supabase = getSupabaseClient();
+    let query = supabase
+      .from('result_pins')
+      .delete()
+      .eq('school_id', school.id)
+      .eq('batch_label', batchLabel)
+      .eq('session', session);
+    query = term ? query.eq('term', term) : query.is('term', null);
+
+    const { error } = await query;
+    if (error) throw error;
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    return NextResponse.json({ error: (error as Error).message }, { status: 500 });
+  }
+}
