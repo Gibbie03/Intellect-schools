@@ -303,6 +303,7 @@ export type Database = {
           email: string | null;
           phone: string | null;
           status: 'Active' | 'Inactive';
+          class_teacher_of: string | null;
           created_at: string;
         };
         Insert: {
@@ -315,6 +316,7 @@ export type Database = {
           email?: string | null;
           phone?: string | null;
           status?: 'Active' | 'Inactive';
+          class_teacher_of?: string | null;
           created_at?: string;
         };
         Update: {
@@ -327,6 +329,7 @@ export type Database = {
           email?: string | null;
           phone?: string | null;
           status?: 'Active' | 'Inactive';
+          class_teacher_of?: string | null;
           created_at?: string;
         };
         Relationships: [];

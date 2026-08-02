@@ -129,6 +129,7 @@ create table if not exists teachers (
   email text,
   phone text,
   status text not null default 'Active' check (status in ('Active', 'Inactive')),
+  class_teacher_of text,
   created_at timestamptz not null default now(),
   unique (school_id, staff_id)
 );

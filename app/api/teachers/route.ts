@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseClient } from '@/lib/supabase';
-import { STAFF_ROLES } from '@/lib/constants';
+import { STAFF_ROLES, CLASSES } from '@/lib/constants';
 import { requireSchoolSession } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
@@ -33,13 +33,16 @@ export async function POST(request: NextRequest) {
     const { school } = staff;
 
     const supabase = getSupabaseClient();
-    const { staffId, fullName, role, subject, email, phone } = await request.json();
+    const { staffId, fullName, role, subject, email, phone, classTeacherOf } = await request.json();
 
     if (!staffId || !fullName) {
       return NextResponse.json({ error: 'staffId and fullName are required.' }, { status: 400 });
     }
     if (role && !STAFF_ROLES.includes(role)) {
       return NextResponse.json({ error: 'Invalid role.' }, { status: 400 });
+    }
+    if (classTeacherOf && !CLASSES.includes(classTeacherOf)) {
+      return NextResponse.json({ error: 'Invalid class for Class Teacher Of.' }, { status: 400 });
     }
 
     const { data, error } = await supabase
@@ -53,6 +56,7 @@ export async function POST(request: NextRequest) {
         email: email || null,
         phone: phone || null,
         status: 'Active',
+        class_teacher_of: classTeacherOf || null,
       })
       .select()
       .single();

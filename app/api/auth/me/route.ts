@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSchoolFromHost } from '@/lib/tenant';
 import { verifySession, SESSION_COOKIE } from '@/lib/auth';
+import { getClassTeacherAssignment } from '@/lib/classTeacher';
 
 export const dynamic = 'force-dynamic';
 
@@ -16,5 +17,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Not authenticated.' }, { status: 401 });
   }
 
-  return NextResponse.json({ role: session.role, fullName: session.fullName });
+  const classTeacherOf = session.role === 'teacher' ? await getClassTeacherAssignment(session.userId) : null;
+
+  return NextResponse.json({ role: session.role, fullName: session.fullName, classTeacherOf });
 }

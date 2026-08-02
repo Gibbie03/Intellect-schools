@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseClient } from '@/lib/supabase';
-import { STAFF_ROLES } from '@/lib/constants';
+import { STAFF_ROLES, CLASSES } from '@/lib/constants';
 import { Database } from '@/lib/database.types';
 import { requireSchoolSession } from '@/lib/auth';
 
@@ -31,6 +31,13 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
         return NextResponse.json({ error: 'status must be Active or Inactive.' }, { status: 400 });
       }
       update.status = body.status as TeacherUpdate['status'];
+    }
+
+    if (body.classTeacherOf !== undefined) {
+      if (body.classTeacherOf && !CLASSES.includes(body.classTeacherOf)) {
+        return NextResponse.json({ error: 'Invalid class for Class Teacher Of.' }, { status: 400 });
+      }
+      update.class_teacher_of = body.classTeacherOf || null;
     }
 
     if (Object.keys(update).length === 0) {

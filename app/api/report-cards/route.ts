@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseClient } from '@/lib/supabase';
 import { requireSchoolSession } from '@/lib/auth';
+import { getClassTeacherAssignment } from '@/lib/classTeacher';
 import { Database } from '@/lib/database.types';
 
 export const dynamic = 'force-dynamic';
@@ -9,10 +10,43 @@ type ReportCardInsert = Database['public']['Tables']['report_cards']['Insert'];
 
 const CONDUCT_RATINGS = ['Excellent', 'Very Good', 'Good', 'Fair', 'Poor'];
 
+/**
+ * Report cards are restricted to the one teacher assigned as class teacher
+ * for that student's class (admins have full access regardless). Returns
+ * null if the caller may proceed, or an error message to reject with.
+ */
+async function checkClassTeacherAccess(
+  supabase: ReturnType<typeof getSupabaseClient>,
+  schoolId: string,
+  role: 'admin' | 'teacher',
+  userId: string,
+  studentId: string
+): Promise<string | null> {
+  if (role === 'admin') return null;
+
+  const classTeacherOf = await getClassTeacherAssignment(userId);
+  if (!classTeacherOf) {
+    return 'You are not assigned as a class teacher. Ask your admin to assign you to a class.';
+  }
+
+  const { data: student } = await supabase
+    .from('students')
+    .select('class')
+    .eq('school_id', schoolId)
+    .eq('student_id', studentId)
+    .maybeSingle();
+
+  if (!student || student.class !== classTeacherOf) {
+    return `You can only manage report cards for your class (${classTeacherOf}).`;
+  }
+
+  return null;
+}
+
 export async function GET(request: NextRequest) {
   const staff = await requireSchoolSession(request, ['admin', 'teacher']);
   if (!staff) return NextResponse.json({ error: 'Not authenticated.' }, { status: 401 });
-  const { school } = staff;
+  const { school, session: staffSession } = staff;
 
   try {
     const studentId = request.nextUrl.searchParams.get('studentId');
@@ -23,6 +57,10 @@ export async function GET(request: NextRequest) {
     }
 
     const supabase = getSupabaseClient();
+
+    const accessError = await checkClassTeacherAccess(supabase, school.id, staffSession.role, staffSession.userId, studentId);
+    if (accessError) return NextResponse.json({ error: accessError }, { status: 403 });
+
     const { data, error } = await supabase
       .from('report_cards')
       .select('*')
@@ -72,6 +110,10 @@ export async function POST(request: NextRequest) {
     }
 
     const supabase = getSupabaseClient();
+
+    const accessError = await checkClassTeacherAccess(supabase, school.id, staffSession.role, staffSession.userId, studentId);
+    if (accessError) return NextResponse.json({ error: accessError }, { status: 403 });
+
     const update: ReportCardInsert = {
       school_id: school.id,
       student_id: studentId,

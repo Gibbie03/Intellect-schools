@@ -92,7 +92,10 @@ export default function TeacherDashboard() {
   const [ocrSaveResult, setOcrSaveResult] = useState<{ created: number; skipped: number } | null>(null);
 
   // Report card comments -- attendance, conduct, and the class teacher's
-  // remark for one student's term. Principal's comment is admin-only.
+  // remark for one student's term. Restricted to the teacher's own assigned
+  // class (set by an admin); principal's comment is admin-only.
+  const [classTeacherOf, setClassTeacherOf] = useState<string | null>(null);
+  const [rcRoster, setRcRoster] = useState<RosterStudent[]>([]);
   const [rcLookup, setRcLookup] = useState({ studentId: '', session: CURRENT_SESSION, term: TERMS[0] });
   const [rcLoading, setRcLoading] = useState(false);
   const [rcSaving, setRcSaving] = useState(false);
@@ -124,8 +127,19 @@ export default function TeacherDashboard() {
       .then((res) => res.json())
       .then((data) => {
         if (data.fullName) setTeacherName(data.fullName);
+        setClassTeacherOf(data.classTeacherOf ?? null);
       });
   }, []);
+
+  useEffect(() => {
+    if (!classTeacherOf) return;
+    fetch(`/api/students?class=${encodeURIComponent(classTeacherOf)}&status=Active`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (!data.error) setRcRoster(data.students);
+      })
+      .catch(() => {});
+  }, [classTeacherOf]);
 
   const handleLogout = async () => {
     await fetch('/api/auth/logout', { method: 'POST' });
@@ -859,37 +873,52 @@ export default function TeacherDashboard() {
             alongside subject results.
           </p>
 
-          <form onSubmit={loadReportCard} className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-            <input
-              type="text"
-              placeholder="Student ID"
-              value={rcLookup.studentId}
-              onChange={(e) => setRcLookup({ ...rcLookup, studentId: e.target.value })}
-              className="w-full border p-3 rounded-xl"
-              required
-            />
-            <select
-              value={rcLookup.session}
-              onChange={(e) => setRcLookup({ ...rcLookup, session: e.target.value })}
-              className="w-full border p-3 rounded-xl"
-            >
-              {SESSIONS.map((s) => (
-                <option key={s}>{s}</option>
-              ))}
-            </select>
-            <select
-              value={rcLookup.term}
-              onChange={(e) => setRcLookup({ ...rcLookup, term: e.target.value })}
-              className="w-full border p-3 rounded-xl"
-            >
-              {TERMS.map((t) => (
-                <option key={t}>{t}</option>
-              ))}
-            </select>
-            <button
-              type="submit"
-              disabled={rcLoading}
-              className="rounded-xl bg-gray-900 text-white px-6 py-3 font-semibold disabled:opacity-60"
+          {!classTeacherOf ? (
+            <p className="text-sm text-amber-700 bg-amber-50 rounded-xl p-4">
+              You&apos;re not assigned as a class teacher yet. Ask your admin to assign you to a class in Staff &amp;
+              Roles &mdash; report card comments are limited to your own class.
+            </p>
+          ) : (
+            <>
+              <p className="text-sm text-gray-500 mb-4">
+                Showing students in <strong>{classTeacherOf}</strong>, your assigned class.
+              </p>
+              <form onSubmit={loadReportCard} className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                <select
+                  value={rcLookup.studentId}
+                  onChange={(e) => setRcLookup({ ...rcLookup, studentId: e.target.value })}
+                  className="w-full border p-3 rounded-xl"
+                  required
+                >
+                  <option value="">— Select student —</option>
+                  {rcRoster.map((s) => (
+                    <option key={s.id} value={s.student_id}>
+                      {s.full_name} ({s.student_id})
+                    </option>
+                  ))}
+                </select>
+                <select
+                  value={rcLookup.session}
+                  onChange={(e) => setRcLookup({ ...rcLookup, session: e.target.value })}
+                  className="w-full border p-3 rounded-xl"
+                >
+                  {SESSIONS.map((s) => (
+                    <option key={s}>{s}</option>
+                  ))}
+                </select>
+                <select
+                  value={rcLookup.term}
+                  onChange={(e) => setRcLookup({ ...rcLookup, term: e.target.value })}
+                  className="w-full border p-3 rounded-xl"
+                >
+                  {TERMS.map((t) => (
+                    <option key={t}>{t}</option>
+                  ))}
+                </select>
+                <button
+                  type="submit"
+                  disabled={rcLoading}
+                  className="rounded-xl bg-gray-900 text-white px-6 py-3 font-semibold disabled:opacity-60"
             >
               {rcLoading ? 'Loading...' : 'Load'}
             </button>
@@ -961,6 +990,8 @@ export default function TeacherDashboard() {
               </button>
             </div>
           </form>
+            </>
+          )}
         </div>
       )}
 
