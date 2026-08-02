@@ -425,6 +425,7 @@ export type Database = {
           subject: string | null;
           message: string;
           status: 'New' | 'Read';
+          category: 'General Enquiry' | 'Suggestion' | 'Complaint' | 'Other';
           created_at: string;
         };
         Insert: {
@@ -436,6 +437,7 @@ export type Database = {
           subject?: string | null;
           message: string;
           status?: 'New' | 'Read';
+          category?: 'General Enquiry' | 'Suggestion' | 'Complaint' | 'Other';
           created_at?: string;
         };
         Update: {
@@ -447,6 +449,7 @@ export type Database = {
           subject?: string | null;
           message?: string;
           status?: 'New' | 'Read';
+          category?: 'General Enquiry' | 'Suggestion' | 'Complaint' | 'Other';
           created_at?: string;
         };
         Relationships: [];

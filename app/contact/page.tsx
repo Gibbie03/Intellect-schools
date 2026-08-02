@@ -2,7 +2,9 @@
 
 import { useEffect, useState } from 'react';
 
-const emptyForm = { name: '', email: '', phone: '', subject: '', message: '' };
+const CATEGORIES = ['General Enquiry', 'Suggestion', 'Complaint', 'Other'];
+
+const emptyForm = { name: '', email: '', phone: '', subject: '', message: '', category: CATEGORIES[0] };
 
 export default function ContactPage() {
   const [form, setForm] = useState(emptyForm);
@@ -94,6 +96,19 @@ export default function ContactPage() {
               onChange={(e) => handleChange('phone', e.target.value)}
               className="w-full rounded-xl border p-3"
             />
+          </div>
+
+          <div>
+            <label className="mb-2 block text-sm font-medium">What is this about?</label>
+            <select
+              value={form.category}
+              onChange={(e) => handleChange('category', e.target.value)}
+              className="w-full rounded-xl border p-3"
+            >
+              {CATEGORIES.map((c) => (
+                <option key={c}>{c}</option>
+              ))}
+            </select>
           </div>
 
           <div>

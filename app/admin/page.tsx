@@ -1677,13 +1677,22 @@ type ContactMessage = {
   subject: string | null;
   message: string;
   status: 'New' | 'Read';
+  category: 'General Enquiry' | 'Suggestion' | 'Complaint' | 'Other';
   created_at: string;
+};
+
+const CONTACT_CATEGORY_STYLES: Record<ContactMessage['category'], string> = {
+  'General Enquiry': 'bg-gray-100 text-gray-700',
+  Suggestion: 'bg-blue-100 text-blue-700',
+  Complaint: 'bg-red-100 text-red-700',
+  Other: 'bg-gray-100 text-gray-700',
 };
 
 function ContactSection() {
   const [messages, setMessages] = useState<ContactMessage[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('');
 
   const load = () => {
     setLoading(true);
@@ -1714,24 +1723,44 @@ function ContactSection() {
     }
   };
 
+  const filteredMessages = categoryFilter ? messages.filter((m) => m.category === categoryFilter) : messages;
+
   return (
     <div>
       <h1 className="text-4xl font-bold mb-8">Contact Messages</h1>
       {error && <div className="mb-6 rounded-xl bg-red-50 p-4 text-sm text-red-700">{error}</div>}
 
+      <div className="mb-6">
+        <select
+          value={categoryFilter}
+          onChange={(e) => setCategoryFilter(e.target.value)}
+          className="rounded-xl border p-3"
+        >
+          <option value="">All types</option>
+          {Object.keys(CONTACT_CATEGORY_STYLES).map((c) => (
+            <option key={c} value={c}>
+              {c}
+            </option>
+          ))}
+        </select>
+      </div>
+
       <div className="bg-white rounded-2xl shadow p-8">
         {loading ? (
           <p className="text-gray-500">Loading...</p>
-        ) : messages.length === 0 ? (
+        ) : filteredMessages.length === 0 ? (
           <p className="text-gray-500">No messages received yet.</p>
         ) : (
           <div className="space-y-4">
-            {messages.map((m) => (
+            {filteredMessages.map((m) => (
               <div key={m.id} className="rounded-xl border p-4">
                 <div className="flex items-start justify-between gap-4">
                   <div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <h3 className="font-semibold">{m.name}</h3>
+                      <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${CONTACT_CATEGORY_STYLES[m.category]}`}>
+                        {m.category}
+                      </span>
                       {m.status === 'New' && (
                         <span className="rounded-full bg-orange-100 px-2 py-0.5 text-xs font-medium text-orange-700">
                           New

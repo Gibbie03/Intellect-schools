@@ -176,6 +176,7 @@ create table if not exists contact_messages (
   subject text,
   message text not null,
   status text not null default 'New' check (status in ('New', 'Read')),
+  category text not null default 'General Enquiry' check (category in ('General Enquiry', 'Suggestion', 'Complaint', 'Other')),
   created_at timestamptz not null default now()
 );
 

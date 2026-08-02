@@ -5,6 +5,8 @@ import { requireSchoolSession } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
+const CATEGORIES = ['General Enquiry', 'Suggestion', 'Complaint', 'Other'];
+
 // FIX NOTE: GET (every contact-form submitter's name/email/phone/message)
 // had no session check. POST (the public contact form) stays open.
 export async function GET(request: NextRequest) {
@@ -34,10 +36,13 @@ export async function POST(request: NextRequest) {
     const school = await getSchoolFromHost(request.headers.get('host'));
     if (!school) return NextResponse.json({ error: 'School not found for this domain.' }, { status: 404 });
 
-    const { name, email, phone, subject, message } = await request.json();
+    const { name, email, phone, subject, message, category } = await request.json();
 
     if (!name || !email || !message) {
       return NextResponse.json({ error: 'name, email, and message are required.' }, { status: 400 });
+    }
+    if (category !== undefined && !CATEGORIES.includes(category)) {
+      return NextResponse.json({ error: `category must be one of: ${CATEGORIES.join(', ')}.` }, { status: 400 });
     }
 
     const { data, error } = await supabase
@@ -49,6 +54,7 @@ export async function POST(request: NextRequest) {
         phone: phone || null,
         subject: subject || null,
         message,
+        category: category || 'General Enquiry',
         status: 'New',
       })
       .select()
