@@ -26,6 +26,10 @@ export function isSeniorSecondaryClass(className: string): boolean {
   return className.trim().toUpperCase().startsWith('SSS');
 }
 
+export function isValidDepartment(value: string): boolean {
+  return (DEPARTMENTS as readonly string[]).includes(value);
+}
+
 export const DAYS_OF_WEEK = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 
 export const STUDENT_TEMPLATE_HEADERS = [

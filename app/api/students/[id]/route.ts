@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseClient } from '@/lib/supabase';
 import { Database } from '@/lib/database.types';
 import { requireSchoolSession } from '@/lib/auth';
-import { CLASSES, DEPARTMENTS, isSeniorSecondaryClass } from '@/lib/constants';
+import { CLASSES, isSeniorSecondaryClass, isValidDepartment } from '@/lib/constants';
 import { logAudit } from '@/lib/auditLog';
 
 export const dynamic = 'force-dynamic';
@@ -40,7 +40,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     }
 
     if (body.department !== undefined) {
-      if (body.department && !(DEPARTMENTS as readonly string[]).includes(body.department)) {
+      if (body.department && !isValidDepartment(body.department)) {
         return NextResponse.json({ error: 'Invalid department.' }, { status: 400 });
       }
       update.department = body.department || null;

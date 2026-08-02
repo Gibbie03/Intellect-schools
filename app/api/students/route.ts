@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseClient } from '@/lib/supabase';
 import { requireSchoolSession } from '@/lib/auth';
-import { CLASSES, DEPARTMENTS, isSeniorSecondaryClass } from '@/lib/constants';
+import { CLASSES, isSeniorSecondaryClass, isValidDepartment } from '@/lib/constants';
 
 export const dynamic = 'force-dynamic';
 
@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
     if (!CLASSES.includes(className)) {
       return NextResponse.json({ error: 'Invalid class.' }, { status: 400 });
     }
-    if (department && !(DEPARTMENTS as readonly string[]).includes(department)) {
+    if (department && !isValidDepartment(department)) {
       return NextResponse.json({ error: 'Invalid department.' }, { status: 400 });
     }
 

@@ -3,7 +3,7 @@ import * as XLSX from 'xlsx';
 import { getSupabaseClient } from '@/lib/supabase';
 import { Database } from '@/lib/database.types';
 import { requireSchoolSession } from '@/lib/auth';
-import { CLASSES, DEPARTMENTS, isSeniorSecondaryClass } from '@/lib/constants';
+import { CLASSES, isSeniorSecondaryClass, isValidDepartment } from '@/lib/constants';
 
 export const dynamic = 'force-dynamic';
 
@@ -91,7 +91,7 @@ export async function POST(request: NextRequest) {
 
       if (mapped.department && !isSeniorSecondaryClass(mapped.class)) {
         mapped.department = undefined;
-      } else if (mapped.department && !(DEPARTMENTS as readonly string[]).includes(mapped.department)) {
+      } else if (mapped.department && !isValidDepartment(mapped.department)) {
         errors.push({
           row: rowNumber,
           reason: `"${mapped.department}" is not a recognized department (Science, Arts, Social Science, or Commercial).`,
