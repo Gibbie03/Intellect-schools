@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseClient } from '@/lib/supabase';
 import { gradeFromScore } from '@/lib/grade';
 import { Database } from '@/lib/database.types';
-import { getSchoolFromHost } from '@/lib/tenant';
+import { requireSchoolSession } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -10,10 +10,11 @@ type ResultInsert = Database['public']['Tables']['results']['Insert'];
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = getSupabaseClient();
-    const school = await getSchoolFromHost(request.headers.get('host'));
-    if (!school) return NextResponse.json({ error: 'School not found for this domain.' }, { status: 404 });
+    const staff = await requireSchoolSession(request, ['admin', 'teacher']);
+    if (!staff) return NextResponse.json({ error: 'Not authenticated.' }, { status: 401 });
+    const { school } = staff;
 
+    const supabase = getSupabaseClient();
     const { subject, session, term, uploadedBy, entries } = await request.json();
 
     if (!subject || !session || !term || !Array.isArray(entries) || entries.length === 0) {

@@ -1,9 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseClient } from '@/lib/supabase';
 import { getSchoolFromHost } from '@/lib/tenant';
+import { requireSchoolSession } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
+// FIX NOTE: previously this had no session check at all -- any request with a
+// resolvable Host header (no cookie needed) could list the school's entire
+// student roster, including parent email/phone/address/DOB. The one
+// legitimate unauthenticated use is app/portal (a parent looking up their
+// own child by a known, specific studentId), so that single-record lookup
+// stays open; anything broader (an unscoped list, or filtering by class/
+// status the way the admin dashboard and teacher roster-loader do) now
+// requires a staff session.
 export async function GET(request: NextRequest) {
   try {
     const supabase = getSupabaseClient();
@@ -13,6 +22,11 @@ export async function GET(request: NextRequest) {
     const className = request.nextUrl.searchParams.get('class');
     const status = request.nextUrl.searchParams.get('status') as 'Active' | 'Inactive' | null;
     const studentId = request.nextUrl.searchParams.get('studentId');
+
+    if (!studentId) {
+      const staff = await requireSchoolSession(request, ['admin', 'teacher']);
+      if (!staff) return NextResponse.json({ error: 'Not authenticated.' }, { status: 401 });
+    }
 
     let query = supabase.from('students').select('*').eq('school_id', school.id).order('full_name', { ascending: true });
     if (className) query = query.eq('class', className);
@@ -30,10 +44,11 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = getSupabaseClient();
-    const school = await getSchoolFromHost(request.headers.get('host'));
-    if (!school) return NextResponse.json({ error: 'School not found for this domain.' }, { status: 404 });
+    const staff = await requireSchoolSession(request, ['admin']);
+    if (!staff) return NextResponse.json({ error: 'Not authenticated.' }, { status: 401 });
+    const { school } = staff;
 
+    const supabase = getSupabaseClient();
     const { studentId, fullName, className, gender, dateOfBirth, parentName, parentEmail, parentPhone, address } =
       await request.json();
 
