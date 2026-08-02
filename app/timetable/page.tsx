@@ -92,7 +92,7 @@ export default function TimetablePage() {
       </section>
 
       <section className="wrap py-10">
-        <div className="mb-7 flex flex-wrap items-center gap-4">
+        <div className="mb-4 flex flex-wrap items-center gap-4">
           <select
             value={selectedClass}
             onChange={(e) => setSelectedClass(e.target.value)}

@@ -200,7 +200,7 @@ export default function StudentPortal() {
   if (loggedIn) {
     return (
       <main className="wrap py-12" style={{ maxWidth: 900 }}>
-        <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
+        <div className="mb-5 flex flex-wrap items-center justify-between gap-4">
           <div>
             <h1 className="text-3xl">Welcome, {studentName ?? 'Student'}</h1>
             <p className="text-[var(--muted)]">
@@ -277,7 +277,7 @@ export default function StudentPortal() {
                 ))}
               </div>
 
-              <h2 className="mb-6 text-2xl">
+              <h2 className="mb-4 text-2xl">
                 {activeTerm}, {activeSession} Session
               </h2>
 
@@ -362,7 +362,7 @@ export default function StudentPortal() {
   return (
     <main className="flex flex-col items-center px-5 py-14">
       <div style={{ width: 'min(420px, 100%)' }}>
-        <div className="mb-7 text-center">
+        <div className="mb-5 text-center">
           <h1 className="mb-2 text-[27px]">
             Student <span style={{ color: 'var(--brand-color-2)' }}>Results Portal</span>
           </h1>

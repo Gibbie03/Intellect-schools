@@ -99,7 +99,7 @@ export default async function Home() {
 
       <section className="wrap pb-6 pt-14">
         <span className="tag">Our school</span>
-        <h2 className="mb-7 text-3xl">Three stages, one community</h2>
+        <h2 className="mb-4 text-3xl">Three stages, one community</h2>
         <div className="schools-grid">
           <div className="card">
             <h3 className="mb-3 text-xl">Primary School</h3>

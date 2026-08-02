@@ -75,7 +75,7 @@ export default function CalendarPage() {
         <select
           value={selectedSession}
           onChange={(e) => setSelectedSession(e.target.value)}
-          className="mb-9 border border-[var(--line)] bg-[var(--paper)] p-3 text-sm"
+          className="mb-5 border border-[var(--line)] bg-[var(--paper)] p-3 text-sm"
         >
           {SESSIONS.map((s) => (
             <option key={s}>{s}</option>
