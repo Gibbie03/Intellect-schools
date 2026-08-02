@@ -15,32 +15,33 @@ type Result = {
 export default function StudentPortal() {
   const [loggedIn, setLoggedIn] = useState(false);
   const [studentId, setStudentId] = useState('');
+  const [serial, setSerial] = useState('');
+  const [pin, setPin] = useState('');
   const [studentName, setStudentName] = useState<string | null>(null);
   const [results, setResults] = useState<Result[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [usesRemaining, setUsesRemaining] = useState<number | null>(null);
   const [activeSession, setActiveSession] = useState('');
   const [activeTerm, setActiveTerm] = useState(TERMS[0]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!studentId) return;
+    if (!studentId || !serial || !pin) return;
 
     setLoading(true);
     setError('');
 
     try {
-      const [resultsRes, studentRes] = await Promise.all([
-        fetch(`/api/results?studentId=${encodeURIComponent(studentId)}&status=Approved`),
-        fetch(`/api/students?studentId=${encodeURIComponent(studentId)}`),
-      ]);
-      const resultsData = await resultsRes.json();
-      if (!resultsRes.ok) throw new Error(resultsData.error || 'Failed to load results.');
+      const res = await fetch('/api/portal/check', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ studentId, serial, pin }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to check result.');
 
-      const studentData = await studentRes.json();
-      const profile = studentRes.ok ? studentData.students?.[0] : null;
-
-      const fetchedResults: Result[] = resultsData.results.map(
+      const fetchedResults: Result[] = data.results.map(
         (r: { id: string; subject: string; score: number; grade: string; session: string; term: string }) => ({
           id: r.id,
           subject: r.subject,
@@ -52,7 +53,8 @@ export default function StudentPortal() {
       );
 
       setResults(fetchedResults);
-      setStudentName(profile?.full_name ?? null);
+      setStudentName(data.student?.fullName ?? null);
+      setUsesRemaining(data.usesRemaining ?? null);
 
       const sessions = Array.from(new Set(fetchedResults.map((r) => r.session))).sort();
       setActiveSession(sessions[sessions.length - 1] ?? '');
@@ -81,13 +83,23 @@ export default function StudentPortal() {
           <div>
             <h1 className="text-3xl font-bold">Welcome, {studentName ?? 'Student'}</h1>
             <p className="text-gray-600">{studentId} &middot; Your approved results</p>
+            {usesRemaining !== null && (
+              <p className="text-sm text-gray-500 mt-1">
+                {usesRemaining > 0
+                  ? `This card can be used ${usesRemaining} more time${usesRemaining === 1 ? '' : 's'}.`
+                  : 'This card has now been fully used.'}
+              </p>
+            )}
           </div>
           <button
             onClick={() => {
               setLoggedIn(false);
               setStudentId('');
+              setSerial('');
+              setPin('');
               setStudentName(null);
               setResults([]);
+              setUsesRemaining(null);
             }}
             className="text-sm text-red-600 hover:underline"
           >
@@ -175,7 +187,7 @@ export default function StudentPortal() {
   return (
     <div className="max-w-md mx-auto mt-20 p-8 border rounded-3xl">
       <h1 className="text-3xl font-bold text-center mb-2">Student Results Portal</h1>
-      <p className="text-center text-gray-600 mb-8">Login to view your results</p>
+      <p className="text-center text-gray-600 mb-8">Enter your details from your result checker card</p>
 
       <form onSubmit={handleLogin} className="space-y-4">
         <input
@@ -186,19 +198,35 @@ export default function StudentPortal() {
           className="w-full border p-3 rounded-xl"
           required
         />
-        <input type="password" placeholder="Password" className="w-full border p-3 rounded-xl" required />
+        <input
+          type="text"
+          placeholder="Serial Number (e.g. ICS-25T2-0001)"
+          value={serial}
+          onChange={(e) => setSerial(e.target.value)}
+          className="w-full border p-3 rounded-xl"
+          required
+        />
+        <input
+          type="text"
+          inputMode="numeric"
+          placeholder="PIN"
+          value={pin}
+          onChange={(e) => setPin(e.target.value)}
+          className="w-full border p-3 rounded-xl"
+          required
+        />
         {error && <p className="text-sm text-red-600">{error}</p>}
         <button
           type="submit"
           disabled={loading}
           className="w-full bg-[var(--brand-color)] text-white py-3 rounded-xl font-semibold hover:brightness-90 disabled:opacity-60"
         >
-          {loading ? 'Loading...' : 'Login'}
+          {loading ? 'Checking...' : 'Check Result'}
         </button>
       </form>
 
       <p className="text-center text-sm mt-4 text-gray-500">
-        Demo: Enter any Student ID to login. Only results your school has approved for that ID will appear.
+        Don&rsquo;t have a card? Get a result checker card from your school.
       </p>
     </div>
   );

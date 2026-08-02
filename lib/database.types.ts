@@ -361,6 +361,48 @@ export type Database = {
         };
         Relationships: [];
       };
+      result_pins: {
+        Row: {
+          id: string;
+          school_id: string;
+          batch_label: string;
+          serial: string;
+          pin_hash: string;
+          session: string;
+          term: string | null;
+          delivery_method: 'print' | 'digital';
+          max_uses: number;
+          uses_count: number;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          school_id: string;
+          batch_label: string;
+          serial: string;
+          pin_hash: string;
+          session: string;
+          term?: string | null;
+          delivery_method?: 'print' | 'digital';
+          max_uses?: number;
+          uses_count?: number;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          school_id?: string;
+          batch_label?: string;
+          serial?: string;
+          pin_hash?: string;
+          session?: string;
+          term?: string | null;
+          delivery_method?: 'print' | 'digital';
+          max_uses?: number;
+          uses_count?: number;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;

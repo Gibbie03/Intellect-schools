@@ -3,8 +3,9 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { STAFF_ROLES } from '@/lib/constants';
+import { SESSIONS, TERMS, CURRENT_SESSION } from '@/lib/grade';
 
-type Tab = 'dashboard' | 'results' | 'admissions' | 'students' | 'staff' | 'news' | 'gallery' | 'contact';
+type Tab = 'dashboard' | 'results' | 'admissions' | 'students' | 'staff' | 'news' | 'gallery' | 'contact' | 'result-pins';
 
 const TABS: { id: Tab; label: string }[] = [
   { id: 'dashboard', label: 'Dashboard' },
@@ -15,6 +16,7 @@ const TABS: { id: Tab; label: string }[] = [
   { id: 'news', label: 'News & Events' },
   { id: 'gallery', label: 'Gallery' },
   { id: 'contact', label: 'Contact Messages' },
+  { id: 'result-pins', label: 'Result Checker Cards' },
 ];
 
 export default function AdminDashboard() {
@@ -71,6 +73,7 @@ export default function AdminDashboard() {
         {tab === 'news' && <NewsSection />}
         {tab === 'gallery' && <GallerySection />}
         {tab === 'contact' && <ContactSection />}
+        {tab === 'result-pins' && <ResultPinsSection />}
       </div>
     </div>
   );
@@ -1416,6 +1419,309 @@ function ContactSection() {
               </div>
             ))}
           </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+type ResultPinBatch = {
+  batchLabel: string;
+  session: string;
+  term: string | null;
+  deliveryMethod: string;
+  maxUses: number;
+  createdAt: string;
+  total: number;
+  exhausted: number;
+};
+
+type GeneratedCard = { serial: string; pin: string };
+
+function ResultPinsSection() {
+  const [batches, setBatches] = useState<ResultPinBatch[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [schoolName, setSchoolName] = useState('');
+
+  const [form, setForm] = useState({
+    session: CURRENT_SESSION,
+    term: TERMS[0],
+    count: 50,
+    maxUses: 3,
+    deliveryMethod: 'print' as 'print' | 'digital',
+    batchLabel: '',
+  });
+
+  const [generated, setGenerated] = useState<{ batchLabel: string; cards: GeneratedCard[] } | null>(null);
+
+  const load = () => {
+    setLoading(true);
+    fetch('/api/result-pins')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.error) throw new Error(data.error);
+        setBatches(data.batches);
+      })
+      .catch((err) => setError(err.message))
+      .finally(() => setLoading(false));
+  };
+
+  useEffect(load, []);
+  useEffect(() => {
+    fetch('/api/school')
+      .then((res) => res.json())
+      .then((data) => setSchoolName(data.name ?? ''))
+      .catch(() => {});
+  }, []);
+
+  const handleGenerate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSubmitting(true);
+    setError('');
+    setGenerated(null);
+    try {
+      const res = await fetch('/api/result-pins', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to generate cards.');
+      setGenerated({ batchLabel: data.batchLabel, cards: data.cards });
+      load();
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleDownloadCsv = () => {
+    if (!generated) return;
+    const rows = ['Serial,PIN', ...generated.cards.map((c) => `${c.serial},${c.pin}`)];
+    const blob = new Blob([rows.join('\n')], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${generated.batchLabel.replace(/\s+/g, '-')}-result-pins.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handlePrint = () => {
+    if (!generated) return;
+    const win = window.open('', '_blank');
+    if (!win) return;
+
+    const cardsHtml = generated.cards
+      .map(
+        (c) => `
+        <div class="card">
+          <div class="card-school">${schoolName || 'Result Checker'}</div>
+          <div class="card-label">Result Checker Card</div>
+          <div class="card-row"><span>Serial</span><strong>${c.serial}</strong></div>
+          <div class="card-row"><span>PIN</span><strong>${c.pin}</strong></div>
+          <div class="card-note">Enter your Student ID + this Serial + PIN on the school portal to check your result.</div>
+        </div>`
+      )
+      .join('');
+
+    win.document.write(`
+      <html>
+        <head>
+          <title>${generated.batchLabel} - Result Checker Cards</title>
+          <style>
+            * { box-sizing: border-box; }
+            body { font-family: Arial, sans-serif; margin: 0; padding: 16px; }
+            .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+            .card {
+              border: 1.5px dashed #999;
+              border-radius: 12px;
+              padding: 14px 16px;
+              break-inside: avoid;
+            }
+            .card-school { font-weight: bold; font-size: 14px; }
+            .card-label { font-size: 11px; color: #666; margin-bottom: 8px; }
+            .card-row { display: flex; justify-content: space-between; font-size: 13px; margin: 4px 0; }
+            .card-row strong { letter-spacing: 1px; }
+            .card-note { font-size: 10px; color: #666; margin-top: 8px; }
+            @media print {
+              .card { border: 1.5px dashed #999; }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="grid">${cardsHtml}</div>
+        </body>
+      </html>
+    `);
+    win.document.close();
+    win.focus();
+    win.print();
+  };
+
+  return (
+    <div>
+      <h1 className="text-4xl font-bold mb-2">Result Checker Cards</h1>
+      <p className="text-gray-600 mb-8">
+        Generate scratch-card style Serial + PIN pairs parents use to check results on the student portal &mdash;
+        print them yourself, send them to a card printer, or share codes digitally after payment.
+      </p>
+      {error && <div className="mb-6 rounded-xl bg-red-50 p-4 text-sm text-red-700">{error}</div>}
+
+      <form onSubmit={handleGenerate} className="bg-white rounded-2xl shadow p-8 mb-8 grid grid-cols-1 md:grid-cols-2 gap-4">
+        <h2 className="md:col-span-2 text-xl font-semibold">Generate a Batch</h2>
+
+        <select
+          value={form.session}
+          onChange={(e) => setForm({ ...form, session: e.target.value })}
+          className="w-full rounded-xl border p-3"
+        >
+          {SESSIONS.map((s) => (
+            <option key={s} value={s}>
+              {s} Session
+            </option>
+          ))}
+        </select>
+
+        <select
+          value={form.term}
+          onChange={(e) => setForm({ ...form, term: e.target.value })}
+          className="w-full rounded-xl border p-3"
+        >
+          {TERMS.map((t) => (
+            <option key={t} value={t}>
+              {t}
+            </option>
+          ))}
+        </select>
+
+        <input
+          type="number"
+          min={1}
+          max={1000}
+          placeholder="How many cards?"
+          value={form.count}
+          onChange={(e) => setForm({ ...form, count: Number(e.target.value) })}
+          className="w-full rounded-xl border p-3"
+          required
+        />
+
+        <input
+          type="number"
+          min={1}
+          max={20}
+          placeholder="Uses allowed per card"
+          value={form.maxUses}
+          onChange={(e) => setForm({ ...form, maxUses: Number(e.target.value) })}
+          className="w-full rounded-xl border p-3"
+          required
+        />
+
+        <select
+          value={form.deliveryMethod}
+          onChange={(e) => setForm({ ...form, deliveryMethod: e.target.value as 'print' | 'digital' })}
+          className="w-full rounded-xl border p-3"
+        >
+          <option value="print">Print (physical cards)</option>
+          <option value="digital">Digital (send code directly)</option>
+        </select>
+
+        <input
+          type="text"
+          placeholder="Batch label (optional)"
+          value={form.batchLabel}
+          onChange={(e) => setForm({ ...form, batchLabel: e.target.value })}
+          className="w-full rounded-xl border p-3"
+        />
+
+        <button
+          type="submit"
+          disabled={submitting}
+          className="md:col-span-2 rounded-xl bg-[var(--brand-color)] px-6 py-3 font-semibold text-white hover:brightness-90 disabled:opacity-60"
+        >
+          {submitting ? 'Generating...' : 'Generate Cards'}
+        </button>
+      </form>
+
+      {generated && (
+        <div className="bg-white rounded-2xl shadow p-8 mb-8">
+          <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
+            <h2 className="text-xl font-semibold">
+              {generated.cards.length} card{generated.cards.length === 1 ? '' : 's'} generated &mdash; &ldquo;{generated.batchLabel}&rdquo;
+            </h2>
+            <div className="flex gap-2">
+              <button onClick={handlePrint} className="rounded-xl border border-gray-200 px-4 py-2 text-sm font-medium hover:bg-gray-50">
+                Print Cards
+              </button>
+              <button onClick={handleDownloadCsv} className="rounded-xl border border-gray-200 px-4 py-2 text-sm font-medium hover:bg-gray-50">
+                Download CSV
+              </button>
+            </div>
+          </div>
+          <p className="text-sm text-amber-700 bg-amber-50 rounded-xl p-4 mb-4">
+            These PINs are shown only once and are not stored in plain text &mdash; save or print this batch now
+            before leaving this page.
+          </p>
+          <div className="max-h-80 overflow-y-auto">
+            <table className="w-full border-collapse text-sm">
+              <thead>
+                <tr className="bg-gray-100">
+                  <th className="text-left p-3">Serial</th>
+                  <th className="text-left p-3">PIN</th>
+                </tr>
+              </thead>
+              <tbody>
+                {generated.cards.map((c) => (
+                  <tr key={c.serial} className="border-b">
+                    <td className="p-3 font-mono">{c.serial}</td>
+                    <td className="p-3 font-mono">{c.pin}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      <div className="bg-white rounded-2xl shadow p-8">
+        <h2 className="text-xl font-semibold mb-6">Past Batches</h2>
+        {loading ? (
+          <p className="text-gray-500">Loading...</p>
+        ) : batches.length === 0 ? (
+          <p className="text-gray-500">No batches generated yet.</p>
+        ) : (
+          <table className="w-full border-collapse text-sm">
+            <thead>
+              <tr className="bg-gray-100">
+                <th className="text-left p-3">Batch</th>
+                <th className="text-left p-3">Session / Term</th>
+                <th className="text-left p-3">Delivery</th>
+                <th className="text-center p-3">Cards</th>
+                <th className="text-center p-3">Used Up</th>
+                <th className="text-center p-3">Max Uses</th>
+                <th className="text-left p-3">Created</th>
+              </tr>
+            </thead>
+            <tbody>
+              {batches.map((b) => (
+                <tr key={b.batchLabel + b.createdAt} className="border-b">
+                  <td className="p-3 font-medium">{b.batchLabel}</td>
+                  <td className="p-3">
+                    {b.session}
+                    {b.term ? ` · ${b.term}` : ''}
+                  </td>
+                  <td className="p-3 capitalize">{b.deliveryMethod}</td>
+                  <td className="p-3 text-center">{b.total}</td>
+                  <td className="p-3 text-center">{b.exhausted}</td>
+                  <td className="p-3 text-center">{b.maxUses}</td>
+                  <td className="p-3">{new Date(b.createdAt).toLocaleDateString()}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         )}
       </div>
     </div>

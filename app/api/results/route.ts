@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseClient } from '@/lib/supabase';
 import { gradeFromScore } from '@/lib/grade';
-import { getSchoolFromHost } from '@/lib/tenant';
 import { requireSchoolSession } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
@@ -9,26 +8,22 @@ export const dynamic = 'force-dynamic';
 // FIX NOTE: previously unauthenticated (no session check at all), so anyone
 // could list every result for the school -- including Pending/Rejected
 // drafts never meant to be visible to a student -- for any or all students,
-// just by supplying a Host header. app/portal's intended public path is a
-// parent looking up ONE student's ALREADY-APPROVED results by a known
-// studentId; that's preserved below, but the studentId/status combination is
-// enforced server-side (not trusted from the query string) rather than
-// opening the whole table whenever no staff session is present.
+// just by supplying a Host header. A studentId+status=Approved lookup used
+// to be left open for app/portal's benefit; that public path now goes
+// through /api/portal/check instead (gated by a scratch-card PIN), so this
+// route is staff-only across the board.
 export async function GET(request: NextRequest) {
+  const staff = await requireSchoolSession(request, ['admin', 'teacher']);
+  if (!staff) return NextResponse.json({ error: 'Not authenticated.' }, { status: 401 });
+  const { school } = staff;
+
   try {
     const supabase = getSupabaseClient();
-    const school = await getSchoolFromHost(request.headers.get('host'));
-    if (!school) return NextResponse.json({ error: 'School not found for this domain.' }, { status: 404 });
 
     const studentId = request.nextUrl.searchParams.get('studentId');
     const status = request.nextUrl.searchParams.get('status') as 'Pending' | 'Approved' | 'Rejected' | null;
     const session = request.nextUrl.searchParams.get('session');
     const term = request.nextUrl.searchParams.get('term');
-
-    const staff = await requireSchoolSession(request, ['admin', 'teacher']);
-    if (!staff && !(studentId && status === 'Approved')) {
-      return NextResponse.json({ error: 'Not authenticated.' }, { status: 401 });
-    }
 
     let query = supabase.from('results').select('*').eq('school_id', school.id).order('created_at', { ascending: false });
     if (studentId) query = query.eq('student_id', studentId);

@@ -143,6 +143,27 @@ create table if not exists contact_messages (
 
 create index if not exists contact_messages_school_id_idx on contact_messages (school_id);
 
+-- Scratch-card style result checker PINs (see migrations/006_result_pins.sql
+-- for the full explanation). Each row is one card: a school-visible serial
+-- paired with a bcrypt-hashed PIN, usable up to max_uses times.
+create table if not exists result_pins (
+  id uuid primary key default gen_random_uuid(),
+  school_id uuid not null references schools(id) on delete cascade,
+  batch_label text not null,
+  serial text not null,
+  pin_hash text not null,
+  session text not null,
+  term text,
+  delivery_method text not null default 'print' check (delivery_method in ('print', 'digital')),
+  max_uses int not null default 3,
+  uses_count int not null default 0,
+  created_at timestamptz not null default now(),
+  unique (school_id, serial)
+);
+
+create index if not exists result_pins_school_id_idx on result_pins (school_id);
+create index if not exists result_pins_batch_label_idx on result_pins (school_id, batch_label);
+
 -- Row Level Security: all access from this app goes through Next.js API
 -- routes using the service role key (which bypasses RLS), so no client-side
 -- policies are required. RLS is enabled anyway as defense-in-depth in case
@@ -156,3 +177,4 @@ alter table gallery_images enable row level security;
 alter table contact_messages enable row level security;
 alter table teachers enable row level security;
 alter table students enable row level security;
+alter table result_pins enable row level security;
