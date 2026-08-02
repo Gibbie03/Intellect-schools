@@ -176,7 +176,7 @@ export default async function Home() {
           <div className="wrap mb-5">
             <span className="tag tag-light">What families say</span>
           </div>
-          <div className="flex w-max gap-5" style={{ animation: 'marquee-scroll 32s linear infinite' }}>
+          <div className="marquee-track gap-5">
             {marqueeList.map((t, i) => (
               <div key={`${t.id}-${i}`} className="testi-card">
                 <p className="testi-quote">&ldquo;{t.quote}&rdquo;</p>
