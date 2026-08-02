@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { STAFF_ROLES, CLASSES } from '@/lib/constants';
-import { SESSIONS, TERMS, CURRENT_SESSION } from '@/lib/grade';
+import { STAFF_ROLES, CLASSES, DAYS_OF_WEEK } from '@/lib/constants';
+import { SESSIONS, TERMS, CURRENT_SESSION, SUBJECTS } from '@/lib/grade';
+import { buildWhatsAppLink } from '@/lib/whatsapp';
 
 type Tab =
   | 'dashboard'
@@ -15,7 +16,10 @@ type Tab =
   | 'gallery'
   | 'contact'
   | 'result-pins'
-  | 'report-cards';
+  | 'report-cards'
+  | 'timetables'
+  | 'fees'
+  | 'messages';
 
 const TABS: { id: Tab; label: string }[] = [
   { id: 'dashboard', label: 'Dashboard' },
@@ -28,6 +32,9 @@ const TABS: { id: Tab; label: string }[] = [
   { id: 'contact', label: 'Contact Messages' },
   { id: 'result-pins', label: 'Result Checker Cards' },
   { id: 'report-cards', label: 'Report Cards' },
+  { id: 'timetables', label: 'Timetables' },
+  { id: 'fees', label: 'Fees' },
+  { id: 'messages', label: 'Message Parents' },
 ];
 
 export default function AdminDashboard() {
@@ -86,6 +93,9 @@ export default function AdminDashboard() {
         {tab === 'contact' && <ContactSection />}
         {tab === 'result-pins' && <ResultPinsSection />}
         {tab === 'report-cards' && <ReportCardsSection />}
+        {tab === 'timetables' && <TimetablesSection />}
+        {tab === 'fees' && <FeesSection />}
+        {tab === 'messages' && <MessagesSection />}
       </div>
     </div>
   );
@@ -2022,6 +2032,785 @@ function ReportCardsSection() {
             )}
           </div>
         </form>
+      </div>
+    </div>
+  );
+}
+
+type ClassTimetableEntry = {
+  id: string;
+  day_of_week: string;
+  period_number: number;
+  start_time: string | null;
+  end_time: string | null;
+  subject: string;
+  teacher_name: string | null;
+};
+
+type ExamTimetableEntry = {
+  id: string;
+  subject: string;
+  exam_date: string;
+  start_time: string | null;
+  end_time: string | null;
+  venue: string | null;
+};
+
+const PERIOD_COUNT = 8;
+
+function TimetablesSection() {
+  const [selectedClass, setSelectedClass] = useState(CLASSES[0]);
+
+  // Class timetable grid
+  const [grid, setGrid] = useState<Record<string, { subject: string; teacherName: string }>>({});
+  const [periodTimes, setPeriodTimes] = useState<Record<number, { start: string; end: string }>>({});
+  const [ttLoading, setTtLoading] = useState(false);
+  const [ttSaving, setTtSaving] = useState(false);
+  const [ttError, setTtError] = useState('');
+  const [ttNotice, setTtNotice] = useState('');
+
+  // Exam timetable
+  const [examLookup, setExamLookup] = useState({ session: CURRENT_SESSION, term: TERMS[0] });
+  const [examEntries, setExamEntries] = useState<ExamTimetableEntry[]>([]);
+  const [examLoading, setExamLoading] = useState(false);
+  const [examError, setExamError] = useState('');
+  const [examForm, setExamForm] = useState({ subject: SUBJECTS[0], examDate: '', startTime: '', endTime: '', venue: '' });
+  const [examSubmitting, setExamSubmitting] = useState(false);
+
+  const cellKey = (day: string, period: number) => `${day}|${period}`;
+
+  const loadClassTimetable = async (className: string) => {
+    setTtLoading(true);
+    setTtError('');
+    setTtNotice('');
+    try {
+      const res = await fetch(`/api/class-timetables?class=${encodeURIComponent(className)}`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to load timetable.');
+
+      const newGrid: Record<string, { subject: string; teacherName: string }> = {};
+      const newTimes: Record<number, { start: string; end: string }> = {};
+      (data.entries as ClassTimetableEntry[]).forEach((e) => {
+        newGrid[cellKey(e.day_of_week, e.period_number)] = { subject: e.subject, teacherName: e.teacher_name ?? '' };
+        if (!newTimes[e.period_number] && (e.start_time || e.end_time)) {
+          newTimes[e.period_number] = { start: e.start_time ?? '', end: e.end_time ?? '' };
+        }
+      });
+      setGrid(newGrid);
+      setPeriodTimes(newTimes);
+    } catch (err) {
+      setTtError((err as Error).message);
+    } finally {
+      setTtLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadClassTimetable(selectedClass);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedClass]);
+
+  const saveClassTimetable = async () => {
+    setTtSaving(true);
+    setTtError('');
+    setTtNotice('');
+    try {
+      const entries = Object.entries(grid)
+        .filter(([, v]) => v.subject?.trim())
+        .map(([key, v]) => {
+          const [dayOfWeek, periodStr] = key.split('|');
+          const periodNumber = Number(periodStr);
+          return {
+            dayOfWeek,
+            periodNumber,
+            subject: v.subject,
+            teacherName: v.teacherName || undefined,
+            startTime: periodTimes[periodNumber]?.start || undefined,
+            endTime: periodTimes[periodNumber]?.end || undefined,
+          };
+        });
+
+      const res = await fetch('/api/class-timetables', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ class: selectedClass, entries }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to save timetable.');
+      setTtNotice(`Saved ${data.saved} period(s) for ${selectedClass}.`);
+    } catch (err) {
+      setTtError((err as Error).message);
+    } finally {
+      setTtSaving(false);
+    }
+  };
+
+  const loadExams = async () => {
+    setExamLoading(true);
+    setExamError('');
+    try {
+      const res = await fetch(
+        `/api/exam-timetables?class=${encodeURIComponent(selectedClass)}&session=${encodeURIComponent(examLookup.session)}&term=${encodeURIComponent(examLookup.term)}`
+      );
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to load exam timetable.');
+      setExamEntries(data.entries);
+    } catch (err) {
+      setExamError((err as Error).message);
+    } finally {
+      setExamLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadExams();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedClass, examLookup.session, examLookup.term]);
+
+  const addExamEntry = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!examForm.subject || !examForm.examDate) return;
+
+    setExamSubmitting(true);
+    setExamError('');
+    try {
+      const res = await fetch('/api/exam-timetables', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          class: selectedClass,
+          session: examLookup.session,
+          term: examLookup.term,
+          subject: examForm.subject,
+          examDate: examForm.examDate,
+          startTime: examForm.startTime,
+          endTime: examForm.endTime,
+          venue: examForm.venue,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to add exam entry.');
+      setExamForm({ subject: SUBJECTS[0], examDate: '', startTime: '', endTime: '', venue: '' });
+      loadExams();
+    } catch (err) {
+      setExamError((err as Error).message);
+    } finally {
+      setExamSubmitting(false);
+    }
+  };
+
+  const deleteExamEntry = async (id: string) => {
+    try {
+      const res = await fetch(`/api/exam-timetables/${id}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to delete entry.');
+      setExamEntries((prev) => prev.filter((e) => e.id !== id));
+    } catch (err) {
+      setExamError((err as Error).message);
+    }
+  };
+
+  return (
+    <div>
+      <h1 className="text-4xl font-bold mb-8">Timetables</h1>
+
+      <div className="mb-8">
+        <label className="block text-sm font-medium mb-2">Class</label>
+        <select
+          value={selectedClass}
+          onChange={(e) => setSelectedClass(e.target.value)}
+          className="w-full md:w-64 rounded-xl border p-3"
+        >
+          {CLASSES.map((c) => (
+            <option key={c}>{c}</option>
+          ))}
+        </select>
+      </div>
+
+      <div className="bg-white rounded-2xl shadow p-8 mb-8">
+        <h2 className="text-xl font-semibold mb-2">Weekly Class Timetable</h2>
+        <p className="text-sm text-gray-500 mb-6">
+          Fill in a subject for each period. Leave a cell blank to skip it. Times you set for a period apply across
+          the week.
+        </p>
+        {ttError && <div className="mb-4 rounded-xl bg-red-50 p-4 text-sm text-red-700">{ttError}</div>}
+        {ttNotice && <div className="mb-4 rounded-xl bg-green-50 p-4 text-sm text-green-800">{ttNotice}</div>}
+
+        {ttLoading ? (
+          <p className="text-gray-500">Loading...</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse text-sm">
+              <thead>
+                <tr className="bg-gray-100">
+                  <th className="text-left p-2">Period</th>
+                  <th className="text-left p-2">Time</th>
+                  {DAYS_OF_WEEK.map((d) => (
+                    <th key={d} className="text-left p-2">
+                      {d}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {Array.from({ length: PERIOD_COUNT }, (_, i) => i + 1).map((period) => (
+                  <tr key={period} className="border-b align-top">
+                    <td className="p-2 font-medium">{period}</td>
+                    <td className="p-2">
+                      <div className="flex flex-col gap-1">
+                        <input
+                          type="time"
+                          value={periodTimes[period]?.start ?? ''}
+                          onChange={(e) =>
+                            setPeriodTimes({
+                              ...periodTimes,
+                              [period]: { start: e.target.value, end: periodTimes[period]?.end ?? '' },
+                            })
+                          }
+                          className="rounded border p-1 text-xs w-24"
+                        />
+                        <input
+                          type="time"
+                          value={periodTimes[period]?.end ?? ''}
+                          onChange={(e) =>
+                            setPeriodTimes({
+                              ...periodTimes,
+                              [period]: { start: periodTimes[period]?.start ?? '', end: e.target.value },
+                            })
+                          }
+                          className="rounded border p-1 text-xs w-24"
+                        />
+                      </div>
+                    </td>
+                    {DAYS_OF_WEEK.map((day) => {
+                      const key = cellKey(day, period);
+                      const cell = grid[key] ?? { subject: '', teacherName: '' };
+                      return (
+                        <td key={day} className="p-2">
+                          <input
+                            type="text"
+                            placeholder="Subject"
+                            value={cell.subject}
+                            onChange={(e) => setGrid({ ...grid, [key]: { ...cell, subject: e.target.value } })}
+                            className="w-32 rounded border p-1 mb-1"
+                          />
+                          <input
+                            type="text"
+                            placeholder="Teacher"
+                            value={cell.teacherName}
+                            onChange={(e) => setGrid({ ...grid, [key]: { ...cell, teacherName: e.target.value } })}
+                            className="w-32 rounded border p-1 text-xs text-gray-500"
+                          />
+                        </td>
+                      );
+                    })}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        <button
+          onClick={saveClassTimetable}
+          disabled={ttSaving || ttLoading}
+          className="mt-6 rounded-xl bg-[var(--brand-color)] px-6 py-3 font-semibold text-white hover:brightness-90 disabled:opacity-60"
+        >
+          {ttSaving ? 'Saving...' : `Save Timetable for ${selectedClass}`}
+        </button>
+      </div>
+
+      <div className="bg-white rounded-2xl shadow p-8">
+        <h2 className="text-xl font-semibold mb-2">Exam Timetable</h2>
+        <p className="text-sm text-gray-500 mb-6">Add exam dates, times, and venues for {selectedClass}.</p>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+          <select
+            value={examLookup.session}
+            onChange={(e) => setExamLookup({ ...examLookup, session: e.target.value })}
+            className="w-full rounded-xl border p-3"
+          >
+            {SESSIONS.map((s) => (
+              <option key={s}>{s}</option>
+            ))}
+          </select>
+          <select
+            value={examLookup.term}
+            onChange={(e) => setExamLookup({ ...examLookup, term: e.target.value })}
+            className="w-full rounded-xl border p-3"
+          >
+            {TERMS.map((t) => (
+              <option key={t}>{t}</option>
+            ))}
+          </select>
+        </div>
+
+        {examError && <div className="mb-4 rounded-xl bg-red-50 p-4 text-sm text-red-700">{examError}</div>}
+
+        <form onSubmit={addExamEntry} className="grid grid-cols-1 md:grid-cols-5 gap-3 mb-6">
+          <select
+            value={examForm.subject}
+            onChange={(e) => setExamForm({ ...examForm, subject: e.target.value })}
+            className="rounded-xl border p-3"
+          >
+            {SUBJECTS.map((s) => (
+              <option key={s}>{s}</option>
+            ))}
+          </select>
+          <input
+            type="date"
+            value={examForm.examDate}
+            onChange={(e) => setExamForm({ ...examForm, examDate: e.target.value })}
+            className="rounded-xl border p-3"
+            required
+          />
+          <input
+            type="time"
+            value={examForm.startTime}
+            onChange={(e) => setExamForm({ ...examForm, startTime: e.target.value })}
+            className="rounded-xl border p-3"
+          />
+          <input
+            type="time"
+            value={examForm.endTime}
+            onChange={(e) => setExamForm({ ...examForm, endTime: e.target.value })}
+            className="rounded-xl border p-3"
+          />
+          <input
+            type="text"
+            placeholder="Venue"
+            value={examForm.venue}
+            onChange={(e) => setExamForm({ ...examForm, venue: e.target.value })}
+            className="rounded-xl border p-3"
+          />
+          <button
+            type="submit"
+            disabled={examSubmitting}
+            className="md:col-span-5 rounded-xl bg-gray-900 text-white px-6 py-3 font-semibold disabled:opacity-60"
+          >
+            {examSubmitting ? 'Adding...' : 'Add Exam Entry'}
+          </button>
+        </form>
+
+        {examLoading ? (
+          <p className="text-gray-500">Loading...</p>
+        ) : examEntries.length === 0 ? (
+          <p className="text-gray-500">No exam entries yet for this class/term.</p>
+        ) : (
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-gray-100">
+                <th className="text-left p-3">Subject</th>
+                <th className="text-left p-3">Date</th>
+                <th className="text-left p-3">Time</th>
+                <th className="text-left p-3">Venue</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {examEntries.map((e) => (
+                <tr key={e.id} className="border-b">
+                  <td className="p-3">{e.subject}</td>
+                  <td className="p-3">{new Date(e.exam_date).toLocaleDateString()}</td>
+                  <td className="p-3">
+                    {e.start_time || '—'} {e.end_time ? `– ${e.end_time}` : ''}
+                  </td>
+                  <td className="p-3">{e.venue || '—'}</td>
+                  <td className="p-3 text-right">
+                    <button onClick={() => deleteExamEntry(e.id)} className="text-sm text-red-600 hover:underline">
+                      Delete
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+    </div>
+  );
+}
+
+type FeeRow = {
+  id: string;
+  student_id: string;
+  description: string;
+  amount: number;
+  due_date: string | null;
+  status: 'Unpaid' | 'Paid';
+  last_reminded_at: string | null;
+  student: { full_name: string; parent_name: string | null; parent_phone: string | null } | null;
+};
+
+type FeeRosterStudent = { student_id: string; full_name: string };
+
+function FeesSection() {
+  const [lookup, setLookup] = useState({ className: CLASSES[0], session: CURRENT_SESSION, term: TERMS[0] });
+  const [fees, setFees] = useState<FeeRow[]>([]);
+  const [roster, setRoster] = useState<FeeRosterStudent[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [form, setForm] = useState({ studentId: '', description: 'School Fees', amount: '', dueDate: '' });
+
+  const load = () => {
+    setLoading(true);
+    setError('');
+    fetch(
+      `/api/fees?class=${encodeURIComponent(lookup.className)}&session=${encodeURIComponent(lookup.session)}&term=${encodeURIComponent(lookup.term)}`
+    )
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.error) throw new Error(data.error);
+        setFees(data.fees);
+        setRoster(data.roster ?? []);
+      })
+      .catch((err) => setError(err.message))
+      .finally(() => setLoading(false));
+  };
+
+  useEffect(load, [lookup.className, lookup.session, lookup.term]);
+
+  const handleAdd = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.studentId || !form.amount) return;
+
+    setSubmitting(true);
+    setError('');
+    try {
+      const res = await fetch('/api/fees', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          studentId: form.studentId,
+          session: lookup.session,
+          term: lookup.term,
+          description: form.description,
+          amount: form.amount,
+          dueDate: form.dueDate,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to add fee record.');
+      setForm({ studentId: '', description: 'School Fees', amount: '', dueDate: '' });
+      load();
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const toggleStatus = async (fee: FeeRow) => {
+    const nextStatus = fee.status === 'Paid' ? 'Unpaid' : 'Paid';
+    try {
+      const res = await fetch(`/api/fees/${fee.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: nextStatus }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to update status.');
+      setFees((prev) => prev.map((f) => (f.id === fee.id ? { ...f, status: nextStatus } : f)));
+    } catch (err) {
+      setError((err as Error).message);
+    }
+  };
+
+  const remind = async (fee: FeeRow) => {
+    if (!fee.student?.parent_phone) {
+      setError(`No parent phone number on file for ${fee.student?.full_name ?? fee.student_id}.`);
+      return;
+    }
+    const amountStr = `₦${Number(fee.amount).toLocaleString()}`;
+    const dueStr = fee.due_date ? ` due ${new Date(fee.due_date).toLocaleDateString()}` : '';
+    const message = `Hello ${fee.student.parent_name || ''}, this is a reminder that ${fee.description} (${amountStr})${dueStr} for ${fee.student.full_name} is still outstanding. Kindly make payment at your earliest convenience. Thank you.`;
+    window.open(buildWhatsAppLink(fee.student.parent_phone, message), '_blank');
+
+    try {
+      await fetch(`/api/fees/${fee.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reminded: true }),
+      });
+      setFees((prev) => prev.map((f) => (f.id === fee.id ? { ...f, last_reminded_at: new Date().toISOString() } : f)));
+    } catch {
+      // Non-critical -- the WhatsApp link already opened either way.
+    }
+  };
+
+  const deleteFee = async (id: string) => {
+    try {
+      const res = await fetch(`/api/fees/${id}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to delete fee.');
+      setFees((prev) => prev.filter((f) => f.id !== id));
+    } catch (err) {
+      setError((err as Error).message);
+    }
+  };
+
+  return (
+    <div>
+      <h1 className="text-4xl font-bold mb-2">Fees</h1>
+      <p className="text-gray-600 mb-8">
+        Track fee records per student and remind parents by WhatsApp &mdash; no online payment collection here, just
+        records and reminders.
+      </p>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <select
+          value={lookup.className}
+          onChange={(e) => setLookup({ ...lookup, className: e.target.value })}
+          className="w-full rounded-xl border p-3"
+        >
+          {CLASSES.map((c) => (
+            <option key={c}>{c}</option>
+          ))}
+        </select>
+        <select
+          value={lookup.session}
+          onChange={(e) => setLookup({ ...lookup, session: e.target.value })}
+          className="w-full rounded-xl border p-3"
+        >
+          {SESSIONS.map((s) => (
+            <option key={s}>{s}</option>
+          ))}
+        </select>
+        <select
+          value={lookup.term}
+          onChange={(e) => setLookup({ ...lookup, term: e.target.value })}
+          className="w-full rounded-xl border p-3"
+        >
+          {TERMS.map((t) => (
+            <option key={t}>{t}</option>
+          ))}
+        </select>
+      </div>
+
+      {error && <div className="mb-6 rounded-xl bg-red-50 p-4 text-sm text-red-700">{error}</div>}
+
+      <form onSubmit={handleAdd} className="bg-white rounded-2xl shadow p-8 mb-8 grid grid-cols-1 md:grid-cols-4 gap-4">
+        <h2 className="md:col-span-4 text-xl font-semibold">Add a Fee Record</h2>
+        <select
+          value={form.studentId}
+          onChange={(e) => setForm({ ...form, studentId: e.target.value })}
+          className="w-full rounded-xl border p-3"
+          required
+        >
+          <option value="">— Select student —</option>
+          {roster.map((s) => (
+            <option key={s.student_id} value={s.student_id}>
+              {s.full_name} ({s.student_id})
+            </option>
+          ))}
+        </select>
+        <input
+          type="text"
+          placeholder="Description"
+          value={form.description}
+          onChange={(e) => setForm({ ...form, description: e.target.value })}
+          className="w-full rounded-xl border p-3"
+        />
+        <input
+          type="number"
+          min="0"
+          placeholder="Amount (₦)"
+          value={form.amount}
+          onChange={(e) => setForm({ ...form, amount: e.target.value })}
+          className="w-full rounded-xl border p-3"
+          required
+        />
+        <input
+          type="date"
+          value={form.dueDate}
+          onChange={(e) => setForm({ ...form, dueDate: e.target.value })}
+          className="w-full rounded-xl border p-3"
+        />
+        <button
+          type="submit"
+          disabled={submitting}
+          className="md:col-span-4 rounded-xl bg-[var(--brand-color)] px-6 py-3 font-semibold text-white hover:brightness-90 disabled:opacity-60"
+        >
+          {submitting ? 'Adding...' : 'Add Fee Record'}
+        </button>
+      </form>
+
+      <div className="bg-white rounded-2xl shadow p-8">
+        <h2 className="text-xl font-semibold mb-6">Fee Records ({fees.length})</h2>
+        {loading ? (
+          <p className="text-gray-500">Loading...</p>
+        ) : fees.length === 0 ? (
+          <p className="text-gray-500">No fee records yet for this class/term.</p>
+        ) : (
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-gray-100">
+                <th className="text-left p-3">Student</th>
+                <th className="text-left p-3">Description</th>
+                <th className="text-right p-3">Amount</th>
+                <th className="text-left p-3">Due</th>
+                <th className="text-center p-3">Status</th>
+                <th className="text-center p-3">Remind</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {fees.map((f) => (
+                <tr key={f.id} className="border-b">
+                  <td className="p-3">{f.student?.full_name ?? f.student_id}</td>
+                  <td className="p-3">{f.description}</td>
+                  <td className="p-3 text-right">₦{Number(f.amount).toLocaleString()}</td>
+                  <td className="p-3">{f.due_date ? new Date(f.due_date).toLocaleDateString() : '—'}</td>
+                  <td className="p-3 text-center">
+                    <button
+                      onClick={() => toggleStatus(f)}
+                      className={`rounded-full px-3 py-1 text-xs font-medium ${
+                        f.status === 'Paid' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'
+                      }`}
+                    >
+                      {f.status}
+                    </button>
+                  </td>
+                  <td className="p-3 text-center">
+                    {f.status === 'Unpaid' && (
+                      <button
+                        onClick={() => remind(f)}
+                        className="text-sm text-green-700 hover:underline whitespace-nowrap"
+                      >
+                        WhatsApp
+                      </button>
+                    )}
+                    {f.last_reminded_at && (
+                      <p className="text-xs text-gray-400">Last: {new Date(f.last_reminded_at).toLocaleDateString()}</p>
+                    )}
+                  </td>
+                  <td className="p-3 text-right">
+                    <button onClick={() => deleteFee(f.id)} className="text-sm text-red-600 hover:underline">
+                      Delete
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+    </div>
+  );
+}
+
+type MessageRosterStudent = {
+  id: string;
+  student_id: string;
+  full_name: string;
+  parent_name: string | null;
+  parent_phone: string | null;
+};
+
+function MessagesSection() {
+  const [className, setClassName] = useState(CLASSES[0]);
+  const [roster, setRoster] = useState<MessageRosterStudent[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [message, setMessage] = useState('');
+
+  const load = () => {
+    setLoading(true);
+    setError('');
+    fetch(`/api/students?class=${encodeURIComponent(className)}&status=Active`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.error) throw new Error(data.error);
+        setRoster(data.students);
+      })
+      .catch((err) => setError(err.message))
+      .finally(() => setLoading(false));
+  };
+
+  useEffect(load, [className]);
+
+  const messageFor = (student: MessageRosterStudent) =>
+    message
+      .replaceAll('{{parent}}', student.parent_name || 'Parent/Guardian')
+      .replaceAll('{{student}}', student.full_name);
+
+  const send = (student: MessageRosterStudent) => {
+    if (!student.parent_phone) {
+      setError(`No parent phone number on file for ${student.full_name}.`);
+      return;
+    }
+    window.open(buildWhatsAppLink(student.parent_phone, messageFor(student)), '_blank');
+  };
+
+  return (
+    <div>
+      <h1 className="text-4xl font-bold mb-2">Message Parents</h1>
+      <p className="text-gray-600 mb-8">
+        Compose one message, then send it to each parent via a pre-filled WhatsApp link &mdash; you click each one,
+        nothing is sent automatically. Use <code>{'{{parent}}'}</code> and <code>{'{{student}}'}</code> to personalize.
+      </p>
+
+      <div className="bg-white rounded-2xl shadow p-8 mb-8">
+        <label className="block text-sm font-medium mb-2">Class</label>
+        <select
+          value={className}
+          onChange={(e) => setClassName(e.target.value)}
+          className="w-full md:w-64 rounded-xl border p-3 mb-6"
+        >
+          {CLASSES.map((c) => (
+            <option key={c}>{c}</option>
+          ))}
+        </select>
+
+        <label className="block text-sm font-medium mb-2">Message</label>
+        <textarea
+          value={message}
+          onChange={(e) => setMessage(e.target.value)}
+          placeholder="Dear {{parent}}, this is a reminder about..."
+          className="w-full rounded-xl border p-3"
+          rows={4}
+        />
+      </div>
+
+      {error && <div className="mb-6 rounded-xl bg-red-50 p-4 text-sm text-red-700">{error}</div>}
+
+      <div className="bg-white rounded-2xl shadow p-8">
+        <h2 className="text-xl font-semibold mb-6">{className} Roster ({roster.length})</h2>
+        {loading ? (
+          <p className="text-gray-500">Loading...</p>
+        ) : roster.length === 0 ? (
+          <p className="text-gray-500">No active students found in {className}.</p>
+        ) : (
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-gray-100">
+                <th className="text-left p-3">Student</th>
+                <th className="text-left p-3">Parent</th>
+                <th className="text-left p-3">Phone</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {roster.map((s) => (
+                <tr key={s.id} className="border-b">
+                  <td className="p-3">{s.full_name}</td>
+                  <td className="p-3">{s.parent_name || '—'}</td>
+                  <td className="p-3">{s.parent_phone || '—'}</td>
+                  <td className="p-3 text-right">
+                    <button
+                      onClick={() => send(s)}
+                      disabled={!message.trim()}
+                      className="text-sm text-green-700 hover:underline disabled:text-gray-300 disabled:no-underline"
+                    >
+                      Send via WhatsApp
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
     </div>
   );

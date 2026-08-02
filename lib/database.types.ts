@@ -15,6 +15,9 @@ export type Database = {
           contact_email: string | null;
           contact_phone: string | null;
           address: string | null;
+          whatsapp_number: string | null;
+          principal_welcome_message: string | null;
+          principal_photo_url: string | null;
           status: 'Active' | 'Suspended';
           plan: string;
           features: Record<string, boolean>;
@@ -33,6 +36,9 @@ export type Database = {
           contact_email?: string | null;
           contact_phone?: string | null;
           address?: string | null;
+          whatsapp_number?: string | null;
+          principal_welcome_message?: string | null;
+          principal_photo_url?: string | null;
           status?: 'Active' | 'Suspended';
           plan?: string;
           features?: Record<string, boolean>;
@@ -51,6 +57,9 @@ export type Database = {
           contact_email?: string | null;
           contact_phone?: string | null;
           address?: string | null;
+          whatsapp_number?: string | null;
+          principal_welcome_message?: string | null;
+          principal_photo_url?: string | null;
           status?: 'Active' | 'Suspended';
           plan?: string;
           features?: Record<string, boolean>;
@@ -462,6 +471,162 @@ export type Database = {
           delivery_method?: 'print' | 'digital';
           max_uses?: number;
           uses_count?: number;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      class_timetables: {
+        Row: {
+          id: string;
+          school_id: string;
+          class: string;
+          day_of_week: 'Monday' | 'Tuesday' | 'Wednesday' | 'Thursday' | 'Friday';
+          period_number: number;
+          start_time: string | null;
+          end_time: string | null;
+          subject: string;
+          teacher_name: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          school_id: string;
+          class: string;
+          day_of_week: 'Monday' | 'Tuesday' | 'Wednesday' | 'Thursday' | 'Friday';
+          period_number: number;
+          start_time?: string | null;
+          end_time?: string | null;
+          subject: string;
+          teacher_name?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          school_id?: string;
+          class?: string;
+          day_of_week?: 'Monday' | 'Tuesday' | 'Wednesday' | 'Thursday' | 'Friday';
+          period_number?: number;
+          start_time?: string | null;
+          end_time?: string | null;
+          subject?: string;
+          teacher_name?: string | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      exam_timetables: {
+        Row: {
+          id: string;
+          school_id: string;
+          class: string;
+          session: string;
+          term: string;
+          subject: string;
+          exam_date: string;
+          start_time: string | null;
+          end_time: string | null;
+          venue: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          school_id: string;
+          class: string;
+          session: string;
+          term: string;
+          subject: string;
+          exam_date: string;
+          start_time?: string | null;
+          end_time?: string | null;
+          venue?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          school_id?: string;
+          class?: string;
+          session?: string;
+          term?: string;
+          subject?: string;
+          exam_date?: string;
+          start_time?: string | null;
+          end_time?: string | null;
+          venue?: string | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      fees: {
+        Row: {
+          id: string;
+          school_id: string;
+          student_id: string;
+          session: string;
+          term: string;
+          description: string;
+          amount: number;
+          due_date: string | null;
+          status: 'Unpaid' | 'Paid';
+          last_reminded_at: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          school_id: string;
+          student_id: string;
+          session: string;
+          term: string;
+          description?: string;
+          amount: number;
+          due_date?: string | null;
+          status?: 'Unpaid' | 'Paid';
+          last_reminded_at?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          school_id?: string;
+          student_id?: string;
+          session?: string;
+          term?: string;
+          description?: string;
+          amount?: number;
+          due_date?: string | null;
+          status?: 'Unpaid' | 'Paid';
+          last_reminded_at?: string | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      spotlights: {
+        Row: {
+          id: string;
+          school_id: string;
+          name: string;
+          subtitle: string | null;
+          photo_url: string | null;
+          blurb: string | null;
+          period_label: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          school_id: string;
+          name: string;
+          subtitle?: string | null;
+          photo_url?: string | null;
+          blurb?: string | null;
+          period_label?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          school_id?: string;
+          name?: string;
+          subtitle?: string | null;
+          photo_url?: string | null;
+          blurb?: string | null;
+          period_label?: string | null;
           created_at?: string;
         };
         Relationships: [];
