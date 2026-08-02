@@ -1,15 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseClient } from '@/lib/supabase';
 import { getSchoolFromHost } from '@/lib/tenant';
+import { requireSchoolSession } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
+// FIX NOTE: GET (the full applicant list, with parent name/email/phone/
+// address) had no session check -- POST (the public application form) is
+// meant to be open, but listing every applicant is admin-only data and now
+// requires an admin session.
 export async function GET(request: NextRequest) {
   try {
-    const supabase = getSupabaseClient();
-    const school = await getSchoolFromHost(request.headers.get('host'));
-    if (!school) return NextResponse.json({ error: 'School not found for this domain.' }, { status: 404 });
+    const staff = await requireSchoolSession(request, ['admin']);
+    if (!staff) return NextResponse.json({ error: 'Not authenticated.' }, { status: 401 });
+    const { school } = staff;
 
+    const supabase = getSupabaseClient();
     const { data, error } = await supabase
       .from('admissions')
       .select('*')

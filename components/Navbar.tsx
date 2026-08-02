@@ -4,10 +4,13 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState } from 'react';
 
-const links = [
+const schoolLinks = [
   { href: '/', label: 'Home' },
   { href: '/admissions', label: 'Admissions' },
   { href: '/news', label: 'News & Events' },
+  { href: '/timetable', label: 'Timetable' },
+  { href: '/calendar', label: 'Calendar' },
+  { href: '/staff', label: 'Staff' },
   { href: '/gallery', label: 'Gallery' },
   { href: '/contact', label: 'Contact' },
   { href: '/portal', label: 'Student Portal' },
@@ -15,7 +18,13 @@ const links = [
   { href: '/admin', label: 'Admin' },
 ];
 
-export default function Navbar({ schoolName }: { schoolName: string }) {
+const landingLinks = [
+  { href: '#features', label: 'Features' },
+  { href: '#pricing', label: 'Pricing' },
+  { href: '#contact', label: 'Contact' },
+];
+
+export default function Navbar({ schoolName, isLanding }: { schoolName: string; isLanding?: boolean }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
 
@@ -30,10 +39,13 @@ export default function Navbar({ schoolName }: { schoolName: string }) {
     );
   }
 
+  const links = isLanding ? landingLinks : schoolLinks;
+  const brandTextClass = isLanding ? 'text-[#1E2761]' : 'text-[var(--brand-color)]';
+
   return (
     <header className="sticky top-0 z-50 border-b border-gray-100 bg-white/90 backdrop-blur">
       <nav className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-        <Link href="/" className="text-lg font-extrabold text-[var(--brand-color)]">
+        <Link href="/" className={`text-lg font-extrabold ${brandTextClass}`}>
           {schoolName}
         </Link>
 
@@ -46,7 +58,7 @@ export default function Navbar({ schoolName }: { schoolName: string }) {
           Menu
         </button>
 
-        <div className="hidden gap-1 md:flex">
+        <div className="hidden items-center gap-1 md:flex">
           {links.map((link) => (
             <Link
               key={link.href}
@@ -60,6 +72,14 @@ export default function Navbar({ schoolName }: { schoolName: string }) {
               {link.label}
             </Link>
           ))}
+          {isLanding && (
+            <a
+              href="#contact"
+              className="ml-2 rounded-lg bg-[#1E2761] px-4 py-2 text-sm font-semibold text-white hover:brightness-90"
+            >
+              Book a Demo
+            </a>
+          )}
         </div>
       </nav>
 
@@ -79,6 +99,15 @@ export default function Navbar({ schoolName }: { schoolName: string }) {
               {link.label}
             </Link>
           ))}
+          {isLanding && (
+            <a
+              href="#contact"
+              onClick={() => setOpen(false)}
+              className="rounded-lg bg-[#1E2761] px-3 py-2 text-sm font-semibold text-white"
+            >
+              Book a Demo
+            </a>
+          )}
         </div>
       )}
     </header>

@@ -1,7 +1,12 @@
 import { SignJWT, jwtVerify } from 'jose';
+import type { NextRequest } from 'next/server';
+import { getSchoolFromHost } from './tenant';
+import type { Database } from './database.types';
 
 export const SESSION_COOKIE = 'session';
 export const PLATFORM_SESSION_COOKIE = 'platform_session';
+
+type School = Database['public']['Tables']['schools']['Row'];
 
 export type SessionPayload = {
   userId: string;
@@ -63,4 +68,32 @@ export async function verifyOwnerSession(token: string): Promise<boolean> {
   } catch {
     return false;
   }
+}
+
+/**
+ * Gate for school-scoped staff API routes: requires a valid session cookie
+ * whose role is in `allowedRoles` AND whose schoolSubdomain claim matches
+ * the school resolved from this request's Host header (blocks a session
+ * issued for one school from being used against another's API, the same
+ * cross-tenant check middleware.ts already does for page routes).
+ *
+ * Route handlers under app/api/** are not covered by middleware.ts's
+ * matcher (it only guards /admin, /teacher-dashboard, /platform page
+ * routes), so each staff-only API route must call this itself rather than
+ * relying on the page-level redirect.
+ */
+export async function requireSchoolSession(
+  request: NextRequest,
+  allowedRoles: Array<'admin' | 'teacher'>
+): Promise<{ school: School; session: SessionPayload } | null> {
+  const token = request.cookies.get(SESSION_COOKIE)?.value;
+  if (!token) return null;
+
+  const session = await verifySession(token);
+  if (!session || !allowedRoles.includes(session.role)) return null;
+
+  const school = await getSchoolFromHost(request.headers.get('host'));
+  if (!school || school.subdomain !== session.schoolSubdomain) return null;
+
+  return { school, session };
 }

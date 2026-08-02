@@ -1,14 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseClient } from '@/lib/supabase';
-import { getSchoolFromHost } from '@/lib/tenant';
+import { requireSchoolSession } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
+// FIX NOTE: previously this had no session check at all -- any request with a
+// resolvable Host header (no cookie needed) could list the school's entire
+// student roster, including parent email/phone/address/DOB. A studentId
+// lookup used to be left open for app/portal's benefit; that public path now
+// goes through /api/portal/check instead (gated by a scratch-card PIN), so
+// this route is staff-only across the board.
 export async function GET(request: NextRequest) {
+  const staff = await requireSchoolSession(request, ['admin', 'teacher']);
+  if (!staff) return NextResponse.json({ error: 'Not authenticated.' }, { status: 401 });
+  const { school } = staff;
+
   try {
     const supabase = getSupabaseClient();
-    const school = await getSchoolFromHost(request.headers.get('host'));
-    if (!school) return NextResponse.json({ error: 'School not found for this domain.' }, { status: 404 });
 
     const className = request.nextUrl.searchParams.get('class');
     const status = request.nextUrl.searchParams.get('status') as 'Active' | 'Inactive' | null;
@@ -30,10 +38,11 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = getSupabaseClient();
-    const school = await getSchoolFromHost(request.headers.get('host'));
-    if (!school) return NextResponse.json({ error: 'School not found for this domain.' }, { status: 404 });
+    const staff = await requireSchoolSession(request, ['admin']);
+    if (!staff) return NextResponse.json({ error: 'Not authenticated.' }, { status: 401 });
+    const { school } = staff;
 
+    const supabase = getSupabaseClient();
     const { studentId, fullName, className, gender, dateOfBirth, parentName, parentEmail, parentPhone, address } =
       await request.json();
 

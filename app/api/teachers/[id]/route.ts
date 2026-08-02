@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseClient } from '@/lib/supabase';
-import { STAFF_ROLES } from '@/lib/constants';
+import { STAFF_ROLES, CLASSES } from '@/lib/constants';
 import { Database } from '@/lib/database.types';
-import { getSchoolFromHost } from '@/lib/tenant';
+import { requireSchoolSession } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -10,10 +10,11 @@ type TeacherUpdate = Database['public']['Tables']['teachers']['Update'];
 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const supabase = getSupabaseClient();
-    const school = await getSchoolFromHost(request.headers.get('host'));
-    if (!school) return NextResponse.json({ error: 'School not found for this domain.' }, { status: 404 });
+    const staff = await requireSchoolSession(request, ['admin']);
+    if (!staff) return NextResponse.json({ error: 'Not authenticated.' }, { status: 401 });
+    const { school } = staff;
 
+    const supabase = getSupabaseClient();
     const { id } = await params;
     const body = await request.json();
     const update: TeacherUpdate = {};
@@ -31,6 +32,17 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       }
       update.status = body.status as TeacherUpdate['status'];
     }
+
+    if (body.classTeacherOf !== undefined) {
+      if (body.classTeacherOf && !CLASSES.includes(body.classTeacherOf)) {
+        return NextResponse.json({ error: 'Invalid class for Class Teacher Of.' }, { status: 400 });
+      }
+      update.class_teacher_of = body.classTeacherOf || null;
+    }
+
+    if (body.photoUrl !== undefined) update.photo_url = body.photoUrl || null;
+    if (body.bio !== undefined) update.bio = body.bio || null;
+    if (body.showOnSite !== undefined) update.show_on_site = Boolean(body.showOnSite);
 
     if (Object.keys(update).length === 0) {
       return NextResponse.json({ error: 'No valid fields to update.' }, { status: 400 });

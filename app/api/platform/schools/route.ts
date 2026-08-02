@@ -45,9 +45,9 @@ export async function POST(request: NextRequest) {
       adminFullName,
     } = await request.json();
 
-    if (!name || !subdomain || !idPrefix || !adminEmail || !adminPassword || !adminFullName) {
+    if (!name || !subdomain || !customDomain || !idPrefix || !adminEmail || !adminPassword || !adminFullName) {
       return NextResponse.json(
-        { error: 'name, subdomain, idPrefix, adminEmail, adminPassword, and adminFullName are required.' },
+        { error: 'name, subdomain, customDomain, idPrefix, adminEmail, adminPassword, and adminFullName are required.' },
         { status: 400 }
       );
     }

@@ -12,6 +12,10 @@ type School = {
   primary_color: string | null;
   tagline: string | null;
   hero_image_url: string | null;
+  whatsapp_number: string | null;
+  principal_welcome_message: string | null;
+  principal_photo_url: string | null;
+  prospectus_url: string | null;
   status: 'Active' | 'Suspended';
   created_at: string;
 };
@@ -62,6 +66,10 @@ export default function PlatformDashboard() {
     primaryColor: '',
     tagline: '',
     heroImageUrl: '',
+    whatsappNumber: '',
+    principalWelcomeMessage: '',
+    principalPhotoUrl: '',
+    prospectusUrl: '',
     status: 'Active' as 'Active' | 'Suspended',
   });
   const [editSubmitting, setEditSubmitting] = useState(false);
@@ -110,7 +118,7 @@ export default function PlatformDashboard() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to create school.');
 
-      setNotice(`Created "${data.school.name}" at ${data.school.subdomain} — share the admin login you set with them.`);
+      setNotice(`Created "${data.school.name}" at ${data.school.custom_domain} — share the admin login you set with them.`);
       setForm(emptyForm);
       load();
     } catch (err) {
@@ -163,6 +171,10 @@ export default function PlatformDashboard() {
       primaryColor: school.primary_color ?? '',
       tagline: school.tagline ?? '',
       heroImageUrl: school.hero_image_url ?? '',
+      whatsappNumber: school.whatsapp_number ?? '',
+      principalWelcomeMessage: school.principal_welcome_message ?? '',
+      principalPhotoUrl: school.principal_photo_url ?? '',
+      prospectusUrl: school.prospectus_url ?? '',
       status: school.status,
     });
   };
@@ -262,10 +274,11 @@ export default function PlatformDashboard() {
         />
         <input
           type="text"
-          placeholder="Custom Domain (optional, e.g. www.greenwood.com)"
+          placeholder="Custom Domain (e.g. www.greenwood.com)"
           value={form.customDomain}
           onChange={(e) => setForm({ ...form, customDomain: e.target.value })}
           className="w-full rounded-xl border p-3"
+          required
         />
         <input
           type="text"
@@ -497,6 +510,34 @@ export default function PlatformDashboard() {
                             placeholder="Hero Image URL"
                             value={editForm.heroImageUrl}
                             onChange={(e) => setEditForm({ ...editForm, heroImageUrl: e.target.value })}
+                            className="w-full rounded-xl border p-3 md:col-span-2"
+                          />
+                          <input
+                            type="text"
+                            placeholder="WhatsApp Number (e.g. 2348012345678, for the site-wide chat button)"
+                            value={editForm.whatsappNumber}
+                            onChange={(e) => setEditForm({ ...editForm, whatsappNumber: e.target.value })}
+                            className="w-full rounded-xl border p-3"
+                          />
+                          <input
+                            type="text"
+                            placeholder="Principal's Photo URL (optional)"
+                            value={editForm.principalPhotoUrl}
+                            onChange={(e) => setEditForm({ ...editForm, principalPhotoUrl: e.target.value })}
+                            className="w-full rounded-xl border p-3"
+                          />
+                          <textarea
+                            placeholder="Principal's Welcome Message (shown on the homepage)"
+                            value={editForm.principalWelcomeMessage}
+                            onChange={(e) => setEditForm({ ...editForm, principalWelcomeMessage: e.target.value })}
+                            className="w-full rounded-xl border p-3 md:col-span-2"
+                            rows={4}
+                          />
+                          <input
+                            type="text"
+                            placeholder="Prospectus PDF URL (optional, shown as a download on Admissions)"
+                            value={editForm.prospectusUrl}
+                            onChange={(e) => setEditForm({ ...editForm, prospectusUrl: e.target.value })}
                             className="w-full rounded-xl border p-3 md:col-span-2"
                           />
                           <select

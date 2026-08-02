@@ -1,15 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseClient } from '@/lib/supabase';
-import { gradeFromScore } from '@/lib/grade';
-import { getSchoolFromHost } from '@/lib/tenant';
+import { gradeFromScore, resolveScore } from '@/lib/grade';
+import { requireSchoolSession } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
+// FIX NOTE: previously unauthenticated (no session check at all), so anyone
+// could list every result for the school -- including Pending/Rejected
+// drafts never meant to be visible to a student -- for any or all students,
+// just by supplying a Host header. A studentId+status=Approved lookup used
+// to be left open for app/portal's benefit; that public path now goes
+// through /api/portal/check instead (gated by a scratch-card PIN), so this
+// route is staff-only across the board.
 export async function GET(request: NextRequest) {
+  const staff = await requireSchoolSession(request, ['admin', 'teacher']);
+  if (!staff) return NextResponse.json({ error: 'Not authenticated.' }, { status: 401 });
+  const { school } = staff;
+
   try {
     const supabase = getSupabaseClient();
-    const school = await getSchoolFromHost(request.headers.get('host'));
-    if (!school) return NextResponse.json({ error: 'School not found for this domain.' }, { status: 404 });
 
     const studentId = request.nextUrl.searchParams.get('studentId');
     const status = request.nextUrl.searchParams.get('status') as 'Pending' | 'Approved' | 'Rejected' | null;
@@ -33,23 +42,26 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const staff = await requireSchoolSession(request, ['admin', 'teacher']);
+    if (!staff) return NextResponse.json({ error: 'Not authenticated.' }, { status: 401 });
+    const { school } = staff;
+
     const supabase = getSupabaseClient();
-    const school = await getSchoolFromHost(request.headers.get('host'));
-    if (!school) return NextResponse.json({ error: 'School not found for this domain.' }, { status: 404 });
-
     const body = await request.json();
-    const { studentId, subject, score, session, term, uploadedBy } = body;
+    const { studentId, subject, score, caScore, examScore, session, term, uploadedBy } = body;
 
-    if (!studentId || !subject || score === undefined || score === null || !session || !term) {
+    if (!studentId || !subject || !session || !term) {
       return NextResponse.json(
-        { error: 'studentId, subject, score, session, and term are required.' },
+        { error: 'studentId, subject, session, and term are required.' },
         { status: 400 }
       );
     }
 
-    const numericScore = Number(score);
-    if (Number.isNaN(numericScore) || numericScore < 0 || numericScore > 100) {
-      return NextResponse.json({ error: 'score must be a number between 0 and 100.' }, { status: 400 });
+    let resolved;
+    try {
+      resolved = resolveScore({ score, caScore, examScore });
+    } catch (err) {
+      return NextResponse.json({ error: (err as Error).message }, { status: 400 });
     }
 
     const { data, error } = await supabase
@@ -58,8 +70,10 @@ export async function POST(request: NextRequest) {
         school_id: school.id,
         student_id: studentId,
         subject,
-        score: numericScore,
-        grade: gradeFromScore(numericScore),
+        score: resolved.total,
+        ca_score: resolved.caScore,
+        exam_score: resolved.examScore,
+        grade: gradeFromScore(resolved.total),
         session,
         term,
         status: 'Approved',

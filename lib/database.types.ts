@@ -15,6 +15,10 @@ export type Database = {
           contact_email: string | null;
           contact_phone: string | null;
           address: string | null;
+          whatsapp_number: string | null;
+          principal_welcome_message: string | null;
+          principal_photo_url: string | null;
+          prospectus_url: string | null;
           status: 'Active' | 'Suspended';
           plan: string;
           features: Record<string, boolean>;
@@ -33,6 +37,10 @@ export type Database = {
           contact_email?: string | null;
           contact_phone?: string | null;
           address?: string | null;
+          whatsapp_number?: string | null;
+          principal_welcome_message?: string | null;
+          principal_photo_url?: string | null;
+          prospectus_url?: string | null;
           status?: 'Active' | 'Suspended';
           plan?: string;
           features?: Record<string, boolean>;
@@ -51,6 +59,10 @@ export type Database = {
           contact_email?: string | null;
           contact_phone?: string | null;
           address?: string | null;
+          whatsapp_number?: string | null;
+          principal_welcome_message?: string | null;
+          principal_photo_url?: string | null;
+          prospectus_url?: string | null;
           status?: 'Active' | 'Suspended';
           plan?: string;
           features?: Record<string, boolean>;
@@ -101,6 +113,8 @@ export type Database = {
           student_id: string;
           subject: string;
           score: number;
+          ca_score: number | null;
+          exam_score: number | null;
           grade: string;
           session: string;
           term: string;
@@ -114,6 +128,8 @@ export type Database = {
           student_id: string;
           subject: string;
           score: number;
+          ca_score?: number | null;
+          exam_score?: number | null;
           grade: string;
           session: string;
           term: string;
@@ -127,12 +143,68 @@ export type Database = {
           student_id?: string;
           subject?: string;
           score?: number;
+          ca_score?: number | null;
+          exam_score?: number | null;
           grade?: string;
           session?: string;
           term?: string;
           status?: 'Pending' | 'Approved' | 'Rejected';
           uploaded_by?: string | null;
           created_at?: string;
+        };
+        Relationships: [];
+      };
+      report_cards: {
+        Row: {
+          id: string;
+          school_id: string;
+          student_id: string;
+          session: string;
+          term: string;
+          days_school_opened: number | null;
+          days_present: number | null;
+          times_punctual: number | null;
+          conduct_rating: 'Excellent' | 'Very Good' | 'Good' | 'Fair' | 'Poor' | null;
+          teacher_comment: string | null;
+          principal_comment: string | null;
+          status: 'Draft' | 'Published';
+          published_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          school_id: string;
+          student_id: string;
+          session: string;
+          term: string;
+          days_school_opened?: number | null;
+          days_present?: number | null;
+          times_punctual?: number | null;
+          conduct_rating?: 'Excellent' | 'Very Good' | 'Good' | 'Fair' | 'Poor' | null;
+          teacher_comment?: string | null;
+          principal_comment?: string | null;
+          status?: 'Draft' | 'Published';
+          published_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          school_id?: string;
+          student_id?: string;
+          session?: string;
+          term?: string;
+          days_school_opened?: number | null;
+          days_present?: number | null;
+          times_punctual?: number | null;
+          conduct_rating?: 'Excellent' | 'Very Good' | 'Good' | 'Fair' | 'Poor' | null;
+          teacher_comment?: string | null;
+          principal_comment?: string | null;
+          status?: 'Draft' | 'Published';
+          published_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
         };
         Relationships: [];
       };
@@ -249,6 +321,10 @@ export type Database = {
           email: string | null;
           phone: string | null;
           status: 'Active' | 'Inactive';
+          class_teacher_of: string | null;
+          photo_url: string | null;
+          bio: string | null;
+          show_on_site: boolean;
           created_at: string;
         };
         Insert: {
@@ -261,6 +337,10 @@ export type Database = {
           email?: string | null;
           phone?: string | null;
           status?: 'Active' | 'Inactive';
+          class_teacher_of?: string | null;
+          photo_url?: string | null;
+          bio?: string | null;
+          show_on_site?: boolean;
           created_at?: string;
         };
         Update: {
@@ -273,6 +353,10 @@ export type Database = {
           email?: string | null;
           phone?: string | null;
           status?: 'Active' | 'Inactive';
+          class_teacher_of?: string | null;
+          photo_url?: string | null;
+          bio?: string | null;
+          show_on_site?: boolean;
           created_at?: string;
         };
         Relationships: [];
@@ -357,6 +441,306 @@ export type Database = {
           subject?: string | null;
           message?: string;
           status?: 'New' | 'Read';
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      result_pins: {
+        Row: {
+          id: string;
+          school_id: string;
+          batch_label: string;
+          serial: string;
+          pin_hash: string;
+          session: string;
+          term: string | null;
+          delivery_method: 'print' | 'digital';
+          max_uses: number;
+          uses_count: number;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          school_id: string;
+          batch_label: string;
+          serial: string;
+          pin_hash: string;
+          session: string;
+          term?: string | null;
+          delivery_method?: 'print' | 'digital';
+          max_uses?: number;
+          uses_count?: number;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          school_id?: string;
+          batch_label?: string;
+          serial?: string;
+          pin_hash?: string;
+          session?: string;
+          term?: string | null;
+          delivery_method?: 'print' | 'digital';
+          max_uses?: number;
+          uses_count?: number;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      class_timetables: {
+        Row: {
+          id: string;
+          school_id: string;
+          class: string;
+          day_of_week: 'Monday' | 'Tuesday' | 'Wednesday' | 'Thursday' | 'Friday';
+          period_number: number;
+          start_time: string | null;
+          end_time: string | null;
+          subject: string;
+          teacher_name: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          school_id: string;
+          class: string;
+          day_of_week: 'Monday' | 'Tuesday' | 'Wednesday' | 'Thursday' | 'Friday';
+          period_number: number;
+          start_time?: string | null;
+          end_time?: string | null;
+          subject: string;
+          teacher_name?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          school_id?: string;
+          class?: string;
+          day_of_week?: 'Monday' | 'Tuesday' | 'Wednesday' | 'Thursday' | 'Friday';
+          period_number?: number;
+          start_time?: string | null;
+          end_time?: string | null;
+          subject?: string;
+          teacher_name?: string | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      exam_timetables: {
+        Row: {
+          id: string;
+          school_id: string;
+          class: string;
+          session: string;
+          term: string;
+          subject: string;
+          exam_date: string;
+          start_time: string | null;
+          end_time: string | null;
+          venue: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          school_id: string;
+          class: string;
+          session: string;
+          term: string;
+          subject: string;
+          exam_date: string;
+          start_time?: string | null;
+          end_time?: string | null;
+          venue?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          school_id?: string;
+          class?: string;
+          session?: string;
+          term?: string;
+          subject?: string;
+          exam_date?: string;
+          start_time?: string | null;
+          end_time?: string | null;
+          venue?: string | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      fees: {
+        Row: {
+          id: string;
+          school_id: string;
+          student_id: string;
+          session: string;
+          term: string;
+          description: string;
+          amount: number;
+          due_date: string | null;
+          status: 'Unpaid' | 'Paid';
+          last_reminded_at: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          school_id: string;
+          student_id: string;
+          session: string;
+          term: string;
+          description?: string;
+          amount: number;
+          due_date?: string | null;
+          status?: 'Unpaid' | 'Paid';
+          last_reminded_at?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          school_id?: string;
+          student_id?: string;
+          session?: string;
+          term?: string;
+          description?: string;
+          amount?: number;
+          due_date?: string | null;
+          status?: 'Unpaid' | 'Paid';
+          last_reminded_at?: string | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      spotlights: {
+        Row: {
+          id: string;
+          school_id: string;
+          name: string;
+          subtitle: string | null;
+          photo_url: string | null;
+          blurb: string | null;
+          period_label: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          school_id: string;
+          name: string;
+          subtitle?: string | null;
+          photo_url?: string | null;
+          blurb?: string | null;
+          period_label?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          school_id?: string;
+          name?: string;
+          subtitle?: string | null;
+          photo_url?: string | null;
+          blurb?: string | null;
+          period_label?: string | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      academic_calendar: {
+        Row: {
+          id: string;
+          school_id: string;
+          session: string;
+          term: string | null;
+          title: string;
+          event_type: 'Resumption' | 'Midterm Break' | 'Closing' | 'Holiday' | 'Other';
+          start_date: string;
+          end_date: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          school_id: string;
+          session: string;
+          term?: string | null;
+          title: string;
+          event_type: 'Resumption' | 'Midterm Break' | 'Closing' | 'Holiday' | 'Other';
+          start_date: string;
+          end_date?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          school_id?: string;
+          session?: string;
+          term?: string | null;
+          title?: string;
+          event_type?: 'Resumption' | 'Midterm Break' | 'Closing' | 'Holiday' | 'Other';
+          start_date?: string;
+          end_date?: string | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      testimonials: {
+        Row: {
+          id: string;
+          school_id: string;
+          author_name: string;
+          author_role: string | null;
+          quote: string;
+          photo_url: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          school_id: string;
+          author_name: string;
+          author_role?: string | null;
+          quote: string;
+          photo_url?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          school_id?: string;
+          author_name?: string;
+          author_role?: string | null;
+          quote?: string;
+          photo_url?: string | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      attendance: {
+        Row: {
+          id: string;
+          school_id: string;
+          student_id: string;
+          class: string;
+          session: string;
+          term: string;
+          date: string;
+          status: 'Present' | 'Absent' | 'Late';
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          school_id: string;
+          student_id: string;
+          class: string;
+          session: string;
+          term: string;
+          date: string;
+          status: 'Present' | 'Absent' | 'Late';
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          school_id?: string;
+          student_id?: string;
+          class?: string;
+          session?: string;
+          term?: string;
+          date?: string;
+          status?: 'Present' | 'Absent' | 'Late';
           created_at?: string;
         };
         Relationships: [];

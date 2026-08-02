@@ -1,16 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseClient } from '@/lib/supabase';
-import { STAFF_ROLES } from '@/lib/constants';
-import { getSchoolFromHost } from '@/lib/tenant';
+import { STAFF_ROLES, CLASSES } from '@/lib/constants';
+import { requireSchoolSession } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = getSupabaseClient();
-    const school = await getSchoolFromHost(request.headers.get('host'));
-    if (!school) return NextResponse.json({ error: 'School not found for this domain.' }, { status: 404 });
+    const staff = await requireSchoolSession(request, ['admin']);
+    if (!staff) return NextResponse.json({ error: 'Not authenticated.' }, { status: 401 });
+    const { school } = staff;
 
+    const supabase = getSupabaseClient();
     const { data, error } = await supabase
       .from('teachers')
       .select('*')
@@ -27,17 +28,21 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = getSupabaseClient();
-    const school = await getSchoolFromHost(request.headers.get('host'));
-    if (!school) return NextResponse.json({ error: 'School not found for this domain.' }, { status: 404 });
+    const staff = await requireSchoolSession(request, ['admin']);
+    if (!staff) return NextResponse.json({ error: 'Not authenticated.' }, { status: 401 });
+    const { school } = staff;
 
-    const { staffId, fullName, role, subject, email, phone } = await request.json();
+    const supabase = getSupabaseClient();
+    const { staffId, fullName, role, subject, email, phone, classTeacherOf, photoUrl, bio } = await request.json();
 
     if (!staffId || !fullName) {
       return NextResponse.json({ error: 'staffId and fullName are required.' }, { status: 400 });
     }
     if (role && !STAFF_ROLES.includes(role)) {
       return NextResponse.json({ error: 'Invalid role.' }, { status: 400 });
+    }
+    if (classTeacherOf && !CLASSES.includes(classTeacherOf)) {
+      return NextResponse.json({ error: 'Invalid class for Class Teacher Of.' }, { status: 400 });
     }
 
     const { data, error } = await supabase
@@ -51,6 +56,9 @@ export async function POST(request: NextRequest) {
         email: email || null,
         phone: phone || null,
         status: 'Active',
+        class_teacher_of: classTeacherOf || null,
+        photo_url: photoUrl || null,
+        bio: bio || null,
       })
       .select()
       .single();

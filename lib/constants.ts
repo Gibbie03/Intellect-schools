@@ -17,6 +17,8 @@ export const CLASSES = [
 
 export const STAFF_ROLES = ['Teacher', 'Head Teacher', 'Admin', 'Bursar', 'Non-Teaching Staff'] as const;
 
+export const DAYS_OF_WEEK = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+
 export const STUDENT_TEMPLATE_HEADERS = [
   'Student ID',
   'Full Name',

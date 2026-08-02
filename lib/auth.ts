@@ -15,5 +15,6 @@ export {
   verifySession,
   signOwnerSession,
   verifyOwnerSession,
+  requireSchoolSession,
 } from './session';
 export type { SessionPayload } from './session';

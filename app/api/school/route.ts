@@ -12,5 +12,10 @@ export async function GET(request: NextRequest) {
     primaryColor: school.primary_color,
     tagline: school.tagline,
     heroImageUrl: school.hero_image_url,
+    whatsappNumber: school.whatsapp_number,
+    principalWelcomeMessage: school.principal_welcome_message,
+    principalPhotoUrl: school.principal_photo_url,
+    prospectusUrl: school.prospectus_url,
+    address: school.address,
   });
 }

@@ -31,6 +31,11 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     if (body.primaryColor !== undefined) update.primary_color = body.primaryColor || null;
     if (body.tagline !== undefined) update.tagline = body.tagline || null;
     if (body.heroImageUrl !== undefined) update.hero_image_url = body.heroImageUrl || null;
+    if (body.whatsappNumber !== undefined) update.whatsapp_number = body.whatsappNumber || null;
+    if (body.principalWelcomeMessage !== undefined)
+      update.principal_welcome_message = body.principalWelcomeMessage || null;
+    if (body.principalPhotoUrl !== undefined) update.principal_photo_url = body.principalPhotoUrl || null;
+    if (body.prospectusUrl !== undefined) update.prospectus_url = body.prospectusUrl || null;
     if (body.status !== undefined) {
       if (!['Active', 'Suspended'].includes(body.status)) {
         return NextResponse.json({ error: 'status must be Active or Suspended.' }, { status: 400 });
