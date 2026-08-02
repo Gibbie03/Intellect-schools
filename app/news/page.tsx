@@ -10,15 +10,18 @@ type NewsItem = {
   created_at: string;
 };
 
-function DateBadge({ isoDate }: { isoDate: string }) {
+function DateBadge({ isoDate, past }: { isoDate: string; past: boolean }) {
   const date = new Date(isoDate);
   return (
-    <div className="flex w-20 shrink-0 flex-col items-center justify-center rounded-2xl bg-[var(--brand-color)] py-4 text-white">
-      <span className="text-xs font-semibold uppercase tracking-wide">
+    <div
+      className="flex w-16 shrink-0 flex-col items-center justify-center py-3 text-white"
+      style={{ background: past ? 'var(--muted)' : 'var(--ink)' }}
+    >
+      <span className="text-[11px] font-bold uppercase tracking-[0.06em]">
         {date.toLocaleDateString(undefined, { month: 'short' })}
       </span>
-      <span className="text-3xl font-extrabold leading-none">{date.getDate()}</span>
-      <span className="text-xs text-white/80">{date.getFullYear()}</span>
+      <span className="font-display text-[26px] font-extrabold leading-none">{date.getDate()}</span>
+      <span className="text-[10.5px] opacity-70">{date.getFullYear()}</span>
     </div>
   );
 }
@@ -57,55 +60,79 @@ export default function NewsPage() {
   today.setHours(0, 0, 0, 0);
 
   return (
-    <div className="mx-auto max-w-4xl px-6 py-12">
-      <h1 className="text-4xl font-bold">News &amp; Events</h1>
-      <p className="mt-3 text-gray-600">Stay up to date with announcements and upcoming events at {schoolName}.</p>
+    <main>
+      <section
+        className="py-12"
+        style={{ background: 'linear-gradient(135deg, var(--ink) 0%, color-mix(in srgb, var(--brand-color) 70%, black) 100%)' }}
+      >
+        <div className="wrap" style={{ maxWidth: 900 }}>
+          <span className="tag tag-light">News &amp; Events</span>
+          <h1 className="text-white" style={{ fontSize: 'clamp(28px, 4vw, 42px)' }}>
+            Stay up to date
+          </h1>
+          <p className="mt-3.5 max-w-[56ch] text-[15.5px] text-white/82">
+            Announcements and upcoming events at {schoolName}.
+          </p>
+        </div>
+      </section>
 
-      {loading && <p className="mt-10 text-gray-500">Loading...</p>}
-      {error && <p className="mt-10 text-red-600">{error}</p>}
-      {!loading && !error && news.length === 0 && (
-        <p className="mt-10 text-gray-500">No news or events have been posted yet.</p>
-      )}
+      <div className="wrap" style={{ maxWidth: 900 }}>
+        {loading && (
+          <p className="pt-14 text-[var(--muted)]">Loading…</p>
+        )}
+        {error && <p className="pt-14 text-red-600">{error}</p>}
+        {!loading && !error && news.length === 0 && (
+          <p className="pt-14 text-[var(--muted)]">No news or events have been posted yet.</p>
+        )}
 
-      {!loading && !error && events.length > 0 && (
-        <div className="mt-10">
-          <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-gray-400">Upcoming Events</h2>
-          <div className="space-y-4">
-            {events.map((item) => {
-              const isPast = new Date(item.event_date!) < today;
-              return (
-                <article
-                  key={item.id}
-                  className={`flex gap-5 rounded-2xl bg-white p-5 shadow ${isPast ? 'opacity-60' : ''}`}
-                >
-                  <DateBadge isoDate={item.event_date!} />
-                  <div className="min-w-0">
-                    <h3 className="text-xl font-semibold">{item.title}</h3>
-                    <p className="mt-2 whitespace-pre-wrap text-gray-600">{item.content}</p>
-                  </div>
+        {!loading && !error && events.length > 0 && (
+          <section className="pb-4 pt-14">
+            <p className="mb-4 text-[11.5px] font-bold uppercase tracking-[0.1em] text-[var(--muted)]">
+              Upcoming events
+            </p>
+            <div className="grid gap-3.5">
+              {events.map((item) => {
+                const isPast = new Date(item.event_date!) < today;
+                return (
+                  <article
+                    key={item.id}
+                    className={`flex gap-5 bg-[var(--paper)] p-5 ${isPast ? 'opacity-60' : ''}`}
+                  >
+                    <DateBadge isoDate={item.event_date!} past={isPast} />
+                    <div className="min-w-0">
+                      <h3 className="mb-2 text-lg">{item.title}</h3>
+                      <p className="m-0 whitespace-pre-wrap text-[14.5px] leading-[1.6] text-[var(--muted)]">
+                        {item.content}
+                      </p>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          </section>
+        )}
+
+        {!loading && !error && announcements.length > 0 && (
+          <section className="pb-16 pt-10">
+            <p className="mb-4 text-[11.5px] font-bold uppercase tracking-[0.1em] text-[var(--muted)]">
+              Announcements
+            </p>
+            <div className="grid gap-3.5">
+              {announcements.map((item) => (
+                <article key={item.id} className="card">
+                  <h3 className="mb-2 text-lg">{item.title}</h3>
+                  <p className="m-0 whitespace-pre-wrap text-[14.5px] leading-[1.6] text-[var(--muted)]">
+                    {item.content}
+                  </p>
+                  <p className="mt-3.5 text-xs text-[var(--muted)]">
+                    Posted {new Date(item.created_at).toLocaleDateString()}
+                  </p>
                 </article>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {!loading && !error && announcements.length > 0 && (
-        <div className="mt-12">
-          <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-gray-400">Announcements</h2>
-          <div className="space-y-4">
-            {announcements.map((item) => (
-              <article key={item.id} className="rounded-2xl bg-white p-6 shadow">
-                <h3 className="text-xl font-semibold">{item.title}</h3>
-                <p className="mt-3 whitespace-pre-wrap text-gray-600">{item.content}</p>
-                <p className="mt-4 text-xs text-gray-400">
-                  Posted {new Date(item.created_at).toLocaleDateString()}
-                </p>
-              </article>
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
+              ))}
+            </div>
+          </section>
+        )}
+      </div>
+    </main>
   );
 }
