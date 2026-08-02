@@ -46,7 +46,7 @@ const tiers = [
     name: 'Premium',
     setup: '₦400,000+',
     term: '₦100,000',
-    features: ['Everything in Standard', 'Unlimited staff accounts', 'Priority support & 24-hour setup'],
+    features: ['Everything in Standard', 'Unlimited staff accounts', 'Priority support & 24-hour setup', 'Up to 3 custom features built on request'],
     highlight: false,
   },
 ];
@@ -128,6 +128,7 @@ export default function LandingPage() {
                 </p>
                 <p className={`text-xs ${t.highlight ? 'text-[#CADCFC]' : 'text-gray-500'}`}>one-time setup</p>
                 <p className="mt-4 text-lg font-bold">{t.term} /term</p>
+                <p className={`text-xs ${t.highlight ? 'text-[#CADCFC]' : 'text-gray-500'}`}>hosting, maintenance &amp; support</p>
                 <ul className="mt-6 space-y-2 text-sm">
                   {t.features.map((f) => (
                     <li key={f} className={t.highlight ? 'text-[#CADCFC]' : 'text-gray-600'}>
