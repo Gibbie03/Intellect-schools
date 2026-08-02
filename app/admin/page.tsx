@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { STAFF_ROLES, CLASSES, DAYS_OF_WEEK } from '@/lib/constants';
 import { SESSIONS, TERMS, CURRENT_SESSION, SUBJECTS } from '@/lib/grade';
 import { buildWhatsAppLink } from '@/lib/whatsapp';
+import DashboardShell from '@/components/DashboardShell';
 
 type Tab =
   | 'dashboard'
@@ -69,53 +70,34 @@ export default function AdminDashboard() {
   };
 
   return (
-    <div className="max-w-6xl mx-auto px-6 py-10">
-      <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
-        <h1 className="text-4xl font-bold">Admin Dashboard</h1>
-        <div className="flex items-center gap-3 text-sm">
-          <span className="text-gray-500">Signed in as {adminName || '...'}</span>
-          <button onClick={handleLogout} className="text-red-600 hover:underline">
-            Logout
-          </button>
-        </div>
-      </div>
-
-      <div className="flex flex-wrap gap-2 mb-8 border-b border-gray-200 pb-4">
-        {TABS.map((t) => (
-          <button
-            key={t.id}
-            onClick={() => setTab(t.id)}
-            className={`rounded-xl px-4 py-2 text-sm font-medium ${
-              tab === t.id ? 'bg-[var(--brand-color)] text-white' : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'
-            }`}
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
-
-      <div>
-        {tab === 'dashboard' && <DashboardOverview />}
-        {tab === 'results' && <ResultsSection />}
-        {tab === 'admissions' && <AdmissionsSection />}
-        {tab === 'students' && <StudentsSection />}
-        {tab === 'staff' && <StaffSection />}
-        {tab === 'news' && <NewsSection />}
-        {tab === 'gallery' && <GallerySection />}
-        {tab === 'contact' && <ContactSection />}
-        {tab === 'result-pins' && <ResultPinsSection />}
-        {tab === 'report-cards' && <ReportCardsSection />}
-        {tab === 'timetables' && <TimetablesSection />}
-        {tab === 'fees' && <FeesSection />}
-        {tab === 'messages' && <MessagesSection />}
-        {tab === 'spotlight' && <SpotlightSection />}
-        {tab === 'calendar' && <CalendarSection />}
-        {tab === 'testimonials' && <TestimonialsSection />}
-        {tab === 'attendance' && <AttendanceSection />}
-        {tab === 'security' && <SecuritySection />}
-        {tab === 'audit-log' && <AuditLogSection />}
-      </div>
-    </div>
+    <DashboardShell
+      brandLabel="Admin Dashboard"
+      tabs={TABS}
+      activeTab={tab}
+      onTabChange={setTab}
+      userLabel={adminName}
+      onLogout={handleLogout}
+    >
+      {tab === 'dashboard' && <DashboardOverview />}
+      {tab === 'results' && <ResultsSection />}
+      {tab === 'admissions' && <AdmissionsSection />}
+      {tab === 'students' && <StudentsSection />}
+      {tab === 'staff' && <StaffSection />}
+      {tab === 'news' && <NewsSection />}
+      {tab === 'gallery' && <GallerySection />}
+      {tab === 'contact' && <ContactSection />}
+      {tab === 'result-pins' && <ResultPinsSection />}
+      {tab === 'report-cards' && <ReportCardsSection />}
+      {tab === 'timetables' && <TimetablesSection />}
+      {tab === 'fees' && <FeesSection />}
+      {tab === 'messages' && <MessagesSection />}
+      {tab === 'spotlight' && <SpotlightSection />}
+      {tab === 'calendar' && <CalendarSection />}
+      {tab === 'testimonials' && <TestimonialsSection />}
+      {tab === 'attendance' && <AttendanceSection />}
+      {tab === 'security' && <SecuritySection />}
+      {tab === 'audit-log' && <AuditLogSection />}
+    </DashboardShell>
   );
 }
 

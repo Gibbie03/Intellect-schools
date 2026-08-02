@@ -15,6 +15,10 @@ export default function Footer({ schoolName, isLanding }: { schoolName: string; 
   const isPlatform = pathname?.startsWith('/platform');
   const name = isPlatform ? 'SchoolOS' : schoolName;
 
+  if (pathname?.startsWith('/admin') || pathname?.startsWith('/teacher-dashboard')) {
+    return null;
+  }
+
   if (isPlatform) {
     return (
       <footer className="border-t border-gray-100 bg-white">

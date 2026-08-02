@@ -36,6 +36,10 @@ export default function Navbar({
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
 
+  if (pathname?.startsWith('/admin') || pathname?.startsWith('/teacher-dashboard')) {
+    return null;
+  }
+
   if (pathname?.startsWith('/platform')) {
     return (
       <header className="sticky top-0 z-50 border-b border-gray-100 bg-white/90 backdrop-blur">
