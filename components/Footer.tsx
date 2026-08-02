@@ -10,7 +10,7 @@ const footerLinks = [
   { href: '/portal', label: 'Student Portal' },
 ];
 
-export default function Footer({ schoolName }: { schoolName: string }) {
+export default function Footer({ schoolName, isLanding }: { schoolName: string; isLanding?: boolean }) {
   const pathname = usePathname();
   const isPlatform = pathname?.startsWith('/platform');
   const name = isPlatform ? 'SchoolOS' : schoolName;
@@ -23,6 +23,14 @@ export default function Footer({ schoolName }: { schoolName: string }) {
             &copy; {new Date().getFullYear()} {name}. All rights reserved.
           </p>
         </div>
+      </footer>
+    );
+  }
+
+  if (isLanding) {
+    return (
+      <footer className="py-8 text-center text-[13px]" style={{ background: '#12172f', color: 'rgba(255,255,255,.55)' }}>
+        &copy; {new Date().getFullYear()} SchoolOS. A platform for Nigerian school proprietors.
       </footer>
     );
   }
