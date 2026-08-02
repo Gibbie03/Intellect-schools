@@ -36,24 +36,17 @@ const features = [
 
 const tiers = [
   {
-    name: 'Basic',
-    setup: '₦100,000–150,000',
-    monthly: '₦20,000–25,000',
-    features: ['Your own custom domain', 'Default branding', 'Core admissions, results & staff workflows'],
-    highlight: false,
-  },
-  {
     name: 'Standard',
     setup: '₦150,000–250,000',
-    monthly: '₦30,000–40,000',
-    features: ['Everything in Basic', 'Custom brand colors, tagline & hero photo', 'More staff accounts'],
+    term: '₦120,000–160,000',
+    features: ['Your own custom domain', 'Custom brand colors, tagline & hero photo', 'Results, admissions & staff workflows'],
     highlight: true,
   },
   {
     name: 'Premium',
     setup: '₦250,000–400,000',
-    monthly: '₦45,000–60,000',
-    features: ['Everything in Standard', 'Priority support', '24-hour setup turnaround'],
+    term: '₦180,000–240,000',
+    features: ['Everything in Standard', 'More staff accounts', 'Priority support & 24-hour setup'],
     highlight: false,
   },
 ];
@@ -114,9 +107,9 @@ export default function LandingPage() {
         <div className="mx-auto max-w-6xl px-6">
           <h2 className="text-center text-3xl font-extrabold text-gray-950">Simple, transparent pricing</h2>
           <p className="mx-auto mt-3 max-w-2xl text-center text-gray-600">
-            A one-time setup fee, then a low monthly subscription. No hidden charges.
+            A one-time setup fee, then a low termly subscription. No hidden charges.
           </p>
-          <div className="mt-12 grid grid-cols-1 gap-6 md:grid-cols-3">
+          <div className="mt-12 grid grid-cols-1 gap-6 md:grid-cols-2 md:max-w-3xl md:mx-auto">
             {tiers.map((t) => (
               <div
                 key={t.name}
@@ -126,7 +119,7 @@ export default function LandingPage() {
               >
                 {t.highlight && (
                   <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-[#F2B134] px-4 py-1 text-xs font-bold text-[#1E2761]">
-                    MOST POPULAR
+                    RECOMMENDED
                   </span>
                 )}
                 <h3 className="text-xl font-bold">{t.name}</h3>
@@ -134,7 +127,7 @@ export default function LandingPage() {
                   {t.setup}
                 </p>
                 <p className={`text-xs ${t.highlight ? 'text-[#CADCFC]' : 'text-gray-500'}`}>one-time setup</p>
-                <p className="mt-4 text-lg font-bold">{t.monthly} /mo</p>
+                <p className="mt-4 text-lg font-bold">{t.term} /term</p>
                 <ul className="mt-6 space-y-2 text-sm">
                   {t.features.map((f) => (
                     <li key={f} className={t.highlight ? 'text-[#CADCFC]' : 'text-gray-600'}>
