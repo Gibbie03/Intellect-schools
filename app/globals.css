@@ -323,4 +323,12 @@ h1, h2, h3 {
   .stat {
     max-width: none;
   }
+  /* The hero's solid-fill CTA button reads as an oversized green bar at
+     phone widths -- its outline sibling doesn't have this problem since an
+     unfilled border reads lighter regardless of size. Trim its padding only
+     here; desktop keeps the original design's 15px/30px. */
+  .btn-primary,
+  .btn-secondary {
+    padding: 13px 22px;
+  }
 }

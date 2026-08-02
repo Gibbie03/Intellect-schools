@@ -129,7 +129,7 @@ export default function Navbar({
       className="sticky top-0 z-50 bg-[var(--paper)]/95 backdrop-blur"
       style={{ borderBottom: '3px solid var(--gold)' }}
     >
-      <nav className="wrap flex flex-wrap items-center justify-between gap-y-2 py-3">
+      <nav className="wrap flex flex-wrap items-center justify-between gap-x-4 gap-y-3 py-4">
         <Link href="/" className="flex shrink-0 items-center gap-3">
           {logoUrl && (
             // eslint-disable-next-line @next/next/no-img-element
@@ -148,7 +148,7 @@ export default function Navbar({
         <button
           type="button"
           onClick={() => setOpen(!open)}
-          className="rounded-lg border border-[var(--line)] px-3 py-2 text-sm font-medium text-[var(--ink)] md:hidden"
+          className="rounded-lg border border-[var(--line)] px-4 py-2.5 text-sm font-medium text-[var(--ink)] md:hidden"
           aria-label="Toggle navigation"
         >
           Menu
