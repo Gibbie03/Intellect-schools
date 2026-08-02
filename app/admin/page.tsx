@@ -21,7 +21,9 @@ type Tab =
   | 'fees'
   | 'messages'
   | 'spotlight'
-  | 'calendar';
+  | 'calendar'
+  | 'testimonials'
+  | 'attendance';
 
 const TABS: { id: Tab; label: string }[] = [
   { id: 'dashboard', label: 'Dashboard' },
@@ -39,6 +41,8 @@ const TABS: { id: Tab; label: string }[] = [
   { id: 'messages', label: 'Message Parents' },
   { id: 'spotlight', label: 'Spotlight' },
   { id: 'calendar', label: 'Academic Calendar' },
+  { id: 'testimonials', label: 'Testimonials' },
+  { id: 'attendance', label: 'Attendance' },
 ];
 
 export default function AdminDashboard() {
@@ -102,6 +106,8 @@ export default function AdminDashboard() {
         {tab === 'messages' && <MessagesSection />}
         {tab === 'spotlight' && <SpotlightSection />}
         {tab === 'calendar' && <CalendarSection />}
+        {tab === 'testimonials' && <TestimonialsSection />}
+        {tab === 'attendance' && <AttendanceSection />}
       </div>
     </div>
   );
@@ -467,6 +473,15 @@ function StudentsSection() {
   } | null>(null);
   const [batchError, setBatchError] = useState('');
 
+  const [promoteForm, setPromoteForm] = useState({
+    fromClass: CLASSES[0],
+    toClass: CLASSES[1] ?? CLASSES[0],
+    graduate: false,
+  });
+  const [promoteSubmitting, setPromoteSubmitting] = useState(false);
+  const [promoteError, setPromoteError] = useState('');
+  const [promoteNotice, setPromoteNotice] = useState('');
+
   const load = () => {
     setLoading(true);
     fetch('/api/students')
@@ -519,6 +534,36 @@ function StudentsSection() {
       setError((err as Error).message);
     } finally {
       setUpdatingId(null);
+    }
+  };
+
+  const handlePromote = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPromoteSubmitting(true);
+    setPromoteError('');
+    setPromoteNotice('');
+    try {
+      const res = await fetch('/api/students/promote', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fromClass: promoteForm.fromClass,
+          toClass: promoteForm.graduate ? undefined : promoteForm.toClass,
+          graduate: promoteForm.graduate,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to promote class.');
+      setPromoteNotice(
+        promoteForm.graduate
+          ? `Marked ${data.promoted} student(s) from ${promoteForm.fromClass} as graduated.`
+          : `Moved ${data.promoted} student(s) from ${promoteForm.fromClass} to ${promoteForm.toClass}.`
+      );
+      load();
+    } catch (err) {
+      setPromoteError((err as Error).message);
+    } finally {
+      setPromoteSubmitting(false);
     }
   };
 
@@ -652,6 +697,58 @@ function StudentsSection() {
         </form>
       </div>
 
+      <form onSubmit={handlePromote} className="bg-white rounded-2xl shadow p-8 mb-8 grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+        <div className="md:col-span-4">
+          <h2 className="text-xl font-semibold">Promote a Class</h2>
+          <p className="text-sm text-gray-500 mt-1">
+            Move every active student in a class up to the next class at once, at the start of a new session &mdash;
+            or mark the whole class as graduated instead of moving them.
+          </p>
+        </div>
+        {promoteNotice && <p className="md:col-span-4 text-sm text-green-700">{promoteNotice}</p>}
+        {promoteError && <p className="md:col-span-4 text-sm text-red-600">{promoteError}</p>}
+        <label className="flex flex-col gap-1 text-sm text-gray-600">
+          From Class
+          <select
+            value={promoteForm.fromClass}
+            onChange={(e) => setPromoteForm({ ...promoteForm, fromClass: e.target.value })}
+            className="rounded-xl border p-3"
+          >
+            {CLASSES.map((c) => (
+              <option key={c}>{c}</option>
+            ))}
+          </select>
+        </label>
+        <label className="flex flex-col gap-1 text-sm text-gray-600">
+          To Class
+          <select
+            value={promoteForm.toClass}
+            disabled={promoteForm.graduate}
+            onChange={(e) => setPromoteForm({ ...promoteForm, toClass: e.target.value })}
+            className="rounded-xl border p-3 disabled:opacity-50"
+          >
+            {CLASSES.map((c) => (
+              <option key={c}>{c}</option>
+            ))}
+          </select>
+        </label>
+        <label className="flex items-center gap-2 text-sm text-gray-600">
+          <input
+            type="checkbox"
+            checked={promoteForm.graduate}
+            onChange={(e) => setPromoteForm({ ...promoteForm, graduate: e.target.checked })}
+          />
+          Graduate this class instead (mark Inactive)
+        </label>
+        <button
+          type="submit"
+          disabled={promoteSubmitting}
+          className="rounded-xl bg-[var(--brand-color)] py-3 font-semibold text-white hover:brightness-90 disabled:opacity-60"
+        >
+          {promoteSubmitting ? 'Promoting...' : 'Promote'}
+        </button>
+      </form>
+
       <div className="bg-white rounded-2xl shadow p-8">
         <h2 className="text-xl font-semibold mb-6">All Students ({students.length})</h2>
         {loading ? (
@@ -703,9 +800,22 @@ type TeacherRow = {
   subject: string | null;
   status: 'Active' | 'Inactive';
   class_teacher_of: string | null;
+  photo_url: string | null;
+  bio: string | null;
+  show_on_site: boolean;
 };
 
-const emptyStaffForm = { staffId: '', fullName: '', role: STAFF_ROLES[0], subject: '', email: '', phone: '', classTeacherOf: '' };
+const emptyStaffForm = {
+  staffId: '',
+  fullName: '',
+  role: STAFF_ROLES[0],
+  subject: '',
+  email: '',
+  phone: '',
+  classTeacherOf: '',
+  photoUrl: '',
+  bio: '',
+};
 
 type AccountRow = {
   id: string;
@@ -867,6 +977,24 @@ function StaffSection() {
     }
   };
 
+  const updateShowOnSite = async (id: string, showOnSite: boolean) => {
+    setUpdatingId(id);
+    try {
+      const res = await fetch(`/api/teachers/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ showOnSite }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to update staff directory visibility.');
+      setTeachers((prev) => prev.map((t) => (t.id === id ? { ...t, show_on_site: showOnSite } : t)));
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setUpdatingId(null);
+    }
+  };
+
   const updateClassTeacherOf = async (id: string, classTeacherOf: string) => {
     setUpdatingId(id);
     try {
@@ -952,6 +1080,20 @@ function StaffSection() {
             </option>
           ))}
         </select>
+        <input
+          type="text"
+          placeholder="Photo URL (optional, shown on the public Staff Directory)"
+          value={form.photoUrl}
+          onChange={(e) => setForm({ ...form, photoUrl: e.target.value })}
+          className="w-full rounded-xl border p-3 md:col-span-2"
+        />
+        <textarea
+          placeholder="Short Bio (optional, shown on the public Staff Directory)"
+          value={form.bio}
+          onChange={(e) => setForm({ ...form, bio: e.target.value })}
+          className="w-full rounded-xl border p-3 md:col-span-2"
+          rows={2}
+        />
         <button
           type="submit"
           disabled={submitting}
@@ -977,6 +1119,7 @@ function StaffSection() {
                 <th className="text-center p-4">Role</th>
                 <th className="text-center p-4">Class Teacher Of</th>
                 <th className="text-center p-4">Employment Status</th>
+                <th className="text-center p-4">On Staff Directory</th>
               </tr>
             </thead>
             <tbody>
@@ -1024,6 +1167,14 @@ function StaffSection() {
                       <option value="Active">Active</option>
                       <option value="Inactive">Inactive (Terminated)</option>
                     </select>
+                  </td>
+                  <td className="p-4 text-center">
+                    <input
+                      type="checkbox"
+                      disabled={updatingId === t.id}
+                      checked={t.show_on_site}
+                      onChange={(e) => updateShowOnSite(t.id, e.target.checked)}
+                    />
                   </td>
                 </tr>
               ))}
@@ -3176,6 +3327,340 @@ function CalendarSection() {
               ))}
             </tbody>
           </table>
+        )}
+      </div>
+    </div>
+  );
+}
+
+type TestimonialRow = {
+  id: string;
+  author_name: string;
+  author_role: string | null;
+  quote: string;
+  photo_url: string | null;
+  created_at: string;
+};
+
+function TestimonialsSection() {
+  const [testimonials, setTestimonials] = useState<TestimonialRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [form, setForm] = useState({ authorName: '', authorRole: '', quote: '' });
+  const [file, setFile] = useState<File | null>(null);
+
+  const load = () => {
+    setLoading(true);
+    fetch('/api/testimonials')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.error) throw new Error(data.error);
+        setTestimonials(data.testimonials);
+      })
+      .catch((err) => setError(err.message))
+      .finally(() => setLoading(false));
+  };
+
+  useEffect(load, []);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.authorName || !form.quote) return;
+
+    setSubmitting(true);
+    setError('');
+    try {
+      const formData = new FormData();
+      formData.append('authorName', form.authorName);
+      if (form.authorRole) formData.append('authorRole', form.authorRole);
+      formData.append('quote', form.quote);
+      if (file) formData.append('file', file);
+
+      const res = await fetch('/api/testimonials', { method: 'POST', body: formData });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to add testimonial.');
+      setForm({ authorName: '', authorRole: '', quote: '' });
+      setFile(null);
+      load();
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    try {
+      const res = await fetch(`/api/testimonials/${id}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to delete.');
+      setTestimonials((prev) => prev.filter((t) => t.id !== id));
+    } catch (err) {
+      setError((err as Error).message);
+    }
+  };
+
+  return (
+    <div>
+      <h1 className="text-4xl font-bold mb-2">Testimonials</h1>
+      <p className="text-gray-600 mb-8">
+        Quotes from parents and alumni, shown on the homepage to build trust with prospective families.
+      </p>
+      {error && <div className="mb-6 rounded-xl bg-red-50 p-4 text-sm text-red-700">{error}</div>}
+
+      <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow p-8 mb-8 grid grid-cols-1 md:grid-cols-2 gap-4">
+        <h2 className="md:col-span-2 text-xl font-semibold">Add a Testimonial</h2>
+        <input
+          type="text"
+          placeholder="Author Name"
+          value={form.authorName}
+          onChange={(e) => setForm({ ...form, authorName: e.target.value })}
+          className="w-full rounded-xl border p-3"
+          required
+        />
+        <input
+          type="text"
+          placeholder="Role (e.g. Parent of SSS 2 student, or Alumnus, Class of 2020)"
+          value={form.authorRole}
+          onChange={(e) => setForm({ ...form, authorRole: e.target.value })}
+          className="w-full rounded-xl border p-3"
+        />
+        <textarea
+          placeholder="Quote"
+          value={form.quote}
+          onChange={(e) => setForm({ ...form, quote: e.target.value })}
+          className="w-full rounded-xl border p-3 md:col-span-2"
+          rows={3}
+          required
+        />
+        <input
+          type="file"
+          accept="image/*"
+          onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+          className="w-full rounded-xl border p-3 md:col-span-2"
+        />
+        <button
+          type="submit"
+          disabled={submitting}
+          className="md:col-span-2 rounded-xl bg-[var(--brand-color)] px-6 py-3 font-semibold text-white hover:brightness-90 disabled:opacity-60"
+        >
+          {submitting ? 'Adding...' : 'Add Testimonial'}
+        </button>
+      </form>
+
+      <div className="bg-white rounded-2xl shadow p-8">
+        <h2 className="text-xl font-semibold mb-6">Testimonials ({testimonials.length})</h2>
+        {loading ? (
+          <p className="text-gray-500">Loading...</p>
+        ) : testimonials.length === 0 ? (
+          <p className="text-gray-500">No testimonials added yet.</p>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {testimonials.map((t) => (
+              <div key={t.id} className="rounded-xl border p-4">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-center gap-3">
+                    {t.photo_url && (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={t.photo_url} alt={t.author_name} className="h-10 w-10 rounded-full object-cover" />
+                    )}
+                    <div>
+                      <p className="font-semibold">{t.author_name}</p>
+                      {t.author_role && <p className="text-xs text-gray-500">{t.author_role}</p>}
+                    </div>
+                  </div>
+                  <button onClick={() => handleDelete(t.id)} className="text-xs text-red-600 hover:underline shrink-0">
+                    Delete
+                  </button>
+                </div>
+                <p className="mt-3 text-sm text-gray-600">&ldquo;{t.quote}&rdquo;</p>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+const ATTENDANCE_STATUSES = ['Present', 'Absent', 'Late'] as const;
+
+type RosterStudentRow = { id: string; student_id: string; full_name: string };
+type AttendanceMark = { student_id: string; status: (typeof ATTENDANCE_STATUSES)[number] };
+
+function todayIso() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function AttendanceSection() {
+  const [selectedClass, setSelectedClass] = useState(CLASSES[0]);
+  const [date, setDate] = useState(todayIso());
+  const [session, setSession] = useState(CURRENT_SESSION);
+  const [term, setTerm] = useState(TERMS[0]);
+
+  const [roster, setRoster] = useState<RosterStudentRow[]>([]);
+  const [marksByStudent, setMarksByStudent] = useState<Record<string, (typeof ATTENDANCE_STATUSES)[number]>>({});
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [notice, setNotice] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  const load = () => {
+    setLoading(true);
+    setError('');
+    setNotice('');
+    fetch(`/api/attendance?class=${encodeURIComponent(selectedClass)}&date=${encodeURIComponent(date)}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.error) throw new Error(data.error);
+        setRoster(data.roster ?? []);
+        const initial: Record<string, (typeof ATTENDANCE_STATUSES)[number]> = {};
+        (data.roster ?? []).forEach((s: RosterStudentRow) => {
+          initial[s.student_id] = 'Present';
+        });
+        (data.marks ?? []).forEach((m: AttendanceMark) => {
+          initial[m.student_id] = m.status;
+        });
+        setMarksByStudent(initial);
+      })
+      .catch((err) => setError(err.message))
+      .finally(() => setLoading(false));
+  };
+
+  useEffect(load, [selectedClass, date]);
+
+  const setMark = (studentId: string, status: (typeof ATTENDANCE_STATUSES)[number]) => {
+    setMarksByStudent((prev) => ({ ...prev, [studentId]: status }));
+  };
+
+  const markAll = (status: (typeof ATTENDANCE_STATUSES)[number]) => {
+    setMarksByStudent(Object.fromEntries(roster.map((s) => [s.student_id, status])));
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    setError('');
+    setNotice('');
+    try {
+      const records = roster.map((s) => ({ studentId: s.student_id, status: marksByStudent[s.student_id] || 'Present' }));
+      const res = await fetch('/api/attendance', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ class: selectedClass, date, session, term, records }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to save attendance.');
+      setNotice(`Saved attendance for ${data.count} student(s).`);
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div>
+      <h1 className="text-4xl font-bold mb-2">Attendance</h1>
+      <p className="text-gray-600 mb-8">Mark daily attendance for a class. Feeds the &quot;days present&quot; figure on report cards.</p>
+
+      <div className="mb-6 flex flex-wrap items-end gap-4">
+        <label className="flex flex-col gap-1 text-sm text-gray-600">
+          Class
+          <select
+            value={selectedClass}
+            onChange={(e) => setSelectedClass(e.target.value)}
+            className="rounded-xl border p-3"
+          >
+            {CLASSES.map((c) => (
+              <option key={c}>{c}</option>
+            ))}
+          </select>
+        </label>
+        <label className="flex flex-col gap-1 text-sm text-gray-600">
+          Date
+          <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="rounded-xl border p-3" />
+        </label>
+        <label className="flex flex-col gap-1 text-sm text-gray-600">
+          Session
+          <select value={session} onChange={(e) => setSession(e.target.value)} className="rounded-xl border p-3">
+            {SESSIONS.map((s) => (
+              <option key={s}>{s}</option>
+            ))}
+          </select>
+        </label>
+        <label className="flex flex-col gap-1 text-sm text-gray-600">
+          Term
+          <select value={term} onChange={(e) => setTerm(e.target.value)} className="rounded-xl border p-3">
+            {TERMS.map((t) => (
+              <option key={t}>{t}</option>
+            ))}
+          </select>
+        </label>
+      </div>
+
+      {error && <div className="mb-6 rounded-xl bg-red-50 p-4 text-sm text-red-700">{error}</div>}
+      {notice && <div className="mb-6 rounded-xl bg-green-50 p-4 text-sm text-green-800">{notice}</div>}
+
+      <div className="bg-white rounded-2xl shadow p-8">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <h2 className="text-xl font-semibold">
+            {selectedClass} &mdash; {new Date(date).toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' })}
+          </h2>
+          <div className="flex gap-2 text-sm">
+            <button onClick={() => markAll('Present')} className="rounded-lg border px-3 py-1.5 hover:bg-gray-50">
+              Mark all Present
+            </button>
+            <button onClick={() => markAll('Absent')} className="rounded-lg border px-3 py-1.5 hover:bg-gray-50">
+              Mark all Absent
+            </button>
+          </div>
+        </div>
+
+        {loading ? (
+          <p className="text-gray-500">Loading...</p>
+        ) : roster.length === 0 ? (
+          <p className="text-gray-500">No active students in {selectedClass}.</p>
+        ) : (
+          <>
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-gray-100">
+                  <th className="text-left p-3">Student</th>
+                  <th className="text-center p-3">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {roster.map((s) => (
+                  <tr key={s.id} className="border-b">
+                    <td className="p-3">{s.full_name}</td>
+                    <td className="p-3">
+                      <div className="flex justify-center gap-4">
+                        {ATTENDANCE_STATUSES.map((status) => (
+                          <label key={status} className="flex items-center gap-1 text-xs">
+                            <input
+                              type="radio"
+                              name={`status-${s.student_id}`}
+                              checked={marksByStudent[s.student_id] === status}
+                              onChange={() => setMark(s.student_id, status)}
+                            />
+                            {status}
+                          </label>
+                        ))}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              className="mt-6 rounded-xl bg-[var(--brand-color)] px-6 py-3 font-semibold text-white hover:brightness-90 disabled:opacity-60"
+            >
+              {saving ? 'Saving...' : 'Save Attendance'}
+            </button>
+          </>
         )}
       </div>
     </div>

@@ -40,6 +40,10 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       update.class_teacher_of = body.classTeacherOf || null;
     }
 
+    if (body.photoUrl !== undefined) update.photo_url = body.photoUrl || null;
+    if (body.bio !== undefined) update.bio = body.bio || null;
+    if (body.showOnSite !== undefined) update.show_on_site = Boolean(body.showOnSite);
+
     if (Object.keys(update).length === 0) {
       return NextResponse.json({ error: 'No valid fields to update.' }, { status: 400 });
     }

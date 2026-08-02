@@ -44,6 +44,7 @@ export default function TeacherDashboard() {
   const [showBatch, setShowBatch] = useState(false);
   const [showPhoto, setShowPhoto] = useState(false);
   const [showReportCard, setShowReportCard] = useState(false);
+  const [showAttendance, setShowAttendance] = useState(false);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -109,6 +110,17 @@ export default function TeacherDashboard() {
     conductRating: '',
     teacherComment: '',
   });
+
+  // Daily attendance -- restricted to the teacher's own assigned class, same
+  // as report card comments above.
+  const [attDate, setAttDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [attSession, setAttSession] = useState(CURRENT_SESSION);
+  const [attTerm, setAttTerm] = useState(TERMS[0]);
+  const [attMarks, setAttMarks] = useState<Record<string, 'Present' | 'Absent' | 'Late'>>({});
+  const [attLoading, setAttLoading] = useState(false);
+  const [attSaving, setAttSaving] = useState(false);
+  const [attError, setAttError] = useState('');
+  const [attNotice, setAttNotice] = useState('');
 
   const loadResults = () => {
     setLoading(true);
@@ -392,6 +404,70 @@ export default function TeacherDashboard() {
     persistReportCard();
   };
 
+  const autofillAttendance = async () => {
+    if (!rcLookup.studentId) return;
+    setRcError('');
+    try {
+      const res = await fetch(
+        `/api/attendance?studentId=${encodeURIComponent(rcLookup.studentId)}&session=${encodeURIComponent(rcLookup.session)}&term=${encodeURIComponent(rcLookup.term)}`
+      );
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to load attendance.');
+      setRcForm((prev) => ({
+        ...prev,
+        daysSchoolOpened: String(data.totalDays),
+        daysPresent: String(data.daysPresent),
+      }));
+    } catch (err) {
+      setRcError((err as Error).message);
+    }
+  };
+
+  useEffect(() => {
+    if (!showAttendance || !classTeacherOf) return;
+
+    setAttLoading(true);
+    setAttError('');
+    setAttNotice('');
+    fetch(`/api/attendance?class=${encodeURIComponent(classTeacherOf)}&date=${encodeURIComponent(attDate)}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.error) throw new Error(data.error);
+        const initial: Record<string, 'Present' | 'Absent' | 'Late'> = {};
+        (data.roster ?? []).forEach((s: RosterStudent) => {
+          initial[s.student_id] = 'Present';
+        });
+        (data.marks ?? []).forEach((m: { student_id: string; status: 'Present' | 'Absent' | 'Late' }) => {
+          initial[m.student_id] = m.status;
+        });
+        setAttMarks(initial);
+      })
+      .catch((err) => setAttError(err.message))
+      .finally(() => setAttLoading(false));
+  }, [showAttendance, classTeacherOf, attDate]);
+
+  const saveAttendance = async () => {
+    if (!classTeacherOf) return;
+    setAttSaving(true);
+    setAttError('');
+    setAttNotice('');
+    try {
+      const records = rcRoster.map((s) => ({ studentId: s.student_id, status: attMarks[s.student_id] || 'Present' }));
+      const res = await fetch('/api/attendance', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ class: classTeacherOf, date: attDate, session: attSession, term: attTerm, records }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to save attendance.');
+      setAttNotice(`Saved attendance for ${data.count} student(s).`);
+    } catch (err) {
+      setAttError((err as Error).message);
+    } finally {
+      setAttSaving(false);
+    }
+  };
+
   return (
     <div className="max-w-6xl mx-auto px-6 py-12">
       <div className="flex flex-wrap justify-between items-center gap-4 mb-8">
@@ -409,17 +485,33 @@ export default function TeacherDashboard() {
               setShowForm(false);
               setShowBatch(false);
               setShowPhoto(false);
+              setShowAttendance(false);
             }}
             className="bg-white border border-gray-300 text-gray-700 px-6 py-3 rounded-xl font-semibold"
           >
             {showReportCard ? 'Cancel' : 'Report Card Comments'}
           </button>
+          {classTeacherOf && (
+            <button
+              onClick={() => {
+                setShowAttendance(!showAttendance);
+                setShowForm(false);
+                setShowBatch(false);
+                setShowPhoto(false);
+                setShowReportCard(false);
+              }}
+              className="bg-white border border-gray-300 text-gray-700 px-6 py-3 rounded-xl font-semibold"
+            >
+              {showAttendance ? 'Cancel' : 'Take Attendance'}
+            </button>
+          )}
           <button
             onClick={() => {
               setShowPhoto(!showPhoto);
               setShowForm(false);
               setShowBatch(false);
               setShowReportCard(false);
+              setShowAttendance(false);
             }}
             className="bg-white border border-gray-300 text-gray-700 px-6 py-3 rounded-xl font-semibold"
           >
@@ -431,6 +523,7 @@ export default function TeacherDashboard() {
               setShowForm(false);
               setShowPhoto(false);
               setShowReportCard(false);
+              setShowAttendance(false);
             }}
             className="bg-white border border-[var(--brand-color)] text-[var(--brand-color)] px-6 py-3 rounded-xl font-semibold"
           >
@@ -442,6 +535,7 @@ export default function TeacherDashboard() {
               setShowBatch(false);
               setShowPhoto(false);
               setShowReportCard(false);
+              setShowAttendance(false);
             }}
             className="bg-[var(--brand-color)] text-white px-6 py-3 rounded-xl font-semibold"
           >
@@ -970,6 +1064,14 @@ export default function TeacherDashboard() {
                 onChange={(e) => setRcForm({ ...rcForm, daysPresent: e.target.value })}
                 className="w-full border p-3 rounded-xl"
               />
+              <button
+                type="button"
+                onClick={autofillAttendance}
+                disabled={!rcLookup.studentId}
+                className="mt-2 text-xs font-medium text-[var(--brand-color)] hover:underline disabled:text-gray-300 disabled:no-underline"
+              >
+                Autofill from Attendance
+              </button>
             </div>
             <div>
               <label className="block text-sm font-medium mb-2">Times Punctual</label>
@@ -1031,6 +1133,91 @@ export default function TeacherDashboard() {
               )}
             </div>
           </form>
+            </>
+          )}
+        </div>
+      )}
+
+      {/* Take Attendance */}
+      {showAttendance && classTeacherOf && (
+        <div className="bg-white p-8 rounded-2xl shadow mb-10 border">
+          <h2 className="text-2xl font-semibold mb-2">Take Attendance &mdash; {classTeacherOf}</h2>
+          <p className="text-sm text-gray-500 mb-6">Feeds the &quot;days present&quot; figure on report cards.</p>
+
+          <div className="mb-6 flex flex-wrap items-end gap-4">
+            <label className="flex flex-col gap-1 text-sm text-gray-600">
+              Date
+              <input
+                type="date"
+                value={attDate}
+                onChange={(e) => setAttDate(e.target.value)}
+                className="rounded-xl border p-3"
+              />
+            </label>
+            <label className="flex flex-col gap-1 text-sm text-gray-600">
+              Session
+              <select value={attSession} onChange={(e) => setAttSession(e.target.value)} className="rounded-xl border p-3">
+                {SESSIONS.map((s) => (
+                  <option key={s}>{s}</option>
+                ))}
+              </select>
+            </label>
+            <label className="flex flex-col gap-1 text-sm text-gray-600">
+              Term
+              <select value={attTerm} onChange={(e) => setAttTerm(e.target.value)} className="rounded-xl border p-3">
+                {TERMS.map((t) => (
+                  <option key={t}>{t}</option>
+                ))}
+              </select>
+            </label>
+          </div>
+
+          {attError && <p className="mb-4 text-sm text-red-600">{attError}</p>}
+          {attNotice && <p className="mb-4 text-sm text-green-700">{attNotice}</p>}
+
+          {attLoading ? (
+            <p className="text-gray-500">Loading...</p>
+          ) : rcRoster.length === 0 ? (
+            <p className="text-gray-500">No active students in {classTeacherOf}.</p>
+          ) : (
+            <>
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="bg-gray-100">
+                    <th className="text-left p-3">Student</th>
+                    <th className="text-center p-3">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {rcRoster.map((s) => (
+                    <tr key={s.id} className="border-b">
+                      <td className="p-3">{s.full_name}</td>
+                      <td className="p-3">
+                        <div className="flex justify-center gap-4">
+                          {(['Present', 'Absent', 'Late'] as const).map((status) => (
+                            <label key={status} className="flex items-center gap-1 text-xs">
+                              <input
+                                type="radio"
+                                name={`att-status-${s.student_id}`}
+                                checked={(attMarks[s.student_id] || 'Present') === status}
+                                onChange={() => setAttMarks((prev) => ({ ...prev, [s.student_id]: status }))}
+                              />
+                              {status}
+                            </label>
+                          ))}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <button
+                onClick={saveAttendance}
+                disabled={attSaving}
+                className="mt-6 rounded-xl bg-[var(--brand-color)] px-6 py-3 font-semibold text-white hover:brightness-90 disabled:opacity-60"
+              >
+                {attSaving ? 'Saving...' : 'Save Attendance'}
+              </button>
             </>
           )}
         </div>

@@ -10,6 +10,7 @@ const schoolLinks = [
   { href: '/news', label: 'News & Events' },
   { href: '/timetable', label: 'Timetable' },
   { href: '/calendar', label: 'Calendar' },
+  { href: '/staff', label: 'Staff' },
   { href: '/gallery', label: 'Gallery' },
   { href: '/contact', label: 'Contact' },
   { href: '/portal', label: 'Student Portal' },

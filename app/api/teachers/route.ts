@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
     const { school } = staff;
 
     const supabase = getSupabaseClient();
-    const { staffId, fullName, role, subject, email, phone, classTeacherOf } = await request.json();
+    const { staffId, fullName, role, subject, email, phone, classTeacherOf, photoUrl, bio } = await request.json();
 
     if (!staffId || !fullName) {
       return NextResponse.json({ error: 'staffId and fullName are required.' }, { status: 400 });
@@ -57,6 +57,8 @@ export async function POST(request: NextRequest) {
         phone: phone || null,
         status: 'Active',
         class_teacher_of: classTeacherOf || null,
+        photo_url: photoUrl || null,
+        bio: bio || null,
       })
       .select()
       .single();

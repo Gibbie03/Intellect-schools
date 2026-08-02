@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 const emptyForm = { name: '', email: '', phone: '', subject: '', message: '' };
 
@@ -9,6 +9,15 @@ export default function ContactPage() {
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState('');
+  const [address, setAddress] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetch('/api/school')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.address) setAddress(data.address);
+      });
+  }, []);
 
   const handleChange = (field: keyof typeof emptyForm, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -118,6 +127,18 @@ export default function ContactPage() {
             {submitting ? 'Sending...' : 'Send Message'}
           </button>
         </form>
+      )}
+
+      {address && (
+        <div className="mt-10 overflow-hidden rounded-2xl shadow">
+          <iframe
+            title="School location"
+            src={`https://www.google.com/maps?q=${encodeURIComponent(address)}&output=embed`}
+            className="h-72 w-full border-0"
+            loading="lazy"
+            referrerPolicy="no-referrer-when-downgrade"
+          />
+        </div>
       )}
     </div>
   );

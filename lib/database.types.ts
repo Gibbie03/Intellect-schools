@@ -18,6 +18,7 @@ export type Database = {
           whatsapp_number: string | null;
           principal_welcome_message: string | null;
           principal_photo_url: string | null;
+          prospectus_url: string | null;
           status: 'Active' | 'Suspended';
           plan: string;
           features: Record<string, boolean>;
@@ -39,6 +40,7 @@ export type Database = {
           whatsapp_number?: string | null;
           principal_welcome_message?: string | null;
           principal_photo_url?: string | null;
+          prospectus_url?: string | null;
           status?: 'Active' | 'Suspended';
           plan?: string;
           features?: Record<string, boolean>;
@@ -60,6 +62,7 @@ export type Database = {
           whatsapp_number?: string | null;
           principal_welcome_message?: string | null;
           principal_photo_url?: string | null;
+          prospectus_url?: string | null;
           status?: 'Active' | 'Suspended';
           plan?: string;
           features?: Record<string, boolean>;
@@ -319,6 +322,9 @@ export type Database = {
           phone: string | null;
           status: 'Active' | 'Inactive';
           class_teacher_of: string | null;
+          photo_url: string | null;
+          bio: string | null;
+          show_on_site: boolean;
           created_at: string;
         };
         Insert: {
@@ -332,6 +338,9 @@ export type Database = {
           phone?: string | null;
           status?: 'Active' | 'Inactive';
           class_teacher_of?: string | null;
+          photo_url?: string | null;
+          bio?: string | null;
+          show_on_site?: boolean;
           created_at?: string;
         };
         Update: {
@@ -345,6 +354,9 @@ export type Database = {
           phone?: string | null;
           status?: 'Active' | 'Inactive';
           class_teacher_of?: string | null;
+          photo_url?: string | null;
+          bio?: string | null;
+          show_on_site?: boolean;
           created_at?: string;
         };
         Relationships: [];
@@ -663,6 +675,72 @@ export type Database = {
           event_type?: 'Resumption' | 'Midterm Break' | 'Closing' | 'Holiday' | 'Other';
           start_date?: string;
           end_date?: string | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      testimonials: {
+        Row: {
+          id: string;
+          school_id: string;
+          author_name: string;
+          author_role: string | null;
+          quote: string;
+          photo_url: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          school_id: string;
+          author_name: string;
+          author_role?: string | null;
+          quote: string;
+          photo_url?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          school_id?: string;
+          author_name?: string;
+          author_role?: string | null;
+          quote?: string;
+          photo_url?: string | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      attendance: {
+        Row: {
+          id: string;
+          school_id: string;
+          student_id: string;
+          class: string;
+          session: string;
+          term: string;
+          date: string;
+          status: 'Present' | 'Absent' | 'Late';
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          school_id: string;
+          student_id: string;
+          class: string;
+          session: string;
+          term: string;
+          date: string;
+          status: 'Present' | 'Absent' | 'Late';
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          school_id?: string;
+          student_id?: string;
+          class?: string;
+          session?: string;
+          term?: string;
+          date?: string;
+          status?: 'Present' | 'Absent' | 'Late';
           created_at?: string;
         };
         Relationships: [];

@@ -21,12 +21,14 @@ export default function AdmissionsPage() {
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState('');
   const [schoolName, setSchoolName] = useState('the school');
+  const [prospectusUrl, setProspectusUrl] = useState<string | null>(null);
 
   useEffect(() => {
     fetch('/api/school')
       .then((res) => res.json())
       .then((data) => {
         if (data.name) setSchoolName(data.name);
+        if (data.prospectusUrl) setProspectusUrl(data.prospectusUrl);
       });
   }, []);
 
@@ -84,6 +86,17 @@ export default function AdmissionsPage() {
         Apply for admission to {schoolName}. Fill in the form below and our admissions team will get in
         touch with you.
       </p>
+
+      {prospectusUrl && (
+        <a
+          href={prospectusUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mt-6 inline-flex items-center gap-2 rounded-xl border border-[var(--brand-color)] px-5 py-3 font-semibold text-[var(--brand-color)] hover:bg-gray-50"
+        >
+          Download Prospectus (PDF)
+        </a>
+      )}
 
       <form onSubmit={handleSubmit} className="mt-10 grid grid-cols-1 gap-6 rounded-2xl bg-white p-8 shadow md:grid-cols-2">
         <div className="md:col-span-2">

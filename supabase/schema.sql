@@ -19,6 +19,7 @@ create table if not exists schools (
   whatsapp_number text,
   principal_welcome_message text,
   principal_photo_url text,
+  prospectus_url text,
   status text not null default 'Active' check (status in ('Active', 'Suspended')),
   plan text not null default 'Standard',
   features jsonb not null default '{}'::jsonb,
@@ -135,6 +136,9 @@ create table if not exists teachers (
   phone text,
   status text not null default 'Active' check (status in ('Active', 'Inactive')),
   class_teacher_of text,
+  photo_url text,
+  bio text,
+  show_on_site boolean not null default true,
   created_at timestamptz not null default now(),
   unique (school_id, staff_id)
 );
@@ -279,6 +283,36 @@ create table if not exists academic_calendar (
 
 create index if not exists academic_calendar_school_session_idx on academic_calendar (school_id, session);
 
+-- Homepage testimonials from parents/alumni.
+create table if not exists testimonials (
+  id uuid primary key default gen_random_uuid(),
+  school_id uuid not null references schools(id) on delete cascade,
+  author_name text not null,
+  author_role text,
+  quote text not null,
+  photo_url text,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists testimonials_school_id_idx on testimonials (school_id);
+
+-- Daily attendance register, one row per student per day.
+create table if not exists attendance (
+  id uuid primary key default gen_random_uuid(),
+  school_id uuid not null references schools(id) on delete cascade,
+  student_id text not null,
+  class text not null,
+  session text not null,
+  term text not null,
+  date date not null,
+  status text not null check (status in ('Present', 'Absent', 'Late')),
+  created_at timestamptz not null default now(),
+  unique (school_id, student_id, date)
+);
+
+create index if not exists attendance_school_class_date_idx on attendance (school_id, class, date);
+create index if not exists attendance_school_student_term_idx on attendance (school_id, student_id, session, term);
+
 -- Row Level Security: all access from this app goes through Next.js API
 -- routes using the service role key (which bypasses RLS), so no client-side
 -- policies are required. RLS is enabled anyway as defense-in-depth in case
@@ -299,3 +333,5 @@ alter table exam_timetables enable row level security;
 alter table fees enable row level security;
 alter table spotlights enable row level security;
 alter table academic_calendar enable row level security;
+alter table testimonials enable row level security;
+alter table attendance enable row level security;

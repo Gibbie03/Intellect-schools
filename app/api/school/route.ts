@@ -15,5 +15,7 @@ export async function GET(request: NextRequest) {
     whatsappNumber: school.whatsapp_number,
     principalWelcomeMessage: school.principal_welcome_message,
     principalPhotoUrl: school.principal_photo_url,
+    prospectusUrl: school.prospectus_url,
+    address: school.address,
   });
 }
