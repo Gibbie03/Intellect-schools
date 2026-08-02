@@ -28,38 +28,55 @@ export default function StaffDirectoryPage() {
   }, []);
 
   return (
-    <div className="mx-auto max-w-5xl px-6 py-12">
-      <h1 className="text-4xl font-bold">Meet the Teachers</h1>
-      <p className="mt-3 text-gray-600">The people behind the classroom.</p>
+    <main>
+      <section
+        className="py-13"
+        style={{ background: 'linear-gradient(135deg, var(--ink) 0%, color-mix(in srgb, var(--brand-color) 70%, black) 100%)' }}
+      >
+        <div className="wrap">
+          <span className="tag tag-light">Our people</span>
+          <h1 className="text-white" style={{ fontSize: 'clamp(28px, 4vw, 42px)' }}>
+            Meet the teachers
+          </h1>
+          <p className="mt-3.5 text-[15.5px] text-white/82">The people behind the classroom.</p>
+        </div>
+      </section>
 
-      {loading && <p className="mt-10 text-gray-500">Loading...</p>}
-      {error && <p className="mt-10 text-red-600">{error}</p>}
-      {!loading && !error && staff.length === 0 && <p className="mt-10 text-gray-500">No staff profiles published yet.</p>}
+      <section className="wrap py-16">
+        {loading && <p className="text-[var(--muted)]">Loading…</p>}
+        {error && <p className="text-red-600">{error}</p>}
+        {!loading && !error && staff.length === 0 && <p className="text-[var(--muted)]">No staff profiles published yet.</p>}
 
-      <div className="mt-10 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {staff.map((member) => (
-          <div key={member.id} className="rounded-2xl bg-white p-6 text-center shadow">
-            {member.photo_url ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={member.photo_url}
-                alt={member.full_name}
-                className="mx-auto h-28 w-28 rounded-full object-cover shadow"
-              />
-            ) : (
-              <div className="mx-auto flex h-28 w-28 items-center justify-center rounded-full bg-gray-100 text-3xl font-bold text-gray-400">
-                {member.full_name.charAt(0)}
-              </div>
-            )}
-            <p className="mt-4 text-lg font-semibold">{member.full_name}</p>
-            <p className="text-sm text-[var(--brand-color)]">
-              {member.role}
-              {member.subject ? ` — ${member.subject}` : ''}
-            </p>
-            {member.bio && <p className="mt-3 text-sm text-gray-600">{member.bio}</p>}
-          </div>
-        ))}
-      </div>
-    </div>
+        <div className="schools-grid">
+          {staff.map((member) => (
+            <div key={member.id} className="p-6.5 text-center" style={{ background: 'var(--paper)' }}>
+              {member.photo_url ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={member.photo_url}
+                  alt={member.full_name}
+                  className="mx-auto h-24 w-24 rounded-full object-cover"
+                />
+              ) : (
+                <div
+                  className="mx-auto flex h-24 w-24 items-center justify-center rounded-full text-2xl font-bold"
+                  style={{ background: 'var(--brand-tint)', color: 'var(--brand-color)' }}
+                >
+                  {member.full_name.charAt(0)}
+                </div>
+              )}
+              <p className="mt-4 mb-0.5 font-semibold">{member.full_name}</p>
+              <p className="m-0 text-[13px] text-[var(--brand-color-2)]">
+                {member.role}
+                {member.subject ? `, ${member.subject}` : ''}
+              </p>
+              {member.bio && (
+                <p className="mt-3 text-[13.5px] leading-[1.55] text-[var(--muted)]">{member.bio}</p>
+              )}
+            </div>
+          ))}
+        </div>
+      </section>
+    </main>
   );
 }
