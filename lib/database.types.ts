@@ -88,6 +88,7 @@ export type Database = {
           status: 'Active' | 'Inactive';
           totp_secret: string | null;
           totp_enabled: boolean;
+          totp_last_used_step: number | null;
           created_at: string;
         };
         Insert: {
@@ -101,6 +102,7 @@ export type Database = {
           status?: 'Active' | 'Inactive';
           totp_secret?: string | null;
           totp_enabled?: boolean;
+          totp_last_used_step?: number | null;
           created_at?: string;
         };
         Update: {
@@ -114,6 +116,7 @@ export type Database = {
           status?: 'Active' | 'Inactive';
           totp_secret?: string | null;
           totp_enabled?: boolean;
+          totp_last_used_step?: number | null;
           created_at?: string;
         };
         Relationships: [];

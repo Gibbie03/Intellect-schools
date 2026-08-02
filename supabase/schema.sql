@@ -39,6 +39,7 @@ create table if not exists school_users (
   status text not null default 'Active' check (status in ('Active', 'Inactive')),
   totp_secret text,
   totp_enabled boolean not null default false,
+  totp_last_used_step bigint,
   created_at timestamptz not null default now(),
   unique (school_id, email)
 );

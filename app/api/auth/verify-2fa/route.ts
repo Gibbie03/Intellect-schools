@@ -44,7 +44,26 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Your session expired. Please log in again.' }, { status: 401 });
     }
 
-    if (!verifyTotpCode(user.totp_secret, code)) {
+    const result = verifyTotpCode(user.totp_secret, code, user.totp_last_used_step);
+    if (!result.valid) {
+      return NextResponse.json({ error: 'Invalid code.' }, { status: 401 });
+    }
+
+    // Compare-and-swap on totp_last_used_step, same reasoning as
+    // portal/check's uses_count fix: the WHERE clause re-checks the
+    // column's *current* value at write time, so two requests racing the
+    // same code (a replay attempt racing the legitimate use) can't both
+    // pass -- only one UPDATE can match once the other has committed.
+    const { data: claimed, error: claimError } = await supabase
+      .from('school_users')
+      .update({ totp_last_used_step: result.step })
+      .eq('id', user.id)
+      .eq('school_id', school.id)
+      .or(`totp_last_used_step.is.null,totp_last_used_step.lt.${result.step}`)
+      .select('id')
+      .maybeSingle();
+    if (claimError) throw claimError;
+    if (!claimed) {
       return NextResponse.json({ error: 'Invalid code.' }, { status: 401 });
     }
 

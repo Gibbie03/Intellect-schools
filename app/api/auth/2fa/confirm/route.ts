@@ -26,13 +26,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Start setup first.' }, { status: 400 });
     }
 
-    if (!verifyTotpCode(user.totp_secret, code)) {
+    const result = verifyTotpCode(user.totp_secret, code);
+    if (!result.valid) {
       return NextResponse.json({ error: 'Invalid code. Check your authenticator app and try again.' }, { status: 400 });
     }
 
+    // Seed totp_last_used_step with the step that just confirmed setup, so
+    // this same code can't immediately be replayed against the first real
+    // login (see verify-2fa's replay-protection check).
     const { error } = await supabase
       .from('school_users')
-      .update({ totp_enabled: true })
+      .update({ totp_enabled: true, totp_last_used_step: result.step })
       .eq('id', session.userId)
       .eq('school_id', school.id);
     if (error) throw error;
