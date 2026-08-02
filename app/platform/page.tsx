@@ -85,6 +85,8 @@ export default function PlatformDashboard() {
   });
   const [editSubmitting, setEditSubmitting] = useState(false);
   const [editError, setEditError] = useState('');
+  const [logoUploading, setLogoUploading] = useState(false);
+  const [logoError, setLogoError] = useState('');
 
   const [managingId, setManagingId] = useState<string | null>(null);
   const [schoolUsers, setSchoolUsers] = useState<SchoolUserRow[]>([]);
@@ -193,6 +195,24 @@ export default function PlatformDashboard() {
       prospectusUrl: school.prospectus_url ?? '',
       status: school.status,
     });
+  };
+
+  const handleLogoUpload = async (schoolId: string, file: File) => {
+    setLogoUploading(true);
+    setLogoError('');
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await fetch(`/api/platform/schools/${schoolId}/logo`, { method: 'POST', body: formData });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to upload logo.');
+      setEditForm((prev) => ({ ...prev, logoUrl: data.logoUrl }));
+      load();
+    } catch (err) {
+      setLogoError((err as Error).message);
+    } finally {
+      setLogoUploading(false);
+    }
   };
 
   const handleEditSubmit = async (e: React.FormEvent) => {
@@ -540,13 +560,34 @@ export default function PlatformDashboard() {
                             onChange={(e) => setEditForm({ ...editForm, secondaryColor: e.target.value })}
                             className="w-full rounded-xl border p-3"
                           />
-                          <input
-                            type="text"
-                            placeholder="Logo URL (optional, shown in the site header)"
-                            value={editForm.logoUrl}
-                            onChange={(e) => setEditForm({ ...editForm, logoUrl: e.target.value })}
-                            className="w-full rounded-xl border p-3 md:col-span-2"
-                          />
+                          <div className="w-full rounded-xl border p-3 md:col-span-2">
+                            <label className="mb-2 block text-sm font-medium text-gray-700">
+                              Logo (shown in the site header)
+                            </label>
+                            <div className="flex flex-wrap items-center gap-4">
+                              {editForm.logoUrl && (
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img
+                                  src={editForm.logoUrl}
+                                  alt="Current logo"
+                                  className="h-14 w-14 rounded-lg border object-contain bg-white"
+                                />
+                              )}
+                              <input
+                                type="file"
+                                accept="image/*"
+                                disabled={logoUploading}
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0];
+                                  if (file) handleLogoUpload(s.id, file);
+                                  e.target.value = '';
+                                }}
+                                className="flex-1 text-sm"
+                              />
+                              {logoUploading && <span className="text-sm text-gray-500">Uploading...</span>}
+                            </div>
+                            {logoError && <p className="mt-2 text-sm text-red-600">{logoError}</p>}
+                          </div>
                           <input
                             type="text"
                             placeholder="Homepage Tagline"
