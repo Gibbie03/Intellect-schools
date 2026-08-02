@@ -10,6 +10,8 @@ type School = {
   custom_domain: string | null;
   id_prefix: string;
   primary_color: string | null;
+  tagline: string | null;
+  hero_image_url: string | null;
   status: 'Active' | 'Suspended';
   created_at: string;
 };
@@ -28,6 +30,8 @@ const emptyForm = {
   customDomain: '',
   idPrefix: '',
   primaryColor: '',
+  tagline: '',
+  heroImageUrl: '',
   adminFullName: '',
   adminEmail: '',
   adminPassword: '',
@@ -56,6 +60,8 @@ export default function PlatformDashboard() {
     customDomain: '',
     idPrefix: '',
     primaryColor: '',
+    tagline: '',
+    heroImageUrl: '',
     status: 'Active' as 'Active' | 'Suspended',
   });
   const [editSubmitting, setEditSubmitting] = useState(false);
@@ -155,6 +161,8 @@ export default function PlatformDashboard() {
       customDomain: school.custom_domain ?? '',
       idPrefix: school.id_prefix,
       primaryColor: school.primary_color ?? '',
+      tagline: school.tagline ?? '',
+      heroImageUrl: school.hero_image_url ?? '',
       status: school.status,
     });
   };
@@ -272,6 +280,20 @@ export default function PlatformDashboard() {
           placeholder="Brand Color (hex, optional, e.g. #15803d)"
           value={form.primaryColor}
           onChange={(e) => setForm({ ...form, primaryColor: e.target.value })}
+          className="w-full rounded-xl border p-3 md:col-span-2"
+        />
+        <input
+          type="text"
+          placeholder="Homepage Tagline (optional, e.g. Building confident learners for a brighter future.)"
+          value={form.tagline}
+          onChange={(e) => setForm({ ...form, tagline: e.target.value })}
+          className="w-full rounded-xl border p-3 md:col-span-2"
+        />
+        <input
+          type="text"
+          placeholder="Hero Image URL (optional, e.g. https://...)"
+          value={form.heroImageUrl}
+          onChange={(e) => setForm({ ...form, heroImageUrl: e.target.value })}
           className="w-full rounded-xl border p-3 md:col-span-2"
         />
 
@@ -462,6 +484,20 @@ export default function PlatformDashboard() {
                             value={editForm.primaryColor}
                             onChange={(e) => setEditForm({ ...editForm, primaryColor: e.target.value })}
                             className="w-full rounded-xl border p-3"
+                          />
+                          <input
+                            type="text"
+                            placeholder="Homepage Tagline"
+                            value={editForm.tagline}
+                            onChange={(e) => setEditForm({ ...editForm, tagline: e.target.value })}
+                            className="w-full rounded-xl border p-3 md:col-span-2"
+                          />
+                          <input
+                            type="text"
+                            placeholder="Hero Image URL"
+                            value={editForm.heroImageUrl}
+                            onChange={(e) => setEditForm({ ...editForm, heroImageUrl: e.target.value })}
+                            className="w-full rounded-xl border p-3 md:col-span-2"
                           />
                           <select
                             value={editForm.status}

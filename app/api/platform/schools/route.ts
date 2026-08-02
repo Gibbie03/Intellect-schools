@@ -38,6 +38,8 @@ export async function POST(request: NextRequest) {
       customDomain,
       idPrefix,
       primaryColor,
+      tagline,
+      heroImageUrl,
       adminEmail,
       adminPassword,
       adminFullName,
@@ -58,6 +60,8 @@ export async function POST(request: NextRequest) {
         custom_domain: customDomain || null,
         id_prefix: idPrefix,
         primary_color: primaryColor || null,
+        tagline: tagline || null,
+        hero_image_url: heroImageUrl || null,
       })
       .select()
       .single();

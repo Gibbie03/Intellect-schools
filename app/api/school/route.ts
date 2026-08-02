@@ -10,5 +10,7 @@ export async function GET(request: NextRequest) {
   return NextResponse.json({
     name: school.name,
     primaryColor: school.primary_color,
+    tagline: school.tagline,
+    heroImageUrl: school.hero_image_url,
   });
 }

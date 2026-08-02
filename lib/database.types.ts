@@ -9,6 +9,8 @@ export type Database = {
           custom_domain: string | null;
           id_prefix: string;
           logo_url: string | null;
+          hero_image_url: string | null;
+          tagline: string | null;
           primary_color: string | null;
           contact_email: string | null;
           contact_phone: string | null;
@@ -25,6 +27,8 @@ export type Database = {
           custom_domain?: string | null;
           id_prefix: string;
           logo_url?: string | null;
+          hero_image_url?: string | null;
+          tagline?: string | null;
           primary_color?: string | null;
           contact_email?: string | null;
           contact_phone?: string | null;
@@ -41,6 +45,8 @@ export type Database = {
           custom_domain?: string | null;
           id_prefix?: string;
           logo_url?: string | null;
+          hero_image_url?: string | null;
+          tagline?: string | null;
           primary_color?: string | null;
           contact_email?: string | null;
           contact_phone?: string | null;

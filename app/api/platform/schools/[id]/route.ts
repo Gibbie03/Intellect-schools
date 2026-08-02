@@ -29,6 +29,8 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     if (body.customDomain !== undefined) update.custom_domain = body.customDomain || null;
     if (body.idPrefix !== undefined) update.id_prefix = body.idPrefix;
     if (body.primaryColor !== undefined) update.primary_color = body.primaryColor || null;
+    if (body.tagline !== undefined) update.tagline = body.tagline || null;
+    if (body.heroImageUrl !== undefined) update.hero_image_url = body.heroImageUrl || null;
     if (body.status !== undefined) {
       if (!['Active', 'Suspended'].includes(body.status)) {
         return NextResponse.json({ error: 'status must be Active or Suspended.' }, { status: 400 });

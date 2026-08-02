@@ -6,17 +6,21 @@ export default async function Home() {
   const headersList = await headers();
   const school = await getSchoolFromHost(headersList.get('host'));
   const name = school?.name ?? 'School Portal';
+  const tagline = school?.tagline || 'Building confident learners for a brighter future.';
+  const heroImageUrl = school?.hero_image_url;
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50">
-      <section className="mx-auto flex max-w-6xl flex-col gap-12 px-6 py-12 lg:py-20">
+      <section
+        className={`mx-auto flex max-w-6xl flex-col gap-12 px-6 py-12 lg:py-20 ${
+          heroImageUrl ? 'lg:flex-row lg:items-center' : ''
+        }`}
+      >
         <div className="flex-1">
           <p className="mb-4 inline-flex rounded-full bg-gray-100 px-4 py-2 text-sm font-semibold text-[var(--brand-color)]">
             Welcome to {name}
           </p>
-          <h1 className="text-4xl font-extrabold tracking-tight text-gray-950 sm:text-6xl">
-            Building confident learners for a brighter future.
-          </h1>
+          <h1 className="text-4xl font-extrabold tracking-tight text-gray-950 sm:text-6xl">{tagline}</h1>
           <p className="mt-6 max-w-2xl text-lg leading-8 text-gray-600">
             {name} combines academic excellence, digital learning, and transparent result management for students, parents, teachers, and administrators.
           </p>
@@ -32,6 +36,18 @@ export default async function Home() {
             </Link>
           </div>
         </div>
+
+        {heroImageUrl && (
+          <div className="flex-1">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={heroImageUrl}
+              alt={`${name} campus`}
+              className="w-full rounded-3xl object-cover shadow-xl"
+              style={{ maxHeight: '420px' }}
+            />
+          </div>
+        )}
       </section>
     </main>
   );
