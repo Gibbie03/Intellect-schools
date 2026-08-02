@@ -87,12 +87,12 @@ export default function TimetablePage() {
           <h1 className="text-white" style={{ fontSize: 'clamp(28px, 4vw, 42px)' }}>
             Timetables
           </h1>
-          <p className="mt-3.5 text-[15.5px] text-white/82">Class and exam schedules by class.</p>
+          <p className="mt-3.5 text-[15.5px] text-white/80">Class and exam schedules by class.</p>
         </div>
       </section>
 
       <section className="wrap py-10">
-        <div className="mb-7 flex flex-wrap items-center gap-4">
+        <div className="mb-4 flex flex-wrap items-center gap-4">
           <select
             value={selectedClass}
             onChange={(e) => setSelectedClass(e.target.value)}

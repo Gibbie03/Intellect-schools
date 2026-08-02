@@ -3,7 +3,7 @@ import * as XLSX from 'xlsx';
 import { getSupabaseClient } from '@/lib/supabase';
 import { Database } from '@/lib/database.types';
 import { requireSchoolSession } from '@/lib/auth';
-import { CLASSES } from '@/lib/constants';
+import { CLASSES, isSeniorSecondaryClass, isValidDepartment } from '@/lib/constants';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,6 +18,7 @@ const HEADER_MAP: Record<string, keyof StudentInsert> = {
   fullname: 'full_name',
   name: 'full_name',
   class: 'class',
+  department: 'department',
   gender: 'gender',
   dateofbirth: 'date_of_birth',
   dob: 'date_of_birth',
@@ -85,6 +86,16 @@ export async function POST(request: NextRequest) {
 
       if (!CLASSES.includes(mapped.class)) {
         errors.push({ row: rowNumber, reason: `"${mapped.class}" is not a recognized class (e.g. "SSS 2", not "SS2").` });
+        return;
+      }
+
+      if (mapped.department && !isSeniorSecondaryClass(mapped.class)) {
+        mapped.department = undefined;
+      } else if (mapped.department && !isValidDepartment(mapped.department)) {
+        errors.push({
+          row: rowNumber,
+          reason: `"${mapped.department}" is not a recognized department (Science, Arts, Social Science, or Commercial).`,
+        });
         return;
       }
 

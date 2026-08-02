@@ -32,6 +32,7 @@ export default function StudentPortal() {
   const [pin, setPin] = useState('');
   const [studentName, setStudentName] = useState<string | null>(null);
   const [studentClass, setStudentClass] = useState<string | null>(null);
+  const [studentDepartment, setStudentDepartment] = useState<string | null>(null);
   const [results, setResults] = useState<Result[]>([]);
   const [reportCards, setReportCards] = useState<ReportCard[]>([]);
   const [loading, setLoading] = useState(false);
@@ -90,6 +91,7 @@ export default function StudentPortal() {
       setReportCards(data.reportCards ?? []);
       setStudentName(data.student?.fullName ?? null);
       setStudentClass(data.student?.class ?? null);
+      setStudentDepartment(data.student?.department ?? null);
       setUsesRemaining(data.usesRemaining ?? null);
 
       const sessions = Array.from(new Set(fetchedResults.map((r) => r.session))).sort();
@@ -162,7 +164,7 @@ export default function StudentPortal() {
         <body>
           <h1>${schoolName || 'School'}</h1>
           <p class="muted">Report Card &mdash; ${activeTerm}, ${activeSession} Session</p>
-          <p class="muted">${studentName ?? ''} &middot; ${studentId} ${studentClass ? `&middot; ${studentClass}` : ''}</p>
+          <p class="muted">${studentName ?? ''} &middot; ${studentId} ${studentClass ? `&middot; ${studentClass}` : ''}${studentDepartment ? ` (${studentDepartment})` : ''}</p>
           <p class="muted">Attendance: ${attendanceLine}</p>
 
           <table>
@@ -200,12 +202,13 @@ export default function StudentPortal() {
   if (loggedIn) {
     return (
       <main className="wrap py-12" style={{ maxWidth: 900 }}>
-        <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
+        <div className="mb-5 flex flex-wrap items-center justify-between gap-4">
           <div>
             <h1 className="text-3xl">Welcome, {studentName ?? 'Student'}</h1>
             <p className="text-[var(--muted)]">
               {studentId}
-              {studentClass ? ` · ${studentClass}` : ''} &middot; Your approved results
+              {studentClass ? ` · ${studentClass}` : ''}
+              {studentDepartment ? ` (${studentDepartment})` : ''} &middot; Your approved results
             </p>
             {usesRemaining !== null && (
               <p className="mt-1 text-sm text-[var(--muted)]">
@@ -277,7 +280,7 @@ export default function StudentPortal() {
                 ))}
               </div>
 
-              <h2 className="mb-6 text-2xl">
+              <h2 className="mb-4 text-2xl">
                 {activeTerm}, {activeSession} Session
               </h2>
 
@@ -362,7 +365,7 @@ export default function StudentPortal() {
   return (
     <main className="flex flex-col items-center px-5 py-14">
       <div style={{ width: 'min(420px, 100%)' }}>
-        <div className="mb-7 text-center">
+        <div className="mb-5 text-center">
           <h1 className="mb-2 text-[27px]">
             Student <span style={{ color: 'var(--brand-color-2)' }}>Results Portal</span>
           </h1>

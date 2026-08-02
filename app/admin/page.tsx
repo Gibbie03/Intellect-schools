@@ -2,7 +2,7 @@
 
 import { Fragment, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { STAFF_ROLES, CLASSES, DAYS_OF_WEEK } from '@/lib/constants';
+import { STAFF_ROLES, CLASSES, DAYS_OF_WEEK, DEPARTMENTS, isSeniorSecondaryClass } from '@/lib/constants';
 import { SESSIONS, TERMS, CURRENT_SESSION, SUBJECTS } from '@/lib/grade';
 import { buildWhatsAppLink } from '@/lib/whatsapp';
 import DashboardShell from '@/components/DashboardShell';
@@ -431,6 +431,7 @@ type StudentRow = {
   student_id: string;
   full_name: string;
   class: string;
+  department: string | null;
   status: 'Active' | 'Inactive';
 };
 
@@ -438,6 +439,7 @@ const emptyStudentForm = {
   studentId: '',
   fullName: '',
   className: CLASSES[0],
+  department: '',
   gender: '',
   parentName: '',
   parentEmail: '',
@@ -551,7 +553,27 @@ function StudentsSection() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to update student.');
-      setStudents((prev) => prev.map((s) => (s.id === id ? { ...s, class: className } : s)));
+      setStudents((prev) =>
+        prev.map((s) => (s.id === id ? { ...s, class: className, department: isSeniorSecondaryClass(className) ? s.department : null } : s))
+      );
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setUpdatingId(null);
+    }
+  };
+
+  const updateDepartment = async (id: string, department: string) => {
+    setUpdatingId(id);
+    try {
+      const res = await fetch(`/api/students/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ department }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to update student.');
+      setStudents((prev) => prev.map((s) => (s.id === id ? { ...s, department: department || null } : s)));
     } catch (err) {
       setError((err as Error).message);
     } finally {
@@ -639,13 +661,27 @@ function StudentsSection() {
           />
           <select
             value={form.className}
-            onChange={(e) => setForm({ ...form, className: e.target.value })}
+            onChange={(e) =>
+              setForm({ ...form, className: e.target.value, department: isSeniorSecondaryClass(e.target.value) ? form.department : '' })
+            }
             className="w-full rounded-xl border p-3"
           >
             {CLASSES.map((c) => (
               <option key={c}>{c}</option>
             ))}
           </select>
+          {isSeniorSecondaryClass(form.className) && (
+            <select
+              value={form.department}
+              onChange={(e) => setForm({ ...form, department: e.target.value })}
+              className="w-full rounded-xl border p-3"
+            >
+              <option value="">Department (optional)</option>
+              {DEPARTMENTS.map((d) => (
+                <option key={d}>{d}</option>
+              ))}
+            </select>
+          )}
           <input
             type="text"
             placeholder="Parent/Guardian Name"
@@ -730,6 +766,12 @@ function StudentsSection() {
         </div>
         {promoteNotice && <p className="md:col-span-4 text-sm text-green-700">{promoteNotice}</p>}
         {promoteError && <p className="md:col-span-4 text-sm text-red-600">{promoteError}</p>}
+        {!promoteForm.graduate && isSeniorSecondaryClass(promoteForm.toClass) && !isSeniorSecondaryClass(promoteForm.fromClass) && (
+          <p className="md:col-span-4 text-sm text-amber-700">
+            These students are moving into Senior Secondary for the first time &mdash; set each one&rsquo;s department
+            (Science, Arts, Social Science, or Commercial) in the table below after promoting.
+          </p>
+        )}
         <label className="flex flex-col gap-1 text-sm text-gray-600">
           From Class
           <select
@@ -785,6 +827,7 @@ function StudentsSection() {
                 <th className="text-left p-4">Student ID</th>
                 <th className="text-left p-4">Name</th>
                 <th className="text-left p-4">Class</th>
+                <th className="text-left p-4">Department</th>
                 <th className="text-center p-4">Status</th>
                 <th className="text-center p-4">Action</th>
               </tr>
@@ -812,6 +855,25 @@ function StudentsSection() {
                         </option>
                       ))}
                     </select>
+                  </td>
+                  <td className="p-4">
+                    {isSeniorSecondaryClass(s.class) ? (
+                      <select
+                        disabled={updatingId === s.id}
+                        value={s.department ?? ''}
+                        onChange={(e) => updateDepartment(s.id, e.target.value)}
+                        className="rounded-lg border p-2 text-sm"
+                      >
+                        <option value="">—</option>
+                        {DEPARTMENTS.map((d) => (
+                          <option key={d} value={d}>
+                            {d}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <span className="text-gray-300">—</span>
+                    )}
                   </td>
                   <td className="p-4 text-center">
                     <select

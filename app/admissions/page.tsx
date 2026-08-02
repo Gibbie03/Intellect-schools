@@ -120,7 +120,7 @@ export default function AdmissionsPage() {
           <h1 className="max-w-[18ch] text-white" style={{ fontSize: 'clamp(30px, 4.5vw, 48px)', lineHeight: 1.12 }}>
             We take as much care choosing you as you take choosing us.
           </h1>
-          <p className="mt-5 max-w-[58ch] text-[16.5px] leading-[1.65] text-white/82">
+          <p className="mt-5 max-w-[58ch] text-[16.5px] leading-[1.65] text-white/80">
             Apply for admission to {schoolName}. Our process is unhurried and personal — here&apos;s how a family
             moves from first inquiry to a first day of school.
           </p>
@@ -128,7 +128,7 @@ export default function AdmissionsPage() {
       </section>
 
       <section className="wrap pb-6 pt-14">
-        <h2 className="mb-7 text-[28px]">The admission process</h2>
+        <h2 className="mb-4 text-[28px]">The admission process</h2>
         <div className="schools-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))' }}>
           {STEPS.map((step, i) => (
             <div key={step.title} className={`card ${i % 2 === 1 ? 'card-accent' : ''}`}>
@@ -143,7 +143,7 @@ export default function AdmissionsPage() {
       </section>
 
       <section className="wrap py-10">
-        <h2 className="mb-7 text-[28px]">Requirements</h2>
+        <h2 className="mb-4 text-[28px]">Requirements</h2>
         <div className="grid gap-x-10 gap-y-3.5 sm:grid-cols-2">
           {REQUIREMENTS.map((req) => (
             <div key={req} className="flex items-center gap-2.5 text-[15px]">
@@ -155,7 +155,7 @@ export default function AdmissionsPage() {
       </section>
 
       <section className="wrap pb-16 pt-6">
-        <div className="mb-6 flex flex-wrap items-end justify-between gap-5">
+        <div className="mb-4 flex flex-wrap items-end justify-between gap-5">
           <h2 className="text-[28px]">Apply now</h2>
           {prospectusUrl && (
             <a href={prospectusUrl} target="_blank" rel="noopener noreferrer" className="btn btn-outline">

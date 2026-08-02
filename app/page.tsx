@@ -88,7 +88,7 @@ export default async function Home() {
           </div>
           <div className="stat">
             <p className="font-display text-[40px] font-extrabold text-[var(--brand-color-2)]">{staffCount ?? 0}</p>
-            <p className="mt-1.5 text-xs font-semibold uppercase tracking-[0.06em] text-[var(--muted)]">Faculty &amp; staff</p>
+            <p className="mt-1.5 text-xs font-semibold uppercase tracking-[0.06em] text-[var(--muted)]">Teaching staff</p>
           </div>
           <div className="stat">
             <p className="font-display text-[40px] font-extrabold text-[var(--brand-color)]">{classCount}</p>
@@ -125,7 +125,7 @@ export default async function Home() {
         </div>
       </section>
 
-      <section className="wrap split py-16">
+      <section className="wrap split py-[76px]">
         <div>
           <span className="tag">Campus life</span>
           <h2 className="mb-4 text-[30px]">A campus meant for looking around</h2>
@@ -176,7 +176,7 @@ export default async function Home() {
           <div className="wrap mb-5">
             <span className="tag tag-light">What families say</span>
           </div>
-          <div className="flex w-max gap-5" style={{ animation: 'marquee-scroll 32s linear infinite' }}>
+          <div className="marquee-track gap-5">
             {marqueeList.map((t, i) => (
               <div key={`${t.id}-${i}`} className="testi-card">
                 <p className="testi-quote">&ldquo;{t.quote}&rdquo;</p>
@@ -190,7 +190,7 @@ export default async function Home() {
         </section>
       )}
 
-      <section className="wrap py-16">
+      <section className="wrap py-[72px]">
         <div
           className="flex flex-wrap items-center justify-between gap-6 p-11"
           style={{ background: 'var(--ink)' }}

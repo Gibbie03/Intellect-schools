@@ -156,6 +156,7 @@ create table if not exists students (
   student_id text not null,
   full_name text not null,
   class text not null,
+  department text,
   gender text,
   date_of_birth date,
   parent_name text,

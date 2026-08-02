@@ -67,19 +67,28 @@ h1, h2, h3 {
   cursor: pointer;
   border: none;
   clip-path: polygon(0 0, 100% 0, 100% calc(100% - 16px), calc(100% - 16px) 100%, 0 100%);
+  transition: filter 0.15s ease, background-color 0.15s ease, color 0.15s ease, transform 0.15s ease;
 }
+.btn:active {
+  transform: translateY(1px);
+}
+/* clip-path clips outline/box-shadow along with the rest of the box, so a
+   default focus ring would be invisible on these buttons -- darken like
+   :hover instead, which stays visible within the clipped shape. */
 .btn-primary {
   background: var(--brand-color);
   color: #fff;
 }
-.btn-primary:hover {
+.btn-primary:hover,
+.btn-primary:focus-visible {
   filter: brightness(0.88);
 }
 .btn-secondary {
   background: var(--brand-color-2);
   color: #fff;
 }
-.btn-secondary:hover {
+.btn-secondary:hover,
+.btn-secondary:focus-visible {
   filter: brightness(0.88);
 }
 .btn-outline {
@@ -89,7 +98,8 @@ h1, h2, h3 {
   background: transparent;
   padding: 13.5px 28px;
 }
-.btn-outline:hover {
+.btn-outline:hover,
+.btn-outline:focus-visible {
   background: var(--ink);
   color: #fff;
 }
@@ -100,7 +110,8 @@ h1, h2, h3 {
   background: transparent;
   padding: 13.5px 28px;
 }
-.btn-ghost:hover {
+.btn-ghost:hover,
+.btn-ghost:focus-visible {
   background: rgba(255, 255, 255, 0.12);
 }
 
@@ -115,6 +126,14 @@ h1, h2, h3 {
 
 .frame {
   clip-path: polygon(0 0, 100% 0, 100% calc(100% - 28px), calc(100% - 28px) 100%, 0 100%);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .frame img {
+    transition: transform 0.4s ease;
+  }
+  .frame:hover img {
+    transform: scale(1.045);
+  }
 }
 
 .pill {
@@ -132,18 +151,19 @@ h1, h2, h3 {
 }
 
 .stat-row {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  justify-items: center;
-  text-align: center;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 16px;
 }
 .stat {
-  padding: 0 22px;
-  border-left: 1px solid var(--line);
-}
-.stat:first-child {
-  border-left: none;
-  padding-left: 0;
+  flex: 1 1 180px;
+  max-width: 240px;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 20px 24px;
+  text-align: center;
 }
 
 .split {
@@ -183,13 +203,28 @@ h1, h2, h3 {
     transform: translateX(-50%);
   }
 }
+.marquee-track {
+  display: flex;
+  width: max-content;
+  animation: marquee-scroll 32s linear infinite;
+}
+.marquee-track:hover {
+  animation-play-state: paused;
+}
+/* Auto-scrolling text can trigger motion sickness for some users and is
+   genuinely hard to read while it's moving -- respect the OS-level
+   preference instead of forcing everyone to hover to pause it. */
+@media (prefers-reduced-motion: reduce) {
+  .marquee-track {
+    animation: none;
+    flex-wrap: wrap;
+    width: 100%;
+  }
+}
 
 @media (max-width: 900px) {
   .split {
     grid-template-columns: 1fr !important;
-  }
-  .stat {
-    padding: 0 6px;
   }
 }
 .dash-shell {
@@ -221,6 +256,7 @@ h1, h2, h3 {
   text-align: left;
   cursor: pointer;
   width: 100%;
+  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
 }
 .side-link:hover {
   background: rgba(255, 255, 255, 0.06);
@@ -280,17 +316,11 @@ h1, h2, h3 {
 
 @media (max-width: 560px) {
   .stat-row {
-    grid-template-columns: 1fr !important;
-    gap: 22px;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
   }
   .stat {
-    border-left: none !important;
-    padding: 0 !important;
-    border-top: 1px solid var(--line);
-    padding-top: 18px !important;
-  }
-  .stat:first-child {
-    border-top: none;
-    padding-top: 0 !important;
+    max-width: none;
   }
 }

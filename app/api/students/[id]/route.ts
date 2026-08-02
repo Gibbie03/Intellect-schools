@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseClient } from '@/lib/supabase';
 import { Database } from '@/lib/database.types';
 import { requireSchoolSession } from '@/lib/auth';
-import { CLASSES } from '@/lib/constants';
+import { CLASSES, isSeniorSecondaryClass, isValidDepartment } from '@/lib/constants';
 import { logAudit } from '@/lib/auditLog';
 
 export const dynamic = 'force-dynamic';
@@ -32,6 +32,18 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
         return NextResponse.json({ error: 'Invalid class.' }, { status: 400 });
       }
       update.class = body.className;
+      // Moving out of SSS (e.g. a correction, not a promotion) drops the
+      // department unless this same request is also setting a new one.
+      if (!isSeniorSecondaryClass(body.className) && body.department === undefined) {
+        update.department = null;
+      }
+    }
+
+    if (body.department !== undefined) {
+      if (body.department && !isValidDepartment(body.department)) {
+        return NextResponse.json({ error: 'Invalid department.' }, { status: 400 });
+      }
+      update.department = body.department || null;
     }
 
     if (Object.keys(update).length === 0) {

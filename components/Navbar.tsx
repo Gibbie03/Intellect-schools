@@ -129,15 +129,17 @@ export default function Navbar({
       className="sticky top-0 z-50 bg-[var(--paper)]/95 backdrop-blur"
       style={{ borderBottom: '3px solid var(--gold)' }}
     >
-      <nav className="wrap flex items-center justify-between py-3">
-        <Link href="/" className="flex items-center gap-3">
+      <nav className="wrap flex flex-wrap items-center justify-between gap-y-2 py-3">
+        <Link href="/" className="flex shrink-0 items-center gap-3">
           {logoUrl && (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={logoUrl} alt={schoolName} className="h-[38px] w-auto object-contain" />
+            <img src={logoUrl} alt={schoolName} className="h-[38px] w-auto shrink-0 object-contain" />
           )}
           <span className="flex flex-col leading-tight">
-            <span className="font-display text-lg font-extrabold text-[var(--ink)]">{schoolName}</span>
-            <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-[var(--muted)]">
+            <span className="font-display whitespace-nowrap text-lg font-extrabold text-[var(--ink)]">
+              {schoolName}
+            </span>
+            <span className="whitespace-nowrap text-[10px] font-bold uppercase tracking-[0.15em] text-[var(--muted)]">
               School Portal
             </span>
           </span>
@@ -152,7 +154,7 @@ export default function Navbar({
           Menu
         </button>
 
-        <div className="hidden items-center gap-5 md:flex">
+        <div className="hidden flex-wrap items-center justify-end gap-x-5 gap-y-2 md:flex">
           {links.map((link) => (
             <Link key={link.href} href={link.href} className={linkClass(link.href)}>
               {link.label}

@@ -65,7 +65,7 @@ export default function CalendarPage() {
           <h1 className="text-white" style={{ fontSize: 'clamp(28px, 4vw, 42px)' }}>
             Academic Calendar
           </h1>
-          <p className="mt-3.5 text-[15.5px] text-white/82">
+          <p className="mt-3.5 text-[15.5px] text-white/80">
             Term dates, resumption/closing days, mid-term breaks, and holidays.
           </p>
         </div>
@@ -75,7 +75,7 @@ export default function CalendarPage() {
         <select
           value={selectedSession}
           onChange={(e) => setSelectedSession(e.target.value)}
-          className="mb-9 border border-[var(--line)] bg-[var(--paper)] p-3 text-sm"
+          className="mb-5 border border-[var(--line)] bg-[var(--paper)] p-3 text-sm"
         >
           {SESSIONS.map((s) => (
             <option key={s}>{s}</option>
