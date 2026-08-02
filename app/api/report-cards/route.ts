@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseClient } from '@/lib/supabase';
 import { requireSchoolSession } from '@/lib/auth';
 import { getClassTeacherAssignment } from '@/lib/classTeacher';
+import { logAudit } from '@/lib/auditLog';
 import { Database } from '@/lib/database.types';
 
 export const dynamic = 'force-dynamic';
@@ -115,6 +116,15 @@ export async function POST(request: NextRequest) {
     const accessError = await checkClassTeacherAccess(supabase, school.id, staffSession.role, staffSession.userId, studentId);
     if (accessError) return NextResponse.json({ error: accessError }, { status: 403 });
 
+    const { data: before } = await supabase
+      .from('report_cards')
+      .select('*')
+      .eq('school_id', school.id)
+      .eq('student_id', studentId)
+      .eq('session', session)
+      .eq('term', term)
+      .maybeSingle();
+
     const update: ReportCardInsert = {
       school_id: school.id,
       student_id: studentId,
@@ -148,6 +158,17 @@ export async function POST(request: NextRequest) {
       .select()
       .single();
     if (error) throw error;
+
+    await logAudit({
+      request,
+      schoolId: school.id,
+      actor: staffSession,
+      action: publish === true ? 'report_card.publish' : publish === false ? 'report_card.unpublish' : 'report_card.save',
+      entityType: 'report_card',
+      entityId: data.id,
+      before,
+      after: data,
+    });
 
     return NextResponse.json({ reportCard: data }, { status: 200 });
   } catch (error) {

@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
     const supabase = getSupabaseClient();
     const { data, error } = await supabase
       .from('school_users')
-      .select('id, email, role, full_name, teacher_id, status, created_at')
+      .select('id, email, role, full_name, teacher_id, status, totp_enabled, created_at')
       .eq('school_id', school.id)
       .order('created_at', { ascending: false });
 

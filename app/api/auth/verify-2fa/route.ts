@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseClient } from '@/lib/supabase';
 import { getSchoolFromHost } from '@/lib/tenant';
-import { verifyPassword, signSession, SESSION_COOKIE, signPendingTwoFactorToken } from '@/lib/auth';
+import { signSession, SESSION_COOKIE, verifyPendingTwoFactorToken } from '@/lib/auth';
+import { verifyTotpCode } from '@/lib/totp';
 import { checkRateLimit, getClientIp } from '@/lib/rateLimit';
 
 export const dynamic = 'force-dynamic';
@@ -9,44 +10,42 @@ export const dynamic = 'force-dynamic';
 export async function POST(request: NextRequest) {
   try {
     const ip = getClientIp(request);
-    const { allowed, retryAfterSeconds } = await checkRateLimit(`login:${ip}`, 10, 300);
+    const { allowed, retryAfterSeconds } = await checkRateLimit(`verify-2fa:${ip}`, 10, 300);
     if (!allowed) {
       return NextResponse.json(
-        { error: 'Too many login attempts. Please try again in a few minutes.' },
+        { error: 'Too many attempts. Please try again in a few minutes.' },
         { status: 429, headers: { 'Retry-After': String(retryAfterSeconds) } }
       );
     }
 
-    const supabase = getSupabaseClient();
     const school = await getSchoolFromHost(request.headers.get('host'));
     if (!school) return NextResponse.json({ error: 'School not found for this domain.' }, { status: 404 });
 
-    const { email, password } = await request.json();
-    if (!email || !password) {
-      return NextResponse.json({ error: 'email and password are required.' }, { status: 400 });
+    const { pendingToken, code } = await request.json();
+    if (!pendingToken || !code) {
+      return NextResponse.json({ error: 'pendingToken and code are required.' }, { status: 400 });
     }
 
+    const pending = await verifyPendingTwoFactorToken(pendingToken);
+    if (!pending || pending.schoolSubdomain !== school.subdomain) {
+      return NextResponse.json({ error: 'Your session expired. Please log in again.' }, { status: 401 });
+    }
+
+    const supabase = getSupabaseClient();
     const { data: user, error } = await supabase
       .from('school_users')
       .select('*')
+      .eq('id', pending.userId)
       .eq('school_id', school.id)
-      .eq('email', email)
       .eq('status', 'Active')
       .maybeSingle();
-
     if (error) throw error;
-    if (!user) {
-      return NextResponse.json({ error: 'Invalid email or password.' }, { status: 401 });
+    if (!user || !user.totp_enabled || !user.totp_secret) {
+      return NextResponse.json({ error: 'Your session expired. Please log in again.' }, { status: 401 });
     }
 
-    const valid = await verifyPassword(password, user.password_hash);
-    if (!valid) {
-      return NextResponse.json({ error: 'Invalid email or password.' }, { status: 401 });
-    }
-
-    if (user.totp_enabled) {
-      const pendingToken = await signPendingTwoFactorToken({ userId: user.id, schoolSubdomain: school.subdomain });
-      return NextResponse.json({ requires2fa: true, pendingToken });
+    if (!verifyTotpCode(user.totp_secret, code)) {
+      return NextResponse.json({ error: 'Invalid code.' }, { status: 401 });
     }
 
     const token = await signSession({

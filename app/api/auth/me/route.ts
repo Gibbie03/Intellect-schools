@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSchoolFromHost } from '@/lib/tenant';
 import { verifySession, SESSION_COOKIE } from '@/lib/auth';
 import { getClassTeacherAssignment } from '@/lib/classTeacher';
+import { getSupabaseClient } from '@/lib/supabase';
 
 export const dynamic = 'force-dynamic';
 
@@ -19,5 +20,13 @@ export async function GET(request: NextRequest) {
 
   const classTeacherOf = session.role === 'teacher' ? await getClassTeacherAssignment(session.userId) : null;
 
-  return NextResponse.json({ role: session.role, fullName: session.fullName, classTeacherOf });
+  const supabase = getSupabaseClient();
+  const { data: user } = await supabase.from('school_users').select('totp_enabled').eq('id', session.userId).maybeSingle();
+
+  return NextResponse.json({
+    role: session.role,
+    fullName: session.fullName,
+    classTeacherOf,
+    totpEnabled: user?.totp_enabled ?? false,
+  });
 }

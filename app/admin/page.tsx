@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Fragment, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { STAFF_ROLES, CLASSES, DAYS_OF_WEEK } from '@/lib/constants';
 import { SESSIONS, TERMS, CURRENT_SESSION, SUBJECTS } from '@/lib/grade';
@@ -23,7 +23,9 @@ type Tab =
   | 'spotlight'
   | 'calendar'
   | 'testimonials'
-  | 'attendance';
+  | 'attendance'
+  | 'security'
+  | 'audit-log';
 
 const TABS: { id: Tab; label: string }[] = [
   { id: 'dashboard', label: 'Dashboard' },
@@ -43,6 +45,8 @@ const TABS: { id: Tab; label: string }[] = [
   { id: 'calendar', label: 'Academic Calendar' },
   { id: 'testimonials', label: 'Testimonials' },
   { id: 'attendance', label: 'Attendance' },
+  { id: 'security', label: 'Security' },
+  { id: 'audit-log', label: 'Audit Log' },
 ];
 
 export default function AdminDashboard() {
@@ -108,6 +112,8 @@ export default function AdminDashboard() {
         {tab === 'calendar' && <CalendarSection />}
         {tab === 'testimonials' && <TestimonialsSection />}
         {tab === 'attendance' && <AttendanceSection />}
+        {tab === 'security' && <SecuritySection />}
+        {tab === 'audit-log' && <AuditLogSection />}
       </div>
     </div>
   );
@@ -886,6 +892,7 @@ type AccountRow = {
   full_name: string;
   teacher_id: string | null;
   status: 'Active' | 'Inactive';
+  totp_enabled: boolean;
 };
 
 const emptyAccountForm = { email: '', password: '', fullName: '', role: 'teacher' as 'admin' | 'teacher', teacherId: '' };
@@ -978,6 +985,24 @@ function StaffSection() {
       setAccountsError((err as Error).message);
     } finally {
       setResetSubmitting(false);
+    }
+  };
+
+  const handleDisableTwoFactor = async (accountId: string) => {
+    if (!confirm('Turn off two-factor authentication for this account? Only do this if they are locked out.')) return;
+
+    setAccountsError('');
+    try {
+      const res = await fetch(`/api/school-users/${accountId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ disableTotp: true }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to disable two-factor authentication.');
+      setAccounts((prev) => prev.map((a) => (a.id === accountId ? { ...a, totp_enabled: false } : a)));
+    } catch (err) {
+      setAccountsError((err as Error).message);
     }
   };
 
@@ -1367,6 +1392,14 @@ function StaffSection() {
                           {resetSubmitting ? 'Saving...' : 'Save'}
                         </button>
                       </form>
+                    )}
+                    {a.totp_enabled && (
+                      <button
+                        onClick={() => handleDisableTwoFactor(a.id)}
+                        className="mt-2 block text-sm text-red-600 hover:underline"
+                      >
+                        Disable 2FA
+                      </button>
                     )}
                   </td>
                 </tr>
@@ -3765,6 +3798,342 @@ function AttendanceSection() {
             >
               {saving ? 'Saving...' : 'Save Attendance'}
             </button>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function SecuritySection() {
+  const [totpEnabled, setTotpEnabled] = useState<boolean | null>(null);
+  const [error, setError] = useState('');
+  const [notice, setNotice] = useState('');
+
+  const [setupData, setSetupData] = useState<{ secret: string; qrCodeDataUrl: string } | null>(null);
+  const [confirmCode, setConfirmCode] = useState('');
+  const [confirming, setConfirming] = useState(false);
+  const [settingUp, setSettingUp] = useState(false);
+
+  const [disablePassword, setDisablePassword] = useState('');
+  const [showDisable, setShowDisable] = useState(false);
+  const [disabling, setDisabling] = useState(false);
+
+  const load = () => {
+    fetch('/api/auth/me')
+      .then((res) => res.json())
+      .then((data) => setTotpEnabled(Boolean(data.totpEnabled)))
+      .catch(() => {});
+  };
+
+  useEffect(load, []);
+
+  const startSetup = async () => {
+    setSettingUp(true);
+    setError('');
+    setNotice('');
+    try {
+      const res = await fetch('/api/auth/2fa/setup', { method: 'POST' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to start setup.');
+      setSetupData({ secret: data.secret, qrCodeDataUrl: data.qrCodeDataUrl });
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setSettingUp(false);
+    }
+  };
+
+  const handleConfirm = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setConfirming(true);
+    setError('');
+    try {
+      const res = await fetch('/api/auth/2fa/confirm', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: confirmCode }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Invalid code.');
+      setSetupData(null);
+      setConfirmCode('');
+      setTotpEnabled(true);
+      setNotice('Two-factor authentication is now on for your account.');
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setConfirming(false);
+    }
+  };
+
+  const handleDisable = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setDisabling(true);
+    setError('');
+    try {
+      const res = await fetch('/api/auth/2fa/disable', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: disablePassword }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to disable.');
+      setTotpEnabled(false);
+      setShowDisable(false);
+      setDisablePassword('');
+      setNotice('Two-factor authentication has been turned off.');
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setDisabling(false);
+    }
+  };
+
+  return (
+    <div>
+      <h1 className="text-4xl font-bold mb-2">Security</h1>
+      <p className="text-gray-600 mb-8">
+        Two-factor authentication adds a 6-digit code from an authenticator app (Google Authenticator, Authy, etc.)
+        on top of your password.
+      </p>
+      {error && <div className="mb-6 rounded-xl bg-red-50 p-4 text-sm text-red-700">{error}</div>}
+      {notice && <div className="mb-6 rounded-xl bg-green-50 p-4 text-sm text-green-800">{notice}</div>}
+
+      <div className="bg-white rounded-2xl shadow p-8 max-w-xl">
+        <h2 className="text-xl font-semibold mb-4">Two-Factor Authentication (Your Account)</h2>
+
+        {totpEnabled === null ? (
+          <p className="text-gray-500">Loading...</p>
+        ) : totpEnabled ? (
+          <div>
+            <p className="text-sm text-green-700 font-medium mb-4">Two-factor authentication is ON.</p>
+            {!showDisable ? (
+              <button onClick={() => setShowDisable(true)} className="text-sm text-red-600 hover:underline">
+                Turn off two-factor authentication
+              </button>
+            ) : (
+              <form onSubmit={handleDisable} className="space-y-3">
+                <label className="block text-sm font-medium">Confirm your password to turn it off</label>
+                <input
+                  type="password"
+                  value={disablePassword}
+                  onChange={(e) => setDisablePassword(e.target.value)}
+                  className="w-full rounded-xl border p-3"
+                  required
+                />
+                <div className="flex gap-3">
+                  <button
+                    type="submit"
+                    disabled={disabling}
+                    className="rounded-xl bg-red-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
+                  >
+                    {disabling ? 'Turning off...' : 'Turn Off'}
+                  </button>
+                  <button type="button" onClick={() => setShowDisable(false)} className="text-sm text-gray-500 hover:underline">
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        ) : setupData ? (
+          <form onSubmit={handleConfirm} className="space-y-4">
+            <p className="text-sm text-gray-600">
+              Scan this QR code with your authenticator app, then enter the 6-digit code it shows.
+            </p>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={setupData.qrCodeDataUrl} alt="Two-factor QR code" className="h-48 w-48" />
+            <p className="text-xs text-gray-500">
+              Can&apos;t scan? Enter this key manually: <span className="font-mono">{setupData.secret}</span>
+            </p>
+            <input
+              type="text"
+              inputMode="numeric"
+              placeholder="123456"
+              value={confirmCode}
+              onChange={(e) => setConfirmCode(e.target.value)}
+              className="w-full rounded-xl border p-3 text-center text-xl tracking-widest"
+              maxLength={6}
+              required
+            />
+            <div className="flex gap-3">
+              <button
+                type="submit"
+                disabled={confirming}
+                className="rounded-xl bg-[var(--brand-color)] px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
+              >
+                {confirming ? 'Confirming...' : 'Confirm & Enable'}
+              </button>
+              <button type="button" onClick={() => setSetupData(null)} className="text-sm text-gray-500 hover:underline">
+                Cancel
+              </button>
+            </div>
+          </form>
+        ) : (
+          <button
+            onClick={startSetup}
+            disabled={settingUp}
+            className="rounded-xl bg-[var(--brand-color)] px-6 py-3 font-semibold text-white hover:brightness-90 disabled:opacity-60"
+          >
+            {settingUp ? 'Starting...' : 'Enable Two-Factor Authentication'}
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+type AuditLogEntry = {
+  id: string;
+  actor_name: string;
+  actor_role: string;
+  action: string;
+  entity_type: string;
+  entity_id: string | null;
+  before: Record<string, unknown> | null;
+  after: Record<string, unknown> | null;
+  ip_address: string | null;
+  created_at: string;
+};
+
+const AUDIT_ENTITY_TYPES = ['result', 'report_card', 'student', 'result_pin_batch'];
+
+function AuditLogSection() {
+  const [entries, setEntries] = useState<AuditLogEntry[]>([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const [entityType, setEntityType] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const pageSize = 50;
+
+  useEffect(() => {
+    setLoading(true);
+    setError('');
+    const params = new URLSearchParams({ page: String(page) });
+    if (entityType) params.set('entityType', entityType);
+    fetch(`/api/audit-log?${params.toString()}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.error) throw new Error(data.error);
+        setEntries(data.entries);
+        setTotal(data.total);
+      })
+      .catch((err) => setError(err.message))
+      .finally(() => setLoading(false));
+  }, [page, entityType]);
+
+  const totalPages = Math.max(Math.ceil(total / pageSize), 1);
+
+  return (
+    <div>
+      <h1 className="text-4xl font-bold mb-2">Audit Log</h1>
+      <p className="text-gray-600 mb-8">Who changed what, and when &mdash; results, report cards, and destructive actions.</p>
+      {error && <div className="mb-6 rounded-xl bg-red-50 p-4 text-sm text-red-700">{error}</div>}
+
+      <div className="mb-6">
+        <select
+          value={entityType}
+          onChange={(e) => {
+            setEntityType(e.target.value);
+            setPage(1);
+          }}
+          className="rounded-xl border p-3"
+        >
+          <option value="">All record types</option>
+          {AUDIT_ENTITY_TYPES.map((t) => (
+            <option key={t} value={t}>
+              {t.replace(/_/g, ' ')}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div className="bg-white rounded-2xl shadow p-8">
+        {loading ? (
+          <p className="text-gray-500">Loading...</p>
+        ) : entries.length === 0 ? (
+          <p className="text-gray-500">No audit entries yet.</p>
+        ) : (
+          <>
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-gray-100">
+                  <th className="text-left p-3">When</th>
+                  <th className="text-left p-3">Who</th>
+                  <th className="text-left p-3">Action</th>
+                  <th className="text-left p-3">Record</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {entries.map((entry) => (
+                  <Fragment key={entry.id}>
+                    <tr className="border-b">
+                      <td className="p-3 whitespace-nowrap">{new Date(entry.created_at).toLocaleString()}</td>
+                      <td className="p-3">
+                        {entry.actor_name} <span className="text-xs text-gray-400 capitalize">({entry.actor_role})</span>
+                      </td>
+                      <td className="p-3 font-mono text-xs">{entry.action}</td>
+                      <td className="p-3">
+                        {entry.entity_type.replace(/_/g, ' ')}
+                        {entry.entity_id && <span className="text-xs text-gray-400"> #{entry.entity_id.slice(0, 8)}</span>}
+                      </td>
+                      <td className="p-3 text-right">
+                        <button
+                          onClick={() => setExpandedId(expandedId === entry.id ? null : entry.id)}
+                          className="text-xs text-[var(--brand-color)] hover:underline"
+                        >
+                          {expandedId === entry.id ? 'Hide' : 'Details'}
+                        </button>
+                      </td>
+                    </tr>
+                    {expandedId === entry.id && (
+                      <tr className="border-b bg-gray-50">
+                        <td colSpan={5} className="p-4">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                            <div>
+                              <p className="font-semibold mb-1">Before</p>
+                              <pre className="whitespace-pre-wrap break-all bg-white rounded-lg border p-3">
+                                {entry.before ? JSON.stringify(entry.before, null, 2) : '—'}
+                              </pre>
+                            </div>
+                            <div>
+                              <p className="font-semibold mb-1">After</p>
+                              <pre className="whitespace-pre-wrap break-all bg-white rounded-lg border p-3">
+                                {entry.after ? JSON.stringify(entry.after, null, 2) : '—'}
+                              </pre>
+                            </div>
+                          </div>
+                          {entry.ip_address && <p className="mt-2 text-gray-400">IP: {entry.ip_address}</p>}
+                        </td>
+                      </tr>
+                    )}
+                  </Fragment>
+                ))}
+              </tbody>
+            </table>
+            <div className="mt-4 flex items-center justify-between text-sm">
+              <button
+                onClick={() => setPage((p) => Math.max(p - 1, 1))}
+                disabled={page <= 1}
+                className="rounded-lg border px-3 py-1.5 disabled:opacity-40"
+              >
+                Previous
+              </button>
+              <span className="text-gray-500">
+                Page {page} of {totalPages} ({total} entries)
+              </span>
+              <button
+                onClick={() => setPage((p) => Math.min(p + 1, totalPages))}
+                disabled={page >= totalPages}
+                className="rounded-lg border px-3 py-1.5 disabled:opacity-40"
+              >
+                Next
+              </button>
+            </div>
           </>
         )}
       </div>

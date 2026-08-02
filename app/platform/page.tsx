@@ -26,6 +26,7 @@ type SchoolUserRow = {
   role: 'admin' | 'teacher';
   full_name: string;
   status: 'Active' | 'Inactive';
+  totp_enabled: boolean;
 };
 
 const emptyForm = {
@@ -238,6 +239,25 @@ export default function PlatformDashboard() {
       setUsersError((err as Error).message);
     } finally {
       setResetSubmitting(false);
+    }
+  };
+
+  const handleOwnerDisableTwoFactor = async (userId: string) => {
+    if (!managingId) return;
+    if (!confirm('Turn off two-factor authentication for this account? Only do this if they are locked out.')) return;
+
+    setUsersError('');
+    try {
+      const res = await fetch(`/api/platform/schools/${managingId}/users/${userId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ disableTotp: true }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to disable two-factor authentication.');
+      setSchoolUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, totp_enabled: false } : u)));
+    } catch (err) {
+      setUsersError((err as Error).message);
     }
   };
 
@@ -617,6 +637,14 @@ export default function PlatformDashboard() {
                                           {resetSubmitting ? 'Saving...' : 'Save'}
                                         </button>
                                       </form>
+                                    )}
+                                    {u.totp_enabled && (
+                                      <button
+                                        onClick={() => handleOwnerDisableTwoFactor(u.id)}
+                                        className="mt-2 block text-sm text-red-600 hover:underline"
+                                      >
+                                        Disable 2FA
+                                      </button>
                                     )}
                                   </td>
                                 </tr>

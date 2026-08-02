@@ -3,6 +3,7 @@ import { getSupabaseClient } from '@/lib/supabase';
 import { Database } from '@/lib/database.types';
 import { requireSchoolSession } from '@/lib/auth';
 import { CLASSES } from '@/lib/constants';
+import { logAudit } from '@/lib/auditLog';
 
 export const dynamic = 'force-dynamic';
 
@@ -69,8 +70,20 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
     const supabase = getSupabaseClient();
     const { id } = await params;
 
+    const { data: before } = await supabase.from('students').select('*').eq('id', id).eq('school_id', school.id).maybeSingle();
+
     const { error } = await supabase.from('students').delete().eq('id', id).eq('school_id', school.id);
     if (error) throw error;
+
+    await logAudit({
+      request,
+      schoolId: school.id,
+      actor: staff.session,
+      action: 'student.delete',
+      entityType: 'student',
+      entityId: id,
+      before,
+    });
 
     return NextResponse.json({ success: true });
   } catch (error) {

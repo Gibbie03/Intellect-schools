@@ -80,6 +80,8 @@ export type Database = {
           full_name: string;
           teacher_id: string | null;
           status: 'Active' | 'Inactive';
+          totp_secret: string | null;
+          totp_enabled: boolean;
           created_at: string;
         };
         Insert: {
@@ -91,6 +93,8 @@ export type Database = {
           full_name: string;
           teacher_id?: string | null;
           status?: 'Active' | 'Inactive';
+          totp_secret?: string | null;
+          totp_enabled?: boolean;
           created_at?: string;
         };
         Update: {
@@ -102,6 +106,8 @@ export type Database = {
           full_name?: string;
           teacher_id?: string | null;
           status?: 'Active' | 'Inactive';
+          totp_secret?: string | null;
+          totp_enabled?: boolean;
           created_at?: string;
         };
         Relationships: [];
@@ -675,6 +681,51 @@ export type Database = {
           event_type?: 'Resumption' | 'Midterm Break' | 'Closing' | 'Holiday' | 'Other';
           start_date?: string;
           end_date?: string | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      audit_log: {
+        Row: {
+          id: string;
+          school_id: string;
+          actor_user_id: string | null;
+          actor_name: string;
+          actor_role: string;
+          action: string;
+          entity_type: string;
+          entity_id: string | null;
+          before: Record<string, unknown> | null;
+          after: Record<string, unknown> | null;
+          ip_address: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          school_id: string;
+          actor_user_id?: string | null;
+          actor_name: string;
+          actor_role: string;
+          action: string;
+          entity_type: string;
+          entity_id?: string | null;
+          before?: Record<string, unknown> | null;
+          after?: Record<string, unknown> | null;
+          ip_address?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          school_id?: string;
+          actor_user_id?: string | null;
+          actor_name?: string;
+          actor_role?: string;
+          action?: string;
+          entity_type?: string;
+          entity_id?: string | null;
+          before?: Record<string, unknown> | null;
+          after?: Record<string, unknown> | null;
+          ip_address?: string | null;
           created_at?: string;
         };
         Relationships: [];

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseClient } from '@/lib/supabase';
 import { gradeFromScore, resolveScore } from '@/lib/grade';
 import { requireSchoolSession } from '@/lib/auth';
+import { logAudit } from '@/lib/auditLog';
 
 export const dynamic = 'force-dynamic';
 
@@ -83,6 +84,16 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (error) throw error;
+
+    await logAudit({
+      request,
+      schoolId: school.id,
+      actor: staff.session,
+      action: 'result.create',
+      entityType: 'result',
+      entityId: data.id,
+      after: data,
+    });
 
     return NextResponse.json({ result: data }, { status: 201 });
   } catch (error) {

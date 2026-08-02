@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseClient } from '@/lib/supabase';
 import { requireSchoolSession, hashPassword } from '@/lib/auth';
 import { generatePin, buildSerial, buildBatchTag } from '@/lib/resultPins';
+import { logAudit } from '@/lib/auditLog';
 
 export const dynamic = 'force-dynamic';
 
@@ -142,11 +143,22 @@ export async function DELETE(request: NextRequest) {
       .delete()
       .eq('school_id', school.id)
       .eq('batch_label', batchLabel)
-      .eq('session', session);
+      .eq('session', session)
+      .select('id');
     query = term ? query.eq('term', term) : query.is('term', null);
 
-    const { error } = await query;
+    const { data, error } = await query;
     if (error) throw error;
+
+    await logAudit({
+      request,
+      schoolId: school.id,
+      actor: staff.session,
+      action: 'result_pin_batch.delete',
+      entityType: 'result_pin_batch',
+      entityId: batchLabel,
+      before: { batchLabel, session, term, cardsDeleted: data?.length ?? 0 },
+    });
 
     return NextResponse.json({ success: true });
   } catch (error) {

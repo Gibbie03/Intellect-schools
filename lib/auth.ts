@@ -16,5 +16,7 @@ export {
   signOwnerSession,
   verifyOwnerSession,
   requireSchoolSession,
+  signPendingTwoFactorToken,
+  verifyPendingTwoFactorToken,
 } from './session';
-export type { SessionPayload } from './session';
+export type { SessionPayload, PendingTwoFactorPayload } from './session';

@@ -18,8 +18,25 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   try {
     const { id, userId } = await params;
     const supabase = getSupabaseClient();
-    const { password } = await request.json();
+    const body = await request.json();
 
+    // Lockout recovery: the platform owner can turn off a user's two-factor
+    // authentication if they've lost their authenticator app/device -- there
+    // are no backup codes, so this is the only way back in otherwise.
+    if (body.disableTotp === true) {
+      const { data, error } = await supabase
+        .from('school_users')
+        .update({ totp_secret: null, totp_enabled: false })
+        .eq('id', userId)
+        .eq('school_id', id)
+        .select('id, email, role, full_name')
+        .single();
+
+      if (error) throw error;
+      return NextResponse.json({ user: data });
+    }
+
+    const { password } = body;
     if (!password || typeof password !== 'string' || password.length < 8) {
       return NextResponse.json({ error: 'password must be at least 8 characters.' }, { status: 400 });
     }
