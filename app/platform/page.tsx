@@ -110,7 +110,7 @@ export default function PlatformDashboard() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to create school.');
 
-      setNotice(`Created "${data.school.name}" at ${data.school.subdomain} — share the admin login you set with them.`);
+      setNotice(`Created "${data.school.name}" at ${data.school.custom_domain} — share the admin login you set with them.`);
       setForm(emptyForm);
       load();
     } catch (err) {
@@ -262,10 +262,11 @@ export default function PlatformDashboard() {
         />
         <input
           type="text"
-          placeholder="Custom Domain (optional, e.g. www.greenwood.com)"
+          placeholder="Custom Domain (e.g. www.greenwood.com)"
           value={form.customDomain}
           onChange={(e) => setForm({ ...form, customDomain: e.target.value })}
           className="w-full rounded-xl border p-3"
+          required
         />
         <input
           type="text"

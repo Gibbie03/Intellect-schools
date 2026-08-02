@@ -1,13 +1,19 @@
 import Link from 'next/link';
 import { headers } from 'next/headers';
 import { getSchoolFromHost } from '@/lib/tenant';
+import LandingPage from '@/components/LandingPage';
 
 export default async function Home() {
   const headersList = await headers();
   const school = await getSchoolFromHost(headersList.get('host'));
-  const name = school?.name ?? 'School Portal';
-  const tagline = school?.tagline || 'Building confident learners for a brighter future.';
-  const heroImageUrl = school?.hero_image_url;
+
+  if (!school) {
+    return <LandingPage />;
+  }
+
+  const name = school.name;
+  const tagline = school.tagline || 'Building confident learners for a brighter future.';
+  const heroImageUrl = school.hero_image_url;
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50">
