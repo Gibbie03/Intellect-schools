@@ -26,6 +26,7 @@ type RosterStudent = {
   id: string;
   student_id: string;
   full_name: string;
+  department: string | null;
 };
 
 type OcrRosterStudent = { student_id: string; full_name: string };
@@ -765,7 +766,10 @@ export default function TeacherDashboard() {
                         return (
                           <tr key={s.id} className="border-b">
                             <td className="p-3 font-mono">{s.student_id}</td>
-                            <td className="p-3">{s.full_name}</td>
+                            <td className="p-3">
+                              {s.full_name}
+                              {s.department && <span className="ml-2 text-xs text-gray-400">({s.department})</span>}
+                            </td>
                             <td className="p-3 text-center">
                               <input
                                 type="number"

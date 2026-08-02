@@ -383,6 +383,7 @@ export type Database = {
           student_id: string;
           full_name: string;
           class: string;
+          department: string | null;
           gender: string | null;
           date_of_birth: string | null;
           parent_name: string | null;
@@ -398,6 +399,7 @@ export type Database = {
           student_id: string;
           full_name: string;
           class: string;
+          department?: string | null;
           gender?: string | null;
           date_of_birth?: string | null;
           parent_name?: string | null;
@@ -413,6 +415,7 @@ export type Database = {
           student_id?: string;
           full_name?: string;
           class?: string;
+          department?: string | null;
           gender?: string | null;
           date_of_birth?: string | null;
           parent_name?: string | null;

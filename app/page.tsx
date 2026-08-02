@@ -88,7 +88,7 @@ export default async function Home() {
           </div>
           <div className="stat">
             <p className="font-display text-[40px] font-extrabold text-[var(--brand-color-2)]">{staffCount ?? 0}</p>
-            <p className="mt-1.5 text-xs font-semibold uppercase tracking-[0.06em] text-[var(--muted)]">Faculty &amp; staff</p>
+            <p className="mt-1.5 text-xs font-semibold uppercase tracking-[0.06em] text-[var(--muted)]">Teaching staff</p>
           </div>
           <div className="stat">
             <p className="font-display text-[40px] font-extrabold text-[var(--brand-color)]">{classCount}</p>

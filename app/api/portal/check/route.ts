@@ -134,7 +134,7 @@ export async function POST(request: NextRequest) {
     const results = (allResults ?? []).filter((r) => publishedTerms.has(`${r.session}|${r.term}`));
 
     return NextResponse.json({
-      student: { studentId: student.student_id, fullName: student.full_name, class: student.class },
+      student: { studentId: student.student_id, fullName: student.full_name, class: student.class, department: student.department },
       results,
       reportCards: publishedReportCards,
       usesRemaining: card.max_uses - usesCount,

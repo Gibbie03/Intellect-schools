@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseClient } from '@/lib/supabase';
 import { requireSchoolSession } from '@/lib/auth';
-import { CLASSES } from '@/lib/constants';
+import { CLASSES, DEPARTMENTS, isSeniorSecondaryClass } from '@/lib/constants';
 
 export const dynamic = 'force-dynamic';
 
@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
     const { school } = staff;
 
     const supabase = getSupabaseClient();
-    const { studentId, fullName, className, gender, dateOfBirth, parentName, parentEmail, parentPhone, address } =
+    const { studentId, fullName, className, department, gender, dateOfBirth, parentName, parentEmail, parentPhone, address } =
       await request.json();
 
     if (!studentId || !fullName || !className) {
@@ -52,6 +52,9 @@ export async function POST(request: NextRequest) {
     }
     if (!CLASSES.includes(className)) {
       return NextResponse.json({ error: 'Invalid class.' }, { status: 400 });
+    }
+    if (department && !(DEPARTMENTS as readonly string[]).includes(department)) {
+      return NextResponse.json({ error: 'Invalid department.' }, { status: 400 });
     }
 
     const { data, error } = await supabase
@@ -61,6 +64,7 @@ export async function POST(request: NextRequest) {
         student_id: studentId,
         full_name: fullName,
         class: className,
+        department: isSeniorSecondaryClass(className) ? department || null : null,
         gender: gender || null,
         date_of_birth: dateOfBirth || null,
         parent_name: parentName || null,
