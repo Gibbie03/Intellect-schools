@@ -14,6 +14,8 @@ export default async function Home() {
   const name = school.name;
   const tagline = school.tagline || 'Building confident learners for a brighter future.';
   const heroImageUrl = school.hero_image_url;
+  const welcomeMessage = school.principal_welcome_message;
+  const principalPhotoUrl = school.principal_photo_url;
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50">
@@ -55,6 +57,27 @@ export default async function Home() {
           </div>
         )}
       </section>
+
+      {welcomeMessage && (
+        <section className="mx-auto max-w-5xl px-6 pb-16 lg:pb-24">
+          <div className="flex flex-col gap-8 rounded-3xl bg-white p-8 shadow-xl sm:p-12 lg:flex-row lg:items-center">
+            {principalPhotoUrl && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={principalPhotoUrl}
+                alt="Principal"
+                className="h-32 w-32 shrink-0 rounded-full object-cover shadow lg:h-40 lg:w-40"
+              />
+            )}
+            <div>
+              <p className="mb-2 text-sm font-semibold uppercase tracking-wide text-[var(--brand-color)]">
+                A Message from the Principal
+              </p>
+              <p className="whitespace-pre-wrap text-lg leading-8 text-gray-700">{welcomeMessage}</p>
+            </div>
+          </div>
+        </section>
+      )}
     </main>
   );
 }

@@ -12,6 +12,9 @@ type School = {
   primary_color: string | null;
   tagline: string | null;
   hero_image_url: string | null;
+  whatsapp_number: string | null;
+  principal_welcome_message: string | null;
+  principal_photo_url: string | null;
   status: 'Active' | 'Suspended';
   created_at: string;
 };
@@ -62,6 +65,9 @@ export default function PlatformDashboard() {
     primaryColor: '',
     tagline: '',
     heroImageUrl: '',
+    whatsappNumber: '',
+    principalWelcomeMessage: '',
+    principalPhotoUrl: '',
     status: 'Active' as 'Active' | 'Suspended',
   });
   const [editSubmitting, setEditSubmitting] = useState(false);
@@ -163,6 +169,9 @@ export default function PlatformDashboard() {
       primaryColor: school.primary_color ?? '',
       tagline: school.tagline ?? '',
       heroImageUrl: school.hero_image_url ?? '',
+      whatsappNumber: school.whatsapp_number ?? '',
+      principalWelcomeMessage: school.principal_welcome_message ?? '',
+      principalPhotoUrl: school.principal_photo_url ?? '',
       status: school.status,
     });
   };
@@ -499,6 +508,27 @@ export default function PlatformDashboard() {
                             value={editForm.heroImageUrl}
                             onChange={(e) => setEditForm({ ...editForm, heroImageUrl: e.target.value })}
                             className="w-full rounded-xl border p-3 md:col-span-2"
+                          />
+                          <input
+                            type="text"
+                            placeholder="WhatsApp Number (e.g. 2348012345678, for the site-wide chat button)"
+                            value={editForm.whatsappNumber}
+                            onChange={(e) => setEditForm({ ...editForm, whatsappNumber: e.target.value })}
+                            className="w-full rounded-xl border p-3"
+                          />
+                          <input
+                            type="text"
+                            placeholder="Principal's Photo URL (optional)"
+                            value={editForm.principalPhotoUrl}
+                            onChange={(e) => setEditForm({ ...editForm, principalPhotoUrl: e.target.value })}
+                            className="w-full rounded-xl border p-3"
+                          />
+                          <textarea
+                            placeholder="Principal's Welcome Message (shown on the homepage)"
+                            value={editForm.principalWelcomeMessage}
+                            onChange={(e) => setEditForm({ ...editForm, principalWelcomeMessage: e.target.value })}
+                            className="w-full rounded-xl border p-3 md:col-span-2"
+                            rows={4}
                           />
                           <select
                             value={editForm.status}

@@ -3,6 +3,7 @@ import { headers } from 'next/headers';
 import './globals.css';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import WhatsAppButton from '@/components/WhatsAppButton';
 import { getSchoolFromHost } from '@/lib/tenant';
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -33,6 +34,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
         <Navbar schoolName={school?.name ?? 'SchoolOS'} isLanding={!school} />
         <div className="flex-1">{children}</div>
         <Footer schoolName={school?.name ?? 'SchoolOS'} />
+        {school?.whatsapp_number && <WhatsAppButton phone={school.whatsapp_number} schoolName={school.name} />}
       </body>
     </html>
   );
