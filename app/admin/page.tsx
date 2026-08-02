@@ -54,7 +54,7 @@ export default function AdminDashboard() {
             key={t.id}
             onClick={() => setTab(t.id)}
             className={`rounded-xl px-4 py-2 text-sm font-medium ${
-              tab === t.id ? 'bg-green-700 text-white' : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'
+              tab === t.id ? 'bg-[var(--brand-color)] text-white' : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'
             }`}
           >
             {t.label}
@@ -571,7 +571,7 @@ function StudentsSection() {
           <button
             type="submit"
             disabled={submitting}
-            className="w-full rounded-xl bg-green-700 py-3 font-semibold text-white hover:bg-green-800 disabled:opacity-60"
+            className="w-full rounded-xl bg-[var(--brand-color)] py-3 font-semibold text-white hover:brightness-90 disabled:opacity-60"
           >
             {submitting ? 'Creating...' : 'Create Profile'}
           </button>
@@ -584,7 +584,7 @@ function StudentsSection() {
             Parent Email, Parent Phone, Address.
           </p>
           {/* eslint-disable-next-line @next/next/no-html-link-for-pages -- file download, not a page route */}
-          <a href="/api/students/template" className="inline-block text-sm font-medium text-green-700 hover:underline">
+          <a href="/api/students/template" className="inline-block text-sm font-medium text-[var(--brand-color)] hover:underline">
             Download template
           </a>
           <input
@@ -614,7 +614,7 @@ function StudentsSection() {
           <button
             type="submit"
             disabled={batchSubmitting || !batchFile}
-            className="w-full rounded-xl bg-green-700 py-3 font-semibold text-white hover:bg-green-800 disabled:opacity-60"
+            className="w-full rounded-xl bg-[var(--brand-color)] py-3 font-semibold text-white hover:brightness-90 disabled:opacity-60"
           >
             {batchSubmitting ? 'Uploading...' : 'Upload & Create'}
           </button>
@@ -699,6 +699,9 @@ function StaffSection() {
   const [accountsError, setAccountsError] = useState('');
   const [accountSubmitting, setAccountSubmitting] = useState(false);
   const [accountForm, setAccountForm] = useState(emptyAccountForm);
+  const [resetTarget, setResetTarget] = useState<string | null>(null);
+  const [resetPassword, setResetPassword] = useState('');
+  const [resetSubmitting, setResetSubmitting] = useState(false);
 
   const load = () => {
     setLoading(true);
@@ -747,6 +750,29 @@ function StaffSection() {
       setAccountsError((err as Error).message);
     } finally {
       setAccountSubmitting(false);
+    }
+  };
+
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!resetTarget || resetPassword.length < 8) return;
+
+    setResetSubmitting(true);
+    setAccountsError('');
+    try {
+      const res = await fetch(`/api/school-users/${resetTarget}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: resetPassword }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to reset password.');
+      setResetTarget(null);
+      setResetPassword('');
+    } catch (err) {
+      setAccountsError((err as Error).message);
+    } finally {
+      setResetSubmitting(false);
     }
   };
 
@@ -867,7 +893,7 @@ function StaffSection() {
         <button
           type="submit"
           disabled={submitting}
-          className="md:col-span-2 w-full rounded-xl bg-green-700 py-3 font-semibold text-white hover:bg-green-800 disabled:opacity-60"
+          className="md:col-span-2 w-full rounded-xl bg-[var(--brand-color)] py-3 font-semibold text-white hover:brightness-90 disabled:opacity-60"
         >
           {submitting ? 'Creating...' : 'Create Staff Profile'}
         </button>
@@ -987,7 +1013,7 @@ function StaffSection() {
           <button
             type="submit"
             disabled={accountSubmitting}
-            className="md:col-span-2 w-full rounded-xl bg-green-700 py-3 font-semibold text-white hover:bg-green-800 disabled:opacity-60"
+            className="md:col-span-2 w-full rounded-xl bg-[var(--brand-color)] py-3 font-semibold text-white hover:brightness-90 disabled:opacity-60"
           >
             {accountSubmitting ? 'Creating...' : 'Create Login Account'}
           </button>
@@ -1005,6 +1031,7 @@ function StaffSection() {
                 <th className="text-left p-4">Email</th>
                 <th className="text-center p-4">Role</th>
                 <th className="text-center p-4">Status</th>
+                <th className="text-center p-4">Action</th>
               </tr>
             </thead>
             <tbody>
@@ -1014,6 +1041,37 @@ function StaffSection() {
                   <td className="p-4">{a.email}</td>
                   <td className="p-4 text-center capitalize">{a.role}</td>
                   <td className="p-4 text-center">{a.status}</td>
+                  <td className="p-4 text-center">
+                    <button
+                      onClick={() => {
+                        setResetTarget(resetTarget === a.id ? null : a.id);
+                        setResetPassword('');
+                      }}
+                      className="text-sm text-[var(--brand-color)] hover:underline"
+                    >
+                      {resetTarget === a.id ? 'Cancel' : 'Reset Password'}
+                    </button>
+                    {resetTarget === a.id && (
+                      <form onSubmit={handleResetPassword} className="mt-2 flex gap-2 justify-center">
+                        <input
+                          type="password"
+                          placeholder="New password"
+                          value={resetPassword}
+                          onChange={(e) => setResetPassword(e.target.value)}
+                          className="rounded-lg border p-2 text-sm"
+                          minLength={8}
+                          required
+                        />
+                        <button
+                          type="submit"
+                          disabled={resetSubmitting}
+                          className="rounded-lg bg-gray-900 px-3 py-2 text-xs font-semibold text-white disabled:opacity-60"
+                        >
+                          {resetSubmitting ? 'Saving...' : 'Save'}
+                        </button>
+                      </form>
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -1116,7 +1174,7 @@ function NewsSection() {
         <button
           type="submit"
           disabled={submitting}
-          className="rounded-xl bg-green-700 px-6 py-3 font-semibold text-white hover:bg-green-800 disabled:opacity-60"
+          className="rounded-xl bg-[var(--brand-color)] px-6 py-3 font-semibold text-white hover:brightness-90 disabled:opacity-60"
         >
           {submitting ? 'Posting...' : 'Post'}
         </button>
@@ -1237,7 +1295,7 @@ function GallerySection() {
         <button
           type="submit"
           disabled={submitting || !file}
-          className="rounded-xl bg-green-700 px-6 py-3 font-semibold text-white hover:bg-green-800 disabled:opacity-60"
+          className="rounded-xl bg-[var(--brand-color)] px-6 py-3 font-semibold text-white hover:brightness-90 disabled:opacity-60"
         >
           {submitting ? 'Uploading...' : 'Add Photo'}
         </button>
@@ -1349,7 +1407,7 @@ function ContactSection() {
                   {m.status === 'New' && (
                     <button
                       onClick={() => markRead(m.id)}
-                      className="text-sm text-green-700 hover:underline shrink-0"
+                      className="text-sm text-[var(--brand-color)] hover:underline shrink-0"
                     >
                       Mark as read
                     </button>

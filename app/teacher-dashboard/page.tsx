@@ -192,7 +192,7 @@ export default function TeacherDashboard() {
               setShowBatch(!showBatch);
               setShowForm(false);
             }}
-            className="bg-white border border-green-700 text-green-800 px-6 py-3 rounded-xl font-semibold"
+            className="bg-white border border-[var(--brand-color)] text-[var(--brand-color)] px-6 py-3 rounded-xl font-semibold"
           >
             {showBatch ? 'Cancel' : 'Upload Results for a Class'}
           </button>
@@ -201,7 +201,7 @@ export default function TeacherDashboard() {
               setShowForm(!showForm);
               setShowBatch(false);
             }}
-            className="bg-green-700 text-white px-6 py-3 rounded-xl font-semibold"
+            className="bg-[var(--brand-color)] text-white px-6 py-3 rounded-xl font-semibold"
           >
             {showForm ? 'Cancel' : '+ Upload New Result'}
           </button>
@@ -285,7 +285,7 @@ export default function TeacherDashboard() {
               <button
                 type="submit"
                 disabled={submitting}
-                className="w-full bg-green-700 hover:bg-green-800 text-white py-3 rounded-xl font-semibold disabled:opacity-60"
+                className="w-full bg-[var(--brand-color)] hover:brightness-90 text-white py-3 rounded-xl font-semibold disabled:opacity-60"
               >
                 {submitting ? 'Uploading...' : 'Upload Result'}
               </button>
@@ -421,7 +421,7 @@ export default function TeacherDashboard() {
                   <button
                     type="submit"
                     disabled={batchSubmitting}
-                    className="w-full bg-green-700 hover:bg-green-800 text-white py-3 rounded-xl font-semibold disabled:opacity-60"
+                    className="w-full bg-[var(--brand-color)] hover:brightness-90 text-white py-3 rounded-xl font-semibold disabled:opacity-60"
                   >
                     {batchSubmitting ? 'Uploading...' : 'Upload All Scores'}
                   </button>

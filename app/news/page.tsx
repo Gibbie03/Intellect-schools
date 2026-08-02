@@ -14,6 +14,7 @@ export default function NewsPage() {
   const [news, setNews] = useState<NewsItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [schoolName, setSchoolName] = useState('the school');
 
   useEffect(() => {
     fetch('/api/news')
@@ -24,12 +25,18 @@ export default function NewsPage() {
       })
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
+
+    fetch('/api/school')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.name) setSchoolName(data.name);
+      });
   }, []);
 
   return (
     <div className="mx-auto max-w-4xl px-6 py-12">
       <h1 className="text-4xl font-bold">News &amp; Events</h1>
-      <p className="mt-3 text-gray-600">Stay up to date with announcements and upcoming events at Intellect Schools.</p>
+      <p className="mt-3 text-gray-600">Stay up to date with announcements and upcoming events at {schoolName}.</p>
 
       <div className="mt-10 space-y-6">
         {loading && <p className="text-gray-500">Loading...</p>}
@@ -43,7 +50,7 @@ export default function NewsPage() {
             <div className="flex flex-wrap items-center justify-between gap-2">
               <h2 className="text-xl font-semibold">{item.title}</h2>
               {item.event_date && (
-                <span className="rounded-full bg-green-100 px-3 py-1 text-xs font-medium text-green-800">
+                <span className="rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-[var(--brand-color)]">
                   {new Date(item.event_date).toLocaleDateString(undefined, {
                     year: 'numeric',
                     month: 'long',

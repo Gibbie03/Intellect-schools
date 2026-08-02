@@ -13,6 +13,7 @@ export default function GalleryPage() {
   const [images, setImages] = useState<GalleryImage[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [schoolName, setSchoolName] = useState('the school');
 
   useEffect(() => {
     fetch('/api/gallery')
@@ -23,12 +24,18 @@ export default function GalleryPage() {
       })
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
+
+    fetch('/api/school')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.name) setSchoolName(data.name);
+      });
   }, []);
 
   return (
     <div className="mx-auto max-w-6xl px-6 py-12">
       <h1 className="text-4xl font-bold">Gallery</h1>
-      <p className="mt-3 text-gray-600">A look at life at Intellect Schools.</p>
+      <p className="mt-3 text-gray-600">A look at life at {schoolName}.</p>
 
       {loading && <p className="mt-10 text-gray-500">Loading...</p>}
       {error && <p className="mt-10 text-red-600">{error}</p>}

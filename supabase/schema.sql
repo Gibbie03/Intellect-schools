@@ -10,6 +10,8 @@ create table if not exists schools (
   custom_domain text unique,
   id_prefix text not null,
   logo_url text,
+  hero_image_url text,
+  tagline text,
   primary_color text,
   contact_email text,
   contact_phone text,
