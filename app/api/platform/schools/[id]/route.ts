@@ -32,6 +32,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     if (body.primaryColor !== undefined) update.primary_color = body.primaryColor || null;
     if (body.secondaryColor !== undefined) update.secondary_color = body.secondaryColor || null;
     if (body.tagline !== undefined) update.tagline = body.tagline || null;
+    if (body.motto !== undefined) update.motto = body.motto || null;
     if (body.heroImageUrl !== undefined) update.hero_image_url = body.heroImageUrl || null;
     if (body.contactEmail !== undefined) update.contact_email = body.contactEmail || null;
     if (body.contactPhone !== undefined) update.contact_phone = body.contactPhone || null;

@@ -44,7 +44,12 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
       style={{ '--brand-color': brandColor, '--brand-color-2': brandColor2 } as React.CSSProperties}
     >
       <body className="flex min-h-screen flex-col">
-        <Navbar schoolName={school?.name ?? 'SchoolOS'} logoUrl={school?.logo_url ?? null} isLanding={!school} />
+        <Navbar
+          schoolName={school?.name ?? 'SchoolOS'}
+          logoUrl={school?.logo_url ?? null}
+          motto={school?.motto ?? null}
+          isLanding={!school}
+        />
         <div className="flex-1">{children}</div>
         <Footer schoolName={school?.name ?? 'SchoolOS'} isLanding={!school} />
         {school?.whatsapp_number && <WhatsAppButton phone={school.whatsapp_number} schoolName={school.name} />}

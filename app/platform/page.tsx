@@ -13,6 +13,7 @@ type School = {
   primary_color: string | null;
   secondary_color: string | null;
   tagline: string | null;
+  motto: string | null;
   hero_image_url: string | null;
   contact_email: string | null;
   contact_phone: string | null;
@@ -41,6 +42,7 @@ const emptyForm = {
   idPrefix: '',
   primaryColor: '',
   tagline: '',
+  motto: '',
   heroImageUrl: '',
   adminFullName: '',
   adminEmail: '',
@@ -73,6 +75,7 @@ export default function PlatformDashboard() {
     primaryColor: '',
     secondaryColor: '',
     tagline: '',
+    motto: '',
     heroImageUrl: '',
     contactEmail: '',
     contactPhone: '',
@@ -187,6 +190,7 @@ export default function PlatformDashboard() {
       primaryColor: school.primary_color ?? '',
       secondaryColor: school.secondary_color ?? '',
       tagline: school.tagline ?? '',
+      motto: school.motto ?? '',
       heroImageUrl: school.hero_image_url ?? '',
       contactEmail: school.contact_email ?? '',
       contactPhone: school.contact_phone ?? '',
@@ -368,6 +372,13 @@ export default function PlatformDashboard() {
           placeholder="Brand Color (hex, optional, e.g. #15803d)"
           value={form.primaryColor}
           onChange={(e) => setForm({ ...form, primaryColor: e.target.value })}
+          className="w-full rounded-xl border p-3 md:col-span-2"
+        />
+        <input
+          type="text"
+          placeholder="School Motto (optional, shown in the site header, e.g. The Lord Leads)"
+          value={form.motto}
+          onChange={(e) => setForm({ ...form, motto: e.target.value })}
           className="w-full rounded-xl border p-3 md:col-span-2"
         />
         <input
@@ -608,6 +619,13 @@ export default function PlatformDashboard() {
                             </div>
                             {logoError && <p className="mt-2 text-sm text-red-600">{logoError}</p>}
                           </div>
+                          <input
+                            type="text"
+                            placeholder="School Motto (shown in the site header)"
+                            value={editForm.motto}
+                            onChange={(e) => setEditForm({ ...editForm, motto: e.target.value })}
+                            className="w-full rounded-xl border p-3 md:col-span-2"
+                          />
                           <input
                             type="text"
                             placeholder="Homepage Tagline"
