@@ -125,11 +125,86 @@ h1, h2, h3 {
   letter-spacing: 0.04em;
 }
 
+.schools-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 22px;
+}
+
+.stat-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  justify-items: center;
+  text-align: center;
+}
+.stat {
+  padding: 0 22px;
+  border-left: 1px solid var(--line);
+}
+.stat:first-child {
+  border-left: none;
+  padding-left: 0;
+}
+
+.split {
+  display: grid;
+  grid-template-columns: 1.05fr 0.95fr;
+  gap: 52px;
+  align-items: center;
+}
+
+.testi-card {
+  flex: none;
+  width: min(78vw, 380px);
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  padding: 26px;
+}
+.testi-quote {
+  font-family: var(--font-manrope), system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 16.5px;
+  line-height: 1.55;
+  color: #fff;
+  margin: 0;
+}
+.testi-name {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 13px;
+  margin: 16px 0 0;
+  font-weight: 600;
+}
+
 @keyframes marquee-scroll {
   from {
     transform: translateX(0);
   }
   to {
     transform: translateX(-50%);
+  }
+}
+
+@media (max-width: 900px) {
+  .split {
+    grid-template-columns: 1fr !important;
+  }
+  .stat {
+    padding: 0 6px;
+  }
+}
+@media (max-width: 560px) {
+  .stat-row {
+    grid-template-columns: 1fr !important;
+    gap: 22px;
+  }
+  .stat {
+    border-left: none !important;
+    padding: 0 !important;
+    border-top: 1px solid var(--line);
+    padding-top: 18px !important;
+  }
+  .stat:first-child {
+    border-top: none;
+    padding-top: 0 !important;
   }
 }
