@@ -31,7 +31,11 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
   const headersList = await headers();
   const school = await getSchoolFromHost(headersList.get('host'));
   const brandColor = school?.primary_color || '#15803d';
-  const brandColor2 = school?.secondary_color || school?.primary_color || '#0e6b39';
+  // The classical template's accent moments (tags, card borders, active nav
+  // underline, testimonial band) are designed against a distinct accent
+  // color, not a tint of the primary -- falling back to primary_color here
+  // silently erases that accent for any school that hasn't set one.
+  const brandColor2 = school?.secondary_color || '#b23324';
 
   return (
     <html

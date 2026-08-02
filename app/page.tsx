@@ -99,7 +99,7 @@ export default async function Home() {
 
       <section className="wrap pb-6 pt-14">
         <span className="tag">Our school</span>
-        <h2 className="mb-4 text-3xl">Three stages, one community</h2>
+        <h2 className="mb-7 text-3xl">Three stages, one community</h2>
         <div className="schools-grid">
           <div className="card">
             <h3 className="mb-3 text-xl">Primary School</h3>
@@ -125,7 +125,7 @@ export default async function Home() {
         </div>
       </section>
 
-      <section className="wrap split py-16">
+      <section className="wrap split py-[76px]">
         <div>
           <span className="tag">Campus life</span>
           <h2 className="mb-4 text-[30px]">A campus meant for looking around</h2>
@@ -190,7 +190,7 @@ export default async function Home() {
         </section>
       )}
 
-      <section className="wrap py-16">
+      <section className="wrap py-[72px]">
         <div
           className="flex flex-wrap items-center justify-between gap-6 p-11"
           style={{ background: 'var(--ink)' }}

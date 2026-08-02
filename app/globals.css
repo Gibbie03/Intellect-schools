@@ -151,18 +151,19 @@ h1, h2, h3 {
 }
 
 .stat-row {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  justify-items: center;
-  text-align: center;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 16px;
 }
 .stat {
-  padding: 0 22px;
-  border-left: 1px solid var(--line);
-}
-.stat:first-child {
-  border-left: none;
-  padding-left: 0;
+  flex: 1 1 180px;
+  max-width: 240px;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 20px 24px;
+  text-align: center;
 }
 
 .split {
@@ -224,9 +225,6 @@ h1, h2, h3 {
 @media (max-width: 900px) {
   .split {
     grid-template-columns: 1fr !important;
-  }
-  .stat {
-    padding: 0 6px;
   }
 }
 .dash-shell {
@@ -318,17 +316,11 @@ h1, h2, h3 {
 
 @media (max-width: 560px) {
   .stat-row {
-    grid-template-columns: 1fr !important;
-    gap: 22px;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
   }
   .stat {
-    border-left: none !important;
-    padding: 0 !important;
-    border-top: 1px solid var(--line);
-    padding-top: 18px !important;
-  }
-  .stat:first-child {
-    border-top: none;
-    padding-top: 0 !important;
+    max-width: none;
   }
 }
