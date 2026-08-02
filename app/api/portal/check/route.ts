@@ -36,10 +36,56 @@ export async function POST(request: NextRequest) {
     const pinValid = await verifyPassword(pin, card.pin_hash);
     if (!pinValid) return NextResponse.json({ error: genericError }, { status: 401 });
 
-    if (card.uses_count >= card.max_uses) {
+    // FIX NOTE: this used to read `card.uses_count`, compare it to
+    // `max_uses`, and only afterwards write back `uses_count + 1` -- a
+    // classic TOCTOU race. Two requests racing the same serial+PIN (a
+    // shared/photographed scratch card is the realistic case, no attacker
+    // sophistication required) could both read the same `uses_count`, both
+    // pass the `>= max_uses` check, and both then write `uses_count + 1`,
+    // letting the card be used more times than printed. The compare-and-swap
+    // below closes it: the UPDATE's WHERE clause is evaluated against the
+    // row's *current* value at write time, not our stale in-memory `card`,
+    // so only one of two concurrent requests can ever win a given slot;
+    // Postgres serializes the row-level UPDATEs, so the loser's WHERE
+    // simply stops matching once the winner commits.
+    let usesCount = card.uses_count;
+    const cardId = card.id;
+    let claimed = false;
+    for (let attempt = 0; attempt < 3 && !claimed; attempt++) {
+      if (usesCount >= card.max_uses) {
+        return NextResponse.json(
+          { error: 'This card has already been used its maximum number of times. Please get a new card.' },
+          { status: 403 }
+        );
+      }
+
+      const { data: updated, error: casError } = await supabase
+        .from('result_pins')
+        .update({ uses_count: usesCount + 1 })
+        .eq('id', cardId)
+        .eq('uses_count', usesCount)
+        .select('uses_count')
+        .maybeSingle();
+      if (casError) throw casError;
+
+      if (updated) {
+        claimed = true;
+        usesCount = updated.uses_count;
+      } else {
+        const { data: fresh, error: refetchError } = await supabase
+          .from('result_pins')
+          .select('uses_count')
+          .eq('id', cardId)
+          .single();
+        if (refetchError) throw refetchError;
+        usesCount = fresh.uses_count;
+      }
+    }
+
+    if (!claimed) {
       return NextResponse.json(
-        { error: 'This card has already been used its maximum number of times. Please get a new card.' },
-        { status: 403 }
+        { error: 'This card is being used elsewhere right now. Please try again in a moment.' },
+        { status: 409 }
       );
     }
 
@@ -77,17 +123,11 @@ export async function POST(request: NextRequest) {
     const publishedTerms = new Set(publishedReportCards.map((rc) => `${rc.session}|${rc.term}`));
     const results = (allResults ?? []).filter((r) => publishedTerms.has(`${r.session}|${r.term}`));
 
-    const { error: updateError } = await supabase
-      .from('result_pins')
-      .update({ uses_count: card.uses_count + 1 })
-      .eq('id', card.id);
-    if (updateError) throw updateError;
-
     return NextResponse.json({
       student: { studentId: student.student_id, fullName: student.full_name, class: student.class },
       results,
       reportCards: publishedReportCards,
-      usesRemaining: card.max_uses - (card.uses_count + 1),
+      usesRemaining: card.max_uses - usesCount,
     });
   } catch (error) {
     return NextResponse.json({ error: (error as Error).message }, { status: 500 });
