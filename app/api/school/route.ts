@@ -9,7 +9,9 @@ export async function GET(request: NextRequest) {
 
   return NextResponse.json({
     name: school.name,
+    logoUrl: school.logo_url,
     primaryColor: school.primary_color,
+    secondaryColor: school.secondary_color,
     tagline: school.tagline,
     heroImageUrl: school.hero_image_url,
     whatsappNumber: school.whatsapp_number,
@@ -17,5 +19,7 @@ export async function GET(request: NextRequest) {
     principalPhotoUrl: school.principal_photo_url,
     prospectusUrl: school.prospectus_url,
     address: school.address,
+    contactEmail: school.contact_email,
+    contactPhone: school.contact_phone,
   });
 }

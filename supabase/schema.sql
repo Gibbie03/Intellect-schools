@@ -13,6 +13,7 @@ create table if not exists schools (
   hero_image_url text,
   tagline text,
   primary_color text,
+  secondary_color text,
   contact_email text,
   contact_phone text,
   address text,
@@ -20,6 +21,7 @@ create table if not exists schools (
   principal_welcome_message text,
   principal_photo_url text,
   prospectus_url text,
+  template text not null default 'classical',
   status text not null default 'Active' check (status in ('Active', 'Suspended')),
   plan text not null default 'Standard',
   features jsonb not null default '{}'::jsonb,
@@ -35,6 +37,9 @@ create table if not exists school_users (
   full_name text not null,
   teacher_id uuid references teachers(id) on delete set null,
   status text not null default 'Active' check (status in ('Active', 'Inactive')),
+  totp_secret text,
+  totp_enabled boolean not null default false,
+  totp_last_used_step bigint,
   created_at timestamptz not null default now(),
   unique (school_id, email)
 );
@@ -174,6 +179,7 @@ create table if not exists contact_messages (
   subject text,
   message text not null,
   status text not null default 'New' check (status in ('New', 'Read')),
+  category text not null default 'General Enquiry' check (category in ('General Enquiry', 'Suggestion', 'Complaint', 'Other')),
   created_at timestamptz not null default now()
 );
 
@@ -283,6 +289,51 @@ create table if not exists academic_calendar (
 
 create index if not exists academic_calendar_school_session_idx on academic_calendar (school_id, session);
 
+-- Fixed-window rate limiting, backed by Postgres rather than a new service
+-- (Redis/Upstash) -- one row per (key, window), incremented atomically by
+-- increment_rate_limit() so concurrent requests can't race past the limit.
+create table if not exists rate_limit_hits (
+  key text not null,
+  window_start timestamptz not null,
+  count int not null default 1,
+  primary key (key, window_start)
+);
+
+create index if not exists rate_limit_hits_window_idx on rate_limit_hits (window_start);
+
+create or replace function increment_rate_limit(p_key text, p_window_start timestamptz)
+returns int
+language sql
+as $$
+  insert into rate_limit_hits (key, window_start, count)
+  values (p_key, p_window_start, 1)
+  on conflict (key, window_start)
+  do update set count = rate_limit_hits.count + 1
+  returning count;
+$$;
+
+-- Audit trail for sensitive/destructive actions -- who did what, to which
+-- record, and what changed. actor fields are denormalized (not just a
+-- school_users FK) so the log still reads correctly after the actor
+-- account itself is later deleted or reassigned.
+create table if not exists audit_log (
+  id uuid primary key default gen_random_uuid(),
+  school_id uuid not null references schools(id) on delete cascade,
+  actor_user_id uuid,
+  actor_name text not null,
+  actor_role text not null,
+  action text not null,
+  entity_type text not null,
+  entity_id text,
+  before jsonb,
+  after jsonb,
+  ip_address text,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists audit_log_school_created_idx on audit_log (school_id, created_at desc);
+create index if not exists audit_log_school_entity_idx on audit_log (school_id, entity_type, entity_id);
+
 -- Homepage testimonials from parents/alumni.
 create table if not exists testimonials (
   id uuid primary key default gen_random_uuid(),
@@ -335,3 +386,5 @@ alter table spotlights enable row level security;
 alter table academic_calendar enable row level security;
 alter table testimonials enable row level security;
 alter table attendance enable row level security;
+alter table rate_limit_hits enable row level security;
+alter table audit_log enable row level security;

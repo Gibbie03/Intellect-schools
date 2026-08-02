@@ -28,9 +28,14 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     if (body.subdomain !== undefined) update.subdomain = body.subdomain;
     if (body.customDomain !== undefined) update.custom_domain = body.customDomain || null;
     if (body.idPrefix !== undefined) update.id_prefix = body.idPrefix;
+    if (body.logoUrl !== undefined) update.logo_url = body.logoUrl || null;
     if (body.primaryColor !== undefined) update.primary_color = body.primaryColor || null;
+    if (body.secondaryColor !== undefined) update.secondary_color = body.secondaryColor || null;
     if (body.tagline !== undefined) update.tagline = body.tagline || null;
     if (body.heroImageUrl !== undefined) update.hero_image_url = body.heroImageUrl || null;
+    if (body.contactEmail !== undefined) update.contact_email = body.contactEmail || null;
+    if (body.contactPhone !== undefined) update.contact_phone = body.contactPhone || null;
+    if (body.address !== undefined) update.address = body.address || null;
     if (body.whatsappNumber !== undefined) update.whatsapp_number = body.whatsappNumber || null;
     if (body.principalWelcomeMessage !== undefined)
       update.principal_welcome_message = body.principalWelcomeMessage || null;

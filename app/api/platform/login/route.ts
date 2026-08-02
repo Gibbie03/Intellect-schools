@@ -1,6 +1,7 @@
 import { timingSafeEqual } from 'node:crypto';
 import { NextRequest, NextResponse } from 'next/server';
 import { signOwnerSession, PLATFORM_SESSION_COOKIE } from '@/lib/auth';
+import { checkRateLimit, getClientIp } from '@/lib/rateLimit';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,6 +14,15 @@ function safeEqual(a: string, b: string): boolean {
 
 export async function POST(request: NextRequest) {
   try {
+    const ip = getClientIp(request);
+    const { allowed, retryAfterSeconds } = await checkRateLimit(`platform-login:${ip}`, 5, 300);
+    if (!allowed) {
+      return NextResponse.json(
+        { error: 'Too many attempts. Please try again in a few minutes.' },
+        { status: 429, headers: { 'Retry-After': String(retryAfterSeconds) } }
+      );
+    }
+
     const ownerPassword = process.env.PLATFORM_OWNER_PASSWORD;
     if (!ownerPassword) {
       return NextResponse.json({ error: 'Platform owner password is not configured.' }, { status: 500 });

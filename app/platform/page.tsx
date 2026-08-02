@@ -9,9 +9,14 @@ type School = {
   subdomain: string;
   custom_domain: string | null;
   id_prefix: string;
+  logo_url: string | null;
   primary_color: string | null;
+  secondary_color: string | null;
   tagline: string | null;
   hero_image_url: string | null;
+  contact_email: string | null;
+  contact_phone: string | null;
+  address: string | null;
   whatsapp_number: string | null;
   principal_welcome_message: string | null;
   principal_photo_url: string | null;
@@ -26,6 +31,7 @@ type SchoolUserRow = {
   role: 'admin' | 'teacher';
   full_name: string;
   status: 'Active' | 'Inactive';
+  totp_enabled: boolean;
 };
 
 const emptyForm = {
@@ -63,9 +69,14 @@ export default function PlatformDashboard() {
     subdomain: '',
     customDomain: '',
     idPrefix: '',
+    logoUrl: '',
     primaryColor: '',
+    secondaryColor: '',
     tagline: '',
     heroImageUrl: '',
+    contactEmail: '',
+    contactPhone: '',
+    address: '',
     whatsappNumber: '',
     principalWelcomeMessage: '',
     principalPhotoUrl: '',
@@ -168,9 +179,14 @@ export default function PlatformDashboard() {
       subdomain: school.subdomain,
       customDomain: school.custom_domain ?? '',
       idPrefix: school.id_prefix,
+      logoUrl: school.logo_url ?? '',
       primaryColor: school.primary_color ?? '',
+      secondaryColor: school.secondary_color ?? '',
       tagline: school.tagline ?? '',
       heroImageUrl: school.hero_image_url ?? '',
+      contactEmail: school.contact_email ?? '',
+      contactPhone: school.contact_phone ?? '',
+      address: school.address ?? '',
       whatsappNumber: school.whatsapp_number ?? '',
       principalWelcomeMessage: school.principal_welcome_message ?? '',
       principalPhotoUrl: school.principal_photo_url ?? '',
@@ -238,6 +254,25 @@ export default function PlatformDashboard() {
       setUsersError((err as Error).message);
     } finally {
       setResetSubmitting(false);
+    }
+  };
+
+  const handleOwnerDisableTwoFactor = async (userId: string) => {
+    if (!managingId) return;
+    if (!confirm('Turn off two-factor authentication for this account? Only do this if they are locked out.')) return;
+
+    setUsersError('');
+    try {
+      const res = await fetch(`/api/platform/schools/${managingId}/users/${userId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ disableTotp: true }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to disable two-factor authentication.');
+      setSchoolUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, totp_enabled: false } : u)));
+    } catch (err) {
+      setUsersError((err as Error).message);
     }
   };
 
@@ -493,10 +528,24 @@ export default function PlatformDashboard() {
                           />
                           <input
                             type="text"
-                            placeholder="Brand Color (hex)"
+                            placeholder="Primary Brand Color (hex, e.g. #0e6b39)"
                             value={editForm.primaryColor}
                             onChange={(e) => setEditForm({ ...editForm, primaryColor: e.target.value })}
                             className="w-full rounded-xl border p-3"
+                          />
+                          <input
+                            type="text"
+                            placeholder="Secondary Brand Color (hex, optional, e.g. #b23324)"
+                            value={editForm.secondaryColor}
+                            onChange={(e) => setEditForm({ ...editForm, secondaryColor: e.target.value })}
+                            className="w-full rounded-xl border p-3"
+                          />
+                          <input
+                            type="text"
+                            placeholder="Logo URL (optional, shown in the site header)"
+                            value={editForm.logoUrl}
+                            onChange={(e) => setEditForm({ ...editForm, logoUrl: e.target.value })}
+                            className="w-full rounded-xl border p-3 md:col-span-2"
                           />
                           <input
                             type="text"
@@ -510,6 +559,27 @@ export default function PlatformDashboard() {
                             placeholder="Hero Image URL"
                             value={editForm.heroImageUrl}
                             onChange={(e) => setEditForm({ ...editForm, heroImageUrl: e.target.value })}
+                            className="w-full rounded-xl border p-3 md:col-span-2"
+                          />
+                          <input
+                            type="email"
+                            placeholder="Contact Email (optional)"
+                            value={editForm.contactEmail}
+                            onChange={(e) => setEditForm({ ...editForm, contactEmail: e.target.value })}
+                            className="w-full rounded-xl border p-3"
+                          />
+                          <input
+                            type="text"
+                            placeholder="Contact Phone (optional)"
+                            value={editForm.contactPhone}
+                            onChange={(e) => setEditForm({ ...editForm, contactPhone: e.target.value })}
+                            className="w-full rounded-xl border p-3"
+                          />
+                          <input
+                            type="text"
+                            placeholder="Address (optional, shown on Contact + map)"
+                            value={editForm.address}
+                            onChange={(e) => setEditForm({ ...editForm, address: e.target.value })}
                             className="w-full rounded-xl border p-3 md:col-span-2"
                           />
                           <input
@@ -617,6 +687,14 @@ export default function PlatformDashboard() {
                                           {resetSubmitting ? 'Saving...' : 'Save'}
                                         </button>
                                       </form>
+                                    )}
+                                    {u.totp_enabled && (
+                                      <button
+                                        onClick={() => handleOwnerDisableTwoFactor(u.id)}
+                                        className="mt-2 block text-sm text-red-600 hover:underline"
+                                      >
+                                        Disable 2FA
+                                      </button>
                                     )}
                                   </td>
                                 </tr>

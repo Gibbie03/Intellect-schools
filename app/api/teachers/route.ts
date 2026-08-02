@@ -1,9 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { randomUUID } from 'node:crypto';
 import { getSupabaseClient } from '@/lib/supabase';
 import { STAFF_ROLES, CLASSES } from '@/lib/constants';
 import { requireSchoolSession } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
+
+const BUCKET = 'teachers';
+
+async function ensureBucketExists(supabase: ReturnType<typeof getSupabaseClient>) {
+  const { data: bucket } = await supabase.storage.getBucket(BUCKET);
+  if (!bucket) {
+    await supabase.storage.createBucket(BUCKET, { public: true });
+  }
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -26,6 +36,9 @@ export async function GET(request: NextRequest) {
   }
 }
 
+// Photo is a file upload only (taken/picked on the admin's device) -- no
+// URL field, so staff creation doesn't depend on someone already having a
+// hosted image link.
 export async function POST(request: NextRequest) {
   try {
     const staff = await requireSchoolSession(request, ['admin']);
@@ -33,16 +46,47 @@ export async function POST(request: NextRequest) {
     const { school } = staff;
 
     const supabase = getSupabaseClient();
-    const { staffId, fullName, role, subject, email, phone, classTeacherOf, photoUrl, bio } = await request.json();
+    const formData = await request.formData();
+    const staffId = formData.get('staffId');
+    const fullName = formData.get('fullName');
+    const role = formData.get('role');
+    const subject = formData.get('subject');
+    const email = formData.get('email');
+    const phone = formData.get('phone');
+    const classTeacherOf = formData.get('classTeacherOf');
+    const bio = formData.get('bio');
+    const file = formData.get('file');
 
-    if (!staffId || !fullName) {
+    if (!staffId || typeof staffId !== 'string' || !fullName || typeof fullName !== 'string') {
       return NextResponse.json({ error: 'staffId and fullName are required.' }, { status: 400 });
     }
-    if (role && !STAFF_ROLES.includes(role)) {
+    if (role && (typeof role !== 'string' || !(STAFF_ROLES as readonly string[]).includes(role))) {
       return NextResponse.json({ error: 'Invalid role.' }, { status: 400 });
     }
-    if (classTeacherOf && !CLASSES.includes(classTeacherOf)) {
+    if (classTeacherOf && (typeof classTeacherOf !== 'string' || !CLASSES.includes(classTeacherOf))) {
       return NextResponse.json({ error: 'Invalid class for Class Teacher Of.' }, { status: 400 });
+    }
+
+    let photoUrl: string | null = null;
+    if (file && typeof file !== 'string') {
+      if (!file.type.startsWith('image/')) {
+        return NextResponse.json({ error: 'Only image files are allowed.' }, { status: 400 });
+      }
+      const MAX_BYTES = 8 * 1024 * 1024;
+      if (file.size > MAX_BYTES) {
+        return NextResponse.json({ error: 'Image must be smaller than 8MB.' }, { status: 400 });
+      }
+      await ensureBucketExists(supabase);
+      const extension = file.name.includes('.') ? file.name.split('.').pop() : file.type.split('/')[1];
+      const path = `${school.id}/${randomUUID()}.${extension}`;
+      const { error: uploadError } = await supabase.storage
+        .from(BUCKET)
+        .upload(path, await file.arrayBuffer(), { contentType: file.type });
+      if (uploadError) throw uploadError;
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from(BUCKET).getPublicUrl(path);
+      photoUrl = publicUrl;
     }
 
     const { data, error } = await supabase
@@ -51,14 +95,14 @@ export async function POST(request: NextRequest) {
         school_id: school.id,
         staff_id: staffId,
         full_name: fullName,
-        role: role || 'Teacher',
-        subject: subject || null,
-        email: email || null,
-        phone: phone || null,
+        role: ((role as string) || 'Teacher') as (typeof STAFF_ROLES)[number],
+        subject: (subject as string) || null,
+        email: (email as string) || null,
+        phone: (phone as string) || null,
         status: 'Active',
-        class_teacher_of: classTeacherOf || null,
-        photo_url: photoUrl || null,
-        bio: bio || null,
+        class_teacher_of: (classTeacherOf as string) || null,
+        photo_url: photoUrl,
+        bio: (bio as string) || null,
       })
       .select()
       .single();

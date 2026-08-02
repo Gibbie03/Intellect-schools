@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseClient } from '@/lib/supabase';
 import { requireSchoolSession, hashPassword } from '@/lib/auth';
 import { generatePin, buildSerial, buildBatchTag } from '@/lib/resultPins';
+import { logAudit } from '@/lib/auditLog';
 
 export const dynamic = 'force-dynamic';
 
@@ -113,6 +114,53 @@ export async function POST(request: NextRequest) {
     if (insertError) throw insertError;
 
     return NextResponse.json({ batchLabel: label, cards }, { status: 201 });
+  } catch (error) {
+    return NextResponse.json({ error: (error as Error).message }, { status: 500 });
+  }
+}
+
+// Removes every card in a batch. PINs are bcrypt-hashed and shown only once
+// at generation time -- there is no way to recover them afterwards, so this
+// is for clearing out a batch whose codes were lost before being
+// distributed (e.g. a "digital" batch never sent to parents), not for
+// revoking cards already in parents' hands.
+export async function DELETE(request: NextRequest) {
+  const staff = await requireSchoolSession(request, ['admin']);
+  if (!staff) return NextResponse.json({ error: 'Not authenticated.' }, { status: 401 });
+  const { school } = staff;
+
+  try {
+    const batchLabel = request.nextUrl.searchParams.get('batchLabel');
+    const session = request.nextUrl.searchParams.get('session');
+    const term = request.nextUrl.searchParams.get('term');
+    if (!batchLabel || !session) {
+      return NextResponse.json({ error: 'batchLabel and session are required.' }, { status: 400 });
+    }
+
+    const supabase = getSupabaseClient();
+    let query = supabase
+      .from('result_pins')
+      .delete()
+      .eq('school_id', school.id)
+      .eq('batch_label', batchLabel)
+      .eq('session', session)
+      .select('id');
+    query = term ? query.eq('term', term) : query.is('term', null);
+
+    const { data, error } = await query;
+    if (error) throw error;
+
+    await logAudit({
+      request,
+      schoolId: school.id,
+      actor: staff.session,
+      action: 'result_pin_batch.delete',
+      entityType: 'result_pin_batch',
+      entityId: batchLabel,
+      before: { batchLabel, session, term, cardsDeleted: data?.length ?? 0 },
+    });
+
+    return NextResponse.json({ success: true });
   } catch (error) {
     return NextResponse.json({ error: (error as Error).message }, { status: 500 });
   }

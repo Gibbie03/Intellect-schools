@@ -2,11 +2,295 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * "Classical" design system -- the shared template every school's public
+ * site (and admin/teacher dashboard) renders with. --brand-color and
+ * --brand-color-2 are set per-request in app/layout.tsx from each school's
+ * primary_color/secondary_color; everything else here is a fixed neutral
+ * "paper" base shared across schools, with light tints derived from the
+ * brand colors via color-mix() rather than needing extra DB fields.
+ */
 :root {
   color-scheme: light;
+  --ink: #15201a;
+  --cream: #faf6ee;
+  --paper: #ffffff;
+  --line: #e4ddd0;
+  --muted: #6d7568;
+  --gold: #c9a35a;
+  --brand-tint: color-mix(in srgb, var(--brand-color) 12%, white);
+  --brand-2-tint: color-mix(in srgb, var(--brand-color-2) 12%, white);
 }
 
 body {
-  background: #f8fafc;
-  color: #111827;
+  background: var(--cream);
+  color: var(--ink);
+  font-family: var(--font-inter), system-ui, sans-serif;
+}
+
+h1, h2, h3 {
+  font-family: var(--font-manrope), system-ui, sans-serif;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.wrap {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 clamp(24px, 5vw, 72px);
+}
+
+.tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-manrope), system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 12.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--brand-color-2);
+  margin-bottom: 16px;
+}
+.tag-light {
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  font-family: var(--font-manrope), system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 15px;
+  padding: 15px 30px;
+  cursor: pointer;
+  border: none;
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 16px), calc(100% - 16px) 100%, 0 100%);
+}
+.btn-primary {
+  background: var(--brand-color);
+  color: #fff;
+}
+.btn-primary:hover {
+  filter: brightness(0.88);
+}
+.btn-secondary {
+  background: var(--brand-color-2);
+  color: #fff;
+}
+.btn-secondary:hover {
+  filter: brightness(0.88);
+}
+.btn-outline {
+  clip-path: none;
+  border: 1.5px solid var(--ink);
+  color: var(--ink);
+  background: transparent;
+  padding: 13.5px 28px;
+}
+.btn-outline:hover {
+  background: var(--ink);
+  color: #fff;
+}
+.btn-ghost {
+  clip-path: none;
+  border: 1.5px solid rgba(255, 255, 255, 0.55);
+  color: #fff;
+  background: transparent;
+  padding: 13.5px 28px;
+}
+.btn-ghost:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.card {
+  background: var(--paper);
+  border-left: 4px solid var(--brand-color);
+  padding: 26px;
+}
+.card-accent {
+  border-left-color: var(--brand-color-2);
+}
+
+.frame {
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 28px), calc(100% - 28px) 100%, 0 100%);
+}
+
+.pill {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 5px 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.schools-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 22px;
+}
+
+.stat-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  justify-items: center;
+  text-align: center;
+}
+.stat {
+  padding: 0 22px;
+  border-left: 1px solid var(--line);
+}
+.stat:first-child {
+  border-left: none;
+  padding-left: 0;
+}
+
+.split {
+  display: grid;
+  grid-template-columns: 1.05fr 0.95fr;
+  gap: 52px;
+  align-items: center;
+}
+
+.testi-card {
+  flex: none;
+  width: min(78vw, 380px);
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  padding: 26px;
+}
+.testi-quote {
+  font-family: var(--font-manrope), system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 16.5px;
+  line-height: 1.55;
+  color: #fff;
+  margin: 0;
+}
+.testi-name {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 13px;
+  margin: 16px 0 0;
+  font-weight: 600;
+}
+
+@keyframes marquee-scroll {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@media (max-width: 900px) {
+  .split {
+    grid-template-columns: 1fr !important;
+  }
+  .stat {
+    padding: 0 6px;
+  }
+}
+.dash-shell {
+  display: grid;
+  grid-template-columns: 250px 1fr;
+  min-height: 100vh;
+}
+.dash-sidebar {
+  background: var(--ink);
+  border-right: 3px solid var(--gold);
+  padding: 24px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.side-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 20px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.75);
+  border-left: 3px solid transparent;
+  background: none;
+  border-top: none;
+  border-bottom: none;
+  border-right: none;
+  text-align: left;
+  cursor: pointer;
+  width: 100%;
+}
+.side-link:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+.side-link.active {
+  background: rgba(255, 255, 255, 0.06);
+  color: #fff;
+  border-left-color: var(--gold);
+}
+.dash-icon-btn {
+  width: 38px;
+  height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1.5px solid var(--line);
+  background: var(--paper);
+  cursor: pointer;
+  color: var(--ink);
+}
+.dash-icon-btn:hover {
+  background: var(--cream);
+}
+.dash-mobile-toggle {
+  display: none;
+}
+.dash-overlay {
+  display: none;
+}
+@media (max-width: 840px) {
+  .dash-shell {
+    grid-template-columns: 1fr;
+  }
+  .dash-sidebar {
+    position: fixed;
+    inset: 0 auto 0 0;
+    width: 250px;
+    z-index: 60;
+    transform: translateX(-100%);
+    transition: transform 0.25s ease;
+    box-shadow: 0 0 40px rgba(0, 0, 0, 0.3);
+  }
+  .dash-sidebar.open {
+    transform: translateX(0);
+  }
+  .dash-mobile-toggle {
+    display: inline-flex !important;
+  }
+  .dash-overlay.open {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+    z-index: 50;
+  }
+}
+
+@media (max-width: 560px) {
+  .stat-row {
+    grid-template-columns: 1fr !important;
+    gap: 22px;
+  }
+  .stat {
+    border-left: none !important;
+    padding: 0 !important;
+    border-top: 1px solid var(--line);
+    padding-top: 18px !important;
+  }
+  .stat:first-child {
+    border-top: none;
+    padding-top: 0 !important;
+  }
 }

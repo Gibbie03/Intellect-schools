@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseClient } from '@/lib/supabase';
 import { getSchoolFromHost } from '@/lib/tenant';
 import { verifyPassword } from '@/lib/auth';
+import { checkRateLimit, getClientIp } from '@/lib/rateLimit';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,6 +13,15 @@ export const dynamic = 'force-dynamic';
 // verified, rather than reusing those endpoints.
 export async function POST(request: NextRequest) {
   try {
+    const ip = getClientIp(request);
+    const { allowed, retryAfterSeconds } = await checkRateLimit(`portal-check:${ip}`, 20, 300);
+    if (!allowed) {
+      return NextResponse.json(
+        { error: 'Too many attempts. Please wait a few minutes and try again.' },
+        { status: 429, headers: { 'Retry-After': String(retryAfterSeconds) } }
+      );
+    }
+
     const school = await getSchoolFromHost(request.headers.get('host'));
     if (!school) return NextResponse.json({ error: 'School not found for this domain.' }, { status: 404 });
 

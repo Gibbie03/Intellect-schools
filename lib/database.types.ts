@@ -12,6 +12,7 @@ export type Database = {
           hero_image_url: string | null;
           tagline: string | null;
           primary_color: string | null;
+          secondary_color: string | null;
           contact_email: string | null;
           contact_phone: string | null;
           address: string | null;
@@ -19,6 +20,7 @@ export type Database = {
           principal_welcome_message: string | null;
           principal_photo_url: string | null;
           prospectus_url: string | null;
+          template: string;
           status: 'Active' | 'Suspended';
           plan: string;
           features: Record<string, boolean>;
@@ -34,6 +36,7 @@ export type Database = {
           hero_image_url?: string | null;
           tagline?: string | null;
           primary_color?: string | null;
+          secondary_color?: string | null;
           contact_email?: string | null;
           contact_phone?: string | null;
           address?: string | null;
@@ -41,6 +44,7 @@ export type Database = {
           principal_welcome_message?: string | null;
           principal_photo_url?: string | null;
           prospectus_url?: string | null;
+          template?: string;
           status?: 'Active' | 'Suspended';
           plan?: string;
           features?: Record<string, boolean>;
@@ -56,6 +60,7 @@ export type Database = {
           hero_image_url?: string | null;
           tagline?: string | null;
           primary_color?: string | null;
+          secondary_color?: string | null;
           contact_email?: string | null;
           contact_phone?: string | null;
           address?: string | null;
@@ -63,6 +68,7 @@ export type Database = {
           principal_welcome_message?: string | null;
           principal_photo_url?: string | null;
           prospectus_url?: string | null;
+          template?: string;
           status?: 'Active' | 'Suspended';
           plan?: string;
           features?: Record<string, boolean>;
@@ -80,6 +86,9 @@ export type Database = {
           full_name: string;
           teacher_id: string | null;
           status: 'Active' | 'Inactive';
+          totp_secret: string | null;
+          totp_enabled: boolean;
+          totp_last_used_step: number | null;
           created_at: string;
         };
         Insert: {
@@ -91,6 +100,9 @@ export type Database = {
           full_name: string;
           teacher_id?: string | null;
           status?: 'Active' | 'Inactive';
+          totp_secret?: string | null;
+          totp_enabled?: boolean;
+          totp_last_used_step?: number | null;
           created_at?: string;
         };
         Update: {
@@ -102,6 +114,9 @@ export type Database = {
           full_name?: string;
           teacher_id?: string | null;
           status?: 'Active' | 'Inactive';
+          totp_secret?: string | null;
+          totp_enabled?: boolean;
+          totp_last_used_step?: number | null;
           created_at?: string;
         };
         Relationships: [];
@@ -419,6 +434,7 @@ export type Database = {
           subject: string | null;
           message: string;
           status: 'New' | 'Read';
+          category: 'General Enquiry' | 'Suggestion' | 'Complaint' | 'Other';
           created_at: string;
         };
         Insert: {
@@ -430,6 +446,7 @@ export type Database = {
           subject?: string | null;
           message: string;
           status?: 'New' | 'Read';
+          category?: 'General Enquiry' | 'Suggestion' | 'Complaint' | 'Other';
           created_at?: string;
         };
         Update: {
@@ -441,6 +458,7 @@ export type Database = {
           subject?: string | null;
           message?: string;
           status?: 'New' | 'Read';
+          category?: 'General Enquiry' | 'Suggestion' | 'Complaint' | 'Other';
           created_at?: string;
         };
         Relationships: [];
@@ -679,6 +697,51 @@ export type Database = {
         };
         Relationships: [];
       };
+      audit_log: {
+        Row: {
+          id: string;
+          school_id: string;
+          actor_user_id: string | null;
+          actor_name: string;
+          actor_role: string;
+          action: string;
+          entity_type: string;
+          entity_id: string | null;
+          before: Record<string, unknown> | null;
+          after: Record<string, unknown> | null;
+          ip_address: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          school_id: string;
+          actor_user_id?: string | null;
+          actor_name: string;
+          actor_role: string;
+          action: string;
+          entity_type: string;
+          entity_id?: string | null;
+          before?: Record<string, unknown> | null;
+          after?: Record<string, unknown> | null;
+          ip_address?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          school_id?: string;
+          actor_user_id?: string | null;
+          actor_name?: string;
+          actor_role?: string;
+          action?: string;
+          entity_type?: string;
+          entity_id?: string | null;
+          before?: Record<string, unknown> | null;
+          after?: Record<string, unknown> | null;
+          ip_address?: string | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
       testimonials: {
         Row: {
           id: string;
@@ -745,8 +808,31 @@ export type Database = {
         };
         Relationships: [];
       };
+      rate_limit_hits: {
+        Row: {
+          key: string;
+          window_start: string;
+          count: number;
+        };
+        Insert: {
+          key: string;
+          window_start: string;
+          count?: number;
+        };
+        Update: {
+          key?: string;
+          window_start?: string;
+          count?: number;
+        };
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
-    Functions: Record<string, never>;
+    Functions: {
+      increment_rate_limit: {
+        Args: { p_key: string; p_window_start: string };
+        Returns: number;
+      };
+    };
   };
 };

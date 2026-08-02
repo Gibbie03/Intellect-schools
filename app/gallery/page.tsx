@@ -13,7 +13,6 @@ export default function GalleryPage() {
   const [images, setImages] = useState<GalleryImage[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [schoolName, setSchoolName] = useState('the school');
 
   useEffect(() => {
     fetch('/api/gallery')
@@ -24,34 +23,50 @@ export default function GalleryPage() {
       })
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
-
-    fetch('/api/school')
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.name) setSchoolName(data.name);
-      });
   }, []);
 
   return (
-    <div className="mx-auto max-w-6xl px-6 py-12">
-      <h1 className="text-4xl font-bold">Gallery</h1>
-      <p className="mt-3 text-gray-600">A look at life at {schoolName}.</p>
+    <main>
+      <section
+        className="py-13"
+        style={{ background: 'linear-gradient(135deg, var(--ink) 0%, color-mix(in srgb, var(--brand-color) 70%, black) 100%)' }}
+      >
+        <div className="wrap">
+          <span className="tag tag-light">Campus life</span>
+          <h1 className="text-white" style={{ fontSize: 'clamp(30px, 4.5vw, 46px)', lineHeight: 1.1 }}>
+            A term, in pictures
+          </h1>
+          <p className="mt-4 max-w-[60ch] text-base leading-[1.6] text-white/82">
+            Academics, athletics, performances and the everyday life of the school.
+          </p>
+        </div>
+      </section>
 
-      {loading && <p className="mt-10 text-gray-500">Loading...</p>}
-      {error && <p className="mt-10 text-red-600">{error}</p>}
-      {!loading && !error && images.length === 0 && (
-        <p className="mt-10 text-gray-500">No photos have been added to the gallery yet.</p>
-      )}
+      <section className="wrap py-16">
+        {loading && <p className="text-[var(--muted)]">Loading…</p>}
+        {error && <p className="text-red-600">{error}</p>}
+        {!loading && !error && images.length === 0 && (
+          <p className="text-[var(--muted)]">No photos have been added to the gallery yet.</p>
+        )}
 
-      <div className="mt-10 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {images.map((image) => (
-          <figure key={image.id} className="overflow-hidden rounded-2xl bg-white shadow">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={image.image_url} alt={image.caption ?? 'School gallery photo'} className="h-56 w-full object-cover" />
-            {image.caption && <figcaption className="p-4 text-sm text-gray-600">{image.caption}</figcaption>}
-          </figure>
-        ))}
-      </div>
-    </div>
+        <div className="schools-grid">
+          {images.map((image) => (
+            <figure key={image.id} className="frame m-0 overflow-hidden">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={image.image_url}
+                alt={image.caption ?? 'School gallery photo'}
+                className="aspect-[4/3] w-full object-cover"
+              />
+              {image.caption && (
+                <figcaption className="mt-2.5 text-xs font-semibold uppercase tracking-[0.05em] text-[var(--muted)]">
+                  {image.caption}
+                </figcaption>
+              )}
+            </figure>
+          ))}
+        </div>
+      </section>
+    </main>
   );
 }

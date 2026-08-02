@@ -20,7 +20,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const supabase = getSupabaseClient();
     const { data, error } = await supabase
       .from('school_users')
-      .select('id, email, role, full_name, status, created_at')
+      .select('id, email, role, full_name, status, totp_enabled, created_at')
       .eq('school_id', id)
       .order('created_at', { ascending: false });
 

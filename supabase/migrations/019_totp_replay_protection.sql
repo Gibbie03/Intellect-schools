@@ -1,0 +1,14 @@
+-- FIX NOTE: verifyTotpCode() only checked that a submitted code was valid
+-- for *some* step within the +/-1 window (RFC 6238's usual tolerance for
+-- clock drift) -- it never recorded which step was used, so the same
+-- 6-digit code stayed accepted for its entire ~90s validity window no
+-- matter how many times it was submitted. An attacker who obtains one valid
+-- code together with the account's password (a phished/shoulder-surfed
+-- code, a compromised network relaying a real login attempt, etc.) could
+-- replay that same code against a fresh login of their own within that
+-- window and complete 2FA -- the whole point of the second factor is
+-- defeated if the "second" factor can just be reused. Storing the last
+-- verified time-step and rejecting anything at or before it (time only
+-- moves forward, so this can never reject a legitimate later code) closes
+-- that without adding any friction for the real user.
+alter table school_users add column if not exists totp_last_used_step bigint;

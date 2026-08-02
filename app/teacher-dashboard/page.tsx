@@ -4,6 +4,9 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { SUBJECTS, TERMS, SESSIONS, CURRENT_SESSION, CONDUCT_RATINGS } from '@/lib/grade';
 import { CLASSES } from '@/lib/constants';
+import DashboardShell from '@/components/DashboardShell';
+
+type Panel = 'none' | 'upload' | 'batch' | 'photo' | 'report-card' | 'attendance' | 'security';
 
 type UploadedResult = {
   id: string;
@@ -40,11 +43,7 @@ export default function TeacherDashboard() {
   const router = useRouter();
   const [teacherName, setTeacherName] = useState('');
   const [uploadedResults, setUploadedResults] = useState<UploadedResult[]>([]);
-  const [showForm, setShowForm] = useState(false);
-  const [showBatch, setShowBatch] = useState(false);
-  const [showPhoto, setShowPhoto] = useState(false);
-  const [showReportCard, setShowReportCard] = useState(false);
-  const [showAttendance, setShowAttendance] = useState(false);
+  const [panel, setPanel] = useState<Panel>('none');
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -122,6 +121,18 @@ export default function TeacherDashboard() {
   const [attError, setAttError] = useState('');
   const [attNotice, setAttNotice] = useState('');
 
+  // Two-factor authentication (self-service, per account).
+  const [totpEnabled, setTotpEnabled] = useState<boolean | null>(null);
+  const [setupData, setSetupData] = useState<{ secret: string; qrCodeDataUrl: string } | null>(null);
+  const [confirmCode, setConfirmCode] = useState('');
+  const [confirming, setConfirming] = useState(false);
+  const [settingUp, setSettingUp] = useState(false);
+  const [disablePassword, setDisablePassword] = useState('');
+  const [showDisable, setShowDisable] = useState(false);
+  const [disabling, setDisabling] = useState(false);
+  const [securityError, setSecurityError] = useState('');
+  const [securityNotice, setSecurityNotice] = useState('');
+
   const loadResults = () => {
     setLoading(true);
     fetch('/api/results')
@@ -141,6 +152,7 @@ export default function TeacherDashboard() {
       .then((data) => {
         if (data.fullName) setTeacherName(data.fullName);
         setClassTeacherOf(data.classTeacherOf ?? null);
+        setTotpEnabled(Boolean(data.totpEnabled));
       });
   }, []);
 
@@ -178,7 +190,7 @@ export default function TeacherDashboard() {
       if (!res.ok) throw new Error(data.error || 'Failed to upload result.');
 
       setNewResult({ studentId: '', subject: SUBJECTS[0], caScore: '', examScore: '', session: CURRENT_SESSION, term: TERMS[0] });
-      setShowForm(false);
+      setPanel('none');
       setNotice('Result uploaded. It will appear on the student portal once the class teacher publishes this term’s report card.');
       loadResults();
     } catch (err) {
@@ -404,6 +416,68 @@ export default function TeacherDashboard() {
     persistReportCard();
   };
 
+  const startTotpSetup = async () => {
+    setSettingUp(true);
+    setSecurityError('');
+    setSecurityNotice('');
+    try {
+      const res = await fetch('/api/auth/2fa/setup', { method: 'POST' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to start setup.');
+      setSetupData({ secret: data.secret, qrCodeDataUrl: data.qrCodeDataUrl });
+    } catch (err) {
+      setSecurityError((err as Error).message);
+    } finally {
+      setSettingUp(false);
+    }
+  };
+
+  const handleConfirmTotp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setConfirming(true);
+    setSecurityError('');
+    try {
+      const res = await fetch('/api/auth/2fa/confirm', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: confirmCode }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Invalid code.');
+      setSetupData(null);
+      setConfirmCode('');
+      setTotpEnabled(true);
+      setSecurityNotice('Two-factor authentication is now on for your account.');
+    } catch (err) {
+      setSecurityError((err as Error).message);
+    } finally {
+      setConfirming(false);
+    }
+  };
+
+  const handleDisableTotp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setDisabling(true);
+    setSecurityError('');
+    try {
+      const res = await fetch('/api/auth/2fa/disable', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: disablePassword }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to disable.');
+      setTotpEnabled(false);
+      setShowDisable(false);
+      setDisablePassword('');
+      setSecurityNotice('Two-factor authentication has been turned off.');
+    } catch (err) {
+      setSecurityError((err as Error).message);
+    } finally {
+      setDisabling(false);
+    }
+  };
+
   const autofillAttendance = async () => {
     if (!rcLookup.studentId) return;
     setRcError('');
@@ -424,7 +498,7 @@ export default function TeacherDashboard() {
   };
 
   useEffect(() => {
-    if (!showAttendance || !classTeacherOf) return;
+    if (panel !== 'attendance' || !classTeacherOf) return;
 
     setAttLoading(true);
     setAttError('');
@@ -444,7 +518,7 @@ export default function TeacherDashboard() {
       })
       .catch((err) => setAttError(err.message))
       .finally(() => setAttLoading(false));
-  }, [showAttendance, classTeacherOf, attDate]);
+  }, [panel, classTeacherOf, attDate]);
 
   const saveAttendance = async () => {
     if (!classTeacherOf) return;
@@ -468,87 +542,23 @@ export default function TeacherDashboard() {
     }
   };
 
-  return (
-    <div className="max-w-6xl mx-auto px-6 py-12">
-      <div className="flex flex-wrap justify-between items-center gap-4 mb-8">
-        <div>
-          <h1 className="text-4xl font-bold">Teacher Dashboard</h1>
-          <p className="text-gray-600">Welcome, {teacherName || '...'}</p>
-        </div>
-        <div className="flex flex-wrap gap-3">
-          <button onClick={handleLogout} className="text-sm text-red-600 hover:underline self-center">
-            Logout
-          </button>
-          <button
-            onClick={() => {
-              setShowReportCard(!showReportCard);
-              setShowForm(false);
-              setShowBatch(false);
-              setShowPhoto(false);
-              setShowAttendance(false);
-            }}
-            className="bg-white border border-gray-300 text-gray-700 px-6 py-3 rounded-xl font-semibold"
-          >
-            {showReportCard ? 'Cancel' : 'Report Card Comments'}
-          </button>
-          {classTeacherOf && (
-            <button
-              onClick={() => {
-                setShowAttendance(!showAttendance);
-                setShowForm(false);
-                setShowBatch(false);
-                setShowPhoto(false);
-                setShowReportCard(false);
-              }}
-              className="bg-white border border-gray-300 text-gray-700 px-6 py-3 rounded-xl font-semibold"
-            >
-              {showAttendance ? 'Cancel' : 'Take Attendance'}
-            </button>
-          )}
-          <button
-            onClick={() => {
-              setShowPhoto(!showPhoto);
-              setShowForm(false);
-              setShowBatch(false);
-              setShowReportCard(false);
-              setShowAttendance(false);
-            }}
-            className="bg-white border border-gray-300 text-gray-700 px-6 py-3 rounded-xl font-semibold"
-          >
-            {showPhoto ? 'Cancel' : 'Upload from Photo'}
-          </button>
-          <button
-            onClick={() => {
-              setShowBatch(!showBatch);
-              setShowForm(false);
-              setShowPhoto(false);
-              setShowReportCard(false);
-              setShowAttendance(false);
-            }}
-            className="bg-white border border-[var(--brand-color)] text-[var(--brand-color)] px-6 py-3 rounded-xl font-semibold"
-          >
-            {showBatch ? 'Cancel' : 'Upload Results for a Class'}
-          </button>
-          <button
-            onClick={() => {
-              setShowForm(!showForm);
-              setShowBatch(false);
-              setShowPhoto(false);
-              setShowReportCard(false);
-              setShowAttendance(false);
-            }}
-            className="bg-[var(--brand-color)] text-white px-6 py-3 rounded-xl font-semibold"
-          >
-            {showForm ? 'Cancel' : '+ Upload New Result'}
-          </button>
-        </div>
-      </div>
+  const TABS: { id: Panel; label: string }[] = [
+    { id: 'none', label: 'Dashboard' },
+    { id: 'upload', label: 'Upload New Result' },
+    { id: 'batch', label: 'Upload Results for a Class' },
+    { id: 'photo', label: 'Upload from Photo' },
+    { id: 'report-card', label: 'Report Card Comments' },
+    ...(classTeacherOf ? ([{ id: 'attendance', label: 'Take Attendance' }] as { id: Panel; label: string }[]) : []),
+    { id: 'security', label: 'Security' },
+  ];
 
+  return (
+    <DashboardShell brandLabel="Teacher Dashboard" tabs={TABS} activeTab={panel} onTabChange={setPanel} userLabel={teacherName} onLogout={handleLogout}>
       {notice && <div className="mb-6 rounded-xl bg-green-50 p-4 text-sm text-green-800">{notice}</div>}
       {error && <div className="mb-6 rounded-xl bg-red-50 p-4 text-sm text-red-700">{error}</div>}
 
       {/* Single Upload Form */}
-      {showForm && (
+      {panel === 'upload' && (
         <div className="bg-white p-8 rounded-2xl shadow mb-10 border">
           <h2 className="text-2xl font-semibold mb-6">Upload Student Result</h2>
 
@@ -644,7 +654,7 @@ export default function TeacherDashboard() {
       )}
 
       {/* Batch Upload for a Class */}
-      {showBatch && (
+      {panel === 'batch' && (
         <div className="bg-white p-8 rounded-2xl shadow mb-10 border">
           <h2 className="text-2xl font-semibold mb-2">Upload Results for a Class</h2>
           <p className="text-sm text-gray-500 mb-6">
@@ -801,7 +811,7 @@ export default function TeacherDashboard() {
       )}
 
       {/* Upload from Photo */}
-      {showPhoto && (
+      {panel === 'photo' && (
         <div className="bg-white p-8 rounded-2xl shadow mb-10 border">
           <h2 className="text-2xl font-semibold mb-2">Upload from Photo</h2>
           <p className="text-sm text-gray-500 mb-6">
@@ -973,7 +983,7 @@ export default function TeacherDashboard() {
       )}
 
       {/* Report Card Comments */}
-      {showReportCard && (
+      {panel === 'report-card' && (
         <div className="bg-white p-8 rounded-2xl shadow mb-10 border">
           <h2 className="text-2xl font-semibold mb-2">Report Card Comments</h2>
           <p className="text-sm text-gray-500 mb-6">
@@ -1139,7 +1149,7 @@ export default function TeacherDashboard() {
       )}
 
       {/* Take Attendance */}
-      {showAttendance && classTeacherOf && (
+      {panel === 'attendance' && classTeacherOf && (
         <div className="bg-white p-8 rounded-2xl shadow mb-10 border">
           <h2 className="text-2xl font-semibold mb-2">Take Attendance &mdash; {classTeacherOf}</h2>
           <p className="text-sm text-gray-500 mb-6">Feeds the &quot;days present&quot; figure on report cards.</p>
@@ -1223,6 +1233,95 @@ export default function TeacherDashboard() {
         </div>
       )}
 
+      {/* Security */}
+      {panel === 'security' && (
+        <div className="bg-white p-8 rounded-2xl shadow mb-10 border max-w-xl">
+          <h2 className="text-2xl font-semibold mb-2">Security</h2>
+          <p className="text-sm text-gray-500 mb-6">
+            Two-factor authentication adds a 6-digit code from an authenticator app on top of your password.
+          </p>
+          {securityError && <p className="mb-4 text-sm text-red-600">{securityError}</p>}
+          {securityNotice && <p className="mb-4 text-sm text-green-700">{securityNotice}</p>}
+
+          {totpEnabled === null ? (
+            <p className="text-gray-500">Loading...</p>
+          ) : totpEnabled ? (
+            <div>
+              <p className="text-sm text-green-700 font-medium mb-4">Two-factor authentication is ON.</p>
+              {!showDisable ? (
+                <button onClick={() => setShowDisable(true)} className="text-sm text-red-600 hover:underline">
+                  Turn off two-factor authentication
+                </button>
+              ) : (
+                <form onSubmit={handleDisableTotp} className="space-y-3">
+                  <label className="block text-sm font-medium">Confirm your password to turn it off</label>
+                  <input
+                    type="password"
+                    value={disablePassword}
+                    onChange={(e) => setDisablePassword(e.target.value)}
+                    className="w-full rounded-xl border p-3"
+                    required
+                  />
+                  <div className="flex gap-3">
+                    <button
+                      type="submit"
+                      disabled={disabling}
+                      className="rounded-xl bg-red-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
+                    >
+                      {disabling ? 'Turning off...' : 'Turn Off'}
+                    </button>
+                    <button type="button" onClick={() => setShowDisable(false)} className="text-sm text-gray-500 hover:underline">
+                      Cancel
+                    </button>
+                  </div>
+                </form>
+              )}
+            </div>
+          ) : setupData ? (
+            <form onSubmit={handleConfirmTotp} className="space-y-4">
+              <p className="text-sm text-gray-600">
+                Scan this QR code with your authenticator app, then enter the 6-digit code it shows.
+              </p>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={setupData.qrCodeDataUrl} alt="Two-factor QR code" className="h-48 w-48" />
+              <p className="text-xs text-gray-500">
+                Can&apos;t scan? Enter this key manually: <span className="font-mono">{setupData.secret}</span>
+              </p>
+              <input
+                type="text"
+                inputMode="numeric"
+                placeholder="123456"
+                value={confirmCode}
+                onChange={(e) => setConfirmCode(e.target.value)}
+                className="w-full rounded-xl border p-3 text-center text-xl tracking-widest"
+                maxLength={6}
+                required
+              />
+              <div className="flex gap-3">
+                <button
+                  type="submit"
+                  disabled={confirming}
+                  className="rounded-xl bg-[var(--brand-color)] px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
+                >
+                  {confirming ? 'Confirming...' : 'Confirm & Enable'}
+                </button>
+                <button type="button" onClick={() => setSetupData(null)} className="text-sm text-gray-500 hover:underline">
+                  Cancel
+                </button>
+              </div>
+            </form>
+          ) : (
+            <button
+              onClick={startTotpSetup}
+              disabled={settingUp}
+              className="rounded-xl bg-[var(--brand-color)] px-6 py-3 font-semibold text-white hover:brightness-90 disabled:opacity-60"
+            >
+              {settingUp ? 'Starting...' : 'Enable Two-Factor Authentication'}
+            </button>
+          )}
+        </div>
+      )}
+
       {/* Uploaded Results */}
       <div className="bg-white rounded-2xl shadow p-8">
         <h2 className="text-2xl font-semibold mb-6">Recently Uploaded Results ({uploadedResults.length})</h2>
@@ -1285,6 +1384,6 @@ export default function TeacherDashboard() {
         Results are saved immediately, but only appear on the student portal once the class teacher compiles and
         publishes that term&apos;s report card (see Report Card Comments above).
       </div>
-    </div>
+    </DashboardShell>
   );
 }

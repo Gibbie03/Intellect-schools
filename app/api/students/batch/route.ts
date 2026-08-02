@@ -3,6 +3,7 @@ import * as XLSX from 'xlsx';
 import { getSupabaseClient } from '@/lib/supabase';
 import { Database } from '@/lib/database.types';
 import { requireSchoolSession } from '@/lib/auth';
+import { CLASSES } from '@/lib/constants';
 
 export const dynamic = 'force-dynamic';
 
@@ -79,6 +80,11 @@ export async function POST(request: NextRequest) {
 
       if (!mapped.student_id || !mapped.full_name || !mapped.class) {
         errors.push({ row: rowNumber, reason: 'Missing Student ID, Full Name, or Class.' });
+        return;
+      }
+
+      if (!CLASSES.includes(mapped.class)) {
+        errors.push({ row: rowNumber, reason: `"${mapped.class}" is not a recognized class (e.g. "SSS 2", not "SS2").` });
         return;
       }
 

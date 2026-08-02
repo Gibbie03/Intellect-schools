@@ -1,10 +1,14 @@
 import type { Metadata } from 'next';
+import { Manrope, Inter } from 'next/font/google';
 import { headers } from 'next/headers';
 import './globals.css';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import WhatsAppButton from '@/components/WhatsAppButton';
 import { getSchoolFromHost } from '@/lib/tenant';
+
+const manrope = Manrope({ subsets: ['latin'], weight: ['500', '700', '800'], variable: '--font-manrope' });
+const inter = Inter({ subsets: ['latin'], weight: ['400', '500', '600'], variable: '--font-inter' });
 
 export async function generateMetadata(): Promise<Metadata> {
   const headersList = await headers();
@@ -27,13 +31,18 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
   const headersList = await headers();
   const school = await getSchoolFromHost(headersList.get('host'));
   const brandColor = school?.primary_color || '#15803d';
+  const brandColor2 = school?.secondary_color || school?.primary_color || '#0e6b39';
 
   return (
-    <html lang="en" style={{ '--brand-color': brandColor } as React.CSSProperties}>
+    <html
+      lang="en"
+      className={`${manrope.variable} ${inter.variable}`}
+      style={{ '--brand-color': brandColor, '--brand-color-2': brandColor2 } as React.CSSProperties}
+    >
       <body className="flex min-h-screen flex-col">
-        <Navbar schoolName={school?.name ?? 'SchoolOS'} isLanding={!school} />
+        <Navbar schoolName={school?.name ?? 'SchoolOS'} logoUrl={school?.logo_url ?? null} isLanding={!school} />
         <div className="flex-1">{children}</div>
-        <Footer schoolName={school?.name ?? 'SchoolOS'} />
+        <Footer schoolName={school?.name ?? 'SchoolOS'} isLanding={!school} />
         {school?.whatsapp_number && <WhatsAppButton phone={school.whatsapp_number} schoolName={school.name} />}
       </body>
     </html>

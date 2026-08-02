@@ -53,6 +53,35 @@ export async function verifySession(token: string): Promise<SessionPayload | nul
   }
 }
 
+export type PendingTwoFactorPayload = {
+  userId: string;
+  schoolSubdomain: string;
+};
+
+// A short-lived, narrowly-scoped token issued after a correct password but
+// before the TOTP code is verified. Deliberately a different shape (no
+// role/fullName, a "purpose" tag) from SessionPayload so it can never be
+// mistaken for -- or replayed as -- a real session, even if it leaked.
+export async function signPendingTwoFactorToken(payload: PendingTwoFactorPayload): Promise<string> {
+  return new SignJWT({ ...payload, purpose: '2fa-pending' })
+    .setProtectedHeader({ alg: 'HS256' })
+    .setIssuedAt()
+    .setExpirationTime('5m')
+    .sign(getSecretKey());
+}
+
+export async function verifyPendingTwoFactorToken(token: string): Promise<PendingTwoFactorPayload | null> {
+  try {
+    const { payload } = await jwtVerify(token, getSecretKey());
+    if (payload.purpose === '2fa-pending' && typeof payload.userId === 'string' && typeof payload.schoolSubdomain === 'string') {
+      return { userId: payload.userId, schoolSubdomain: payload.schoolSubdomain };
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 export async function signOwnerSession(): Promise<string> {
   return new SignJWT({ owner: true })
     .setProtectedHeader({ alg: 'HS256' })

@@ -62,6 +62,22 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       return NextResponse.json({ user: data });
     }
 
+    // Lockout recovery: an admin can turn off a colleague's two-factor
+    // authentication if they've lost their authenticator app/device --
+    // there are no backup codes, so this is the only way back in otherwise.
+    if (body.disableTotp === true) {
+      const { data, error } = await supabase
+        .from('school_users')
+        .update({ totp_secret: null, totp_enabled: false })
+        .eq('id', id)
+        .eq('school_id', school.id)
+        .select('id, email, role, full_name, status')
+        .single();
+
+      if (error) throw error;
+      return NextResponse.json({ user: data });
+    }
+
     return NextResponse.json({ error: 'No valid fields to update.' }, { status: 400 });
   } catch (error) {
     return NextResponse.json({ error: (error as Error).message }, { status: 500 });

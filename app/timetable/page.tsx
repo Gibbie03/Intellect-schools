@@ -23,6 +23,20 @@ type ExamTimetableEntry = {
   venue: string | null;
 };
 
+function TabButton({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`font-display border-b-2 pb-2.5 text-[13.5px] font-bold ${
+        active ? 'border-[var(--brand-color-2)] text-[var(--ink)]' : 'border-transparent text-[var(--muted)]'
+      }`}
+    >
+      {children}
+    </button>
+  );
+}
+
 export default function TimetablePage() {
   const [selectedClass, setSelectedClass] = useState(CLASSES[0]);
   const [tab, setTab] = useState<'class' | 'exam'>('class');
@@ -63,151 +77,168 @@ export default function TimetablePage() {
   const cellFor = (day: string, period: number) => classEntries.find((e) => e.day_of_week === day && e.period_number === period);
 
   return (
-    <div className="mx-auto max-w-6xl px-6 py-12">
-      <h1 className="text-4xl font-bold">Timetables</h1>
-      <p className="mt-3 text-gray-600">Class and exam schedules by class.</p>
-
-      <div className="mt-8 flex flex-wrap items-center gap-4">
-        <select
-          value={selectedClass}
-          onChange={(e) => setSelectedClass(e.target.value)}
-          className="rounded-xl border p-3"
-        >
-          {CLASSES.map((c) => (
-            <option key={c}>{c}</option>
-          ))}
-        </select>
-
-        <div className="flex gap-2">
-          <button
-            onClick={() => setTab('class')}
-            className={`rounded-xl px-4 py-2 text-sm font-medium ${
-              tab === 'class' ? 'bg-[var(--brand-color)] text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
-          >
-            Class Timetable
-          </button>
-          <button
-            onClick={() => setTab('exam')}
-            className={`rounded-xl px-4 py-2 text-sm font-medium ${
-              tab === 'exam' ? 'bg-[var(--brand-color)] text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
-          >
-            Exam Timetable
-          </button>
+    <main>
+      <section
+        className="py-12"
+        style={{ background: 'linear-gradient(135deg, var(--ink) 0%, color-mix(in srgb, var(--brand-color) 70%, black) 100%)' }}
+      >
+        <div className="wrap">
+          <span className="tag tag-light">Academics</span>
+          <h1 className="text-white" style={{ fontSize: 'clamp(28px, 4vw, 42px)' }}>
+            Timetables
+          </h1>
+          <p className="mt-3.5 text-[15.5px] text-white/82">Class and exam schedules by class.</p>
         </div>
-      </div>
+      </section>
 
-      {tab === 'class' && (
-        <div className="mt-8 bg-white rounded-2xl shadow p-6 overflow-x-auto">
-          {classLoading ? (
-            <p className="text-gray-500">Loading...</p>
-          ) : periods.length === 0 ? (
-            <p className="text-gray-500">No timetable has been published for {selectedClass} yet.</p>
-          ) : (
-            <table className="w-full border-collapse text-sm min-w-[640px]">
-              <thead>
-                <tr className="bg-gray-100">
-                  <th className="text-left p-3">Period</th>
-                  {DAYS_OF_WEEK.map((d) => (
-                    <th key={d} className="text-left p-3">
-                      {d}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {periods.map((period) => {
-                  const times = periodsByNumber.get(period);
-                  return (
-                    <tr key={period} className="border-b align-top">
-                      <td className="p-3 font-medium">
-                        {period}
-                        {(times?.start || times?.end) && (
-                          <div className="text-xs text-gray-400">
-                            {times?.start} {times?.end ? `– ${times.end}` : ''}
-                          </div>
-                        )}
-                      </td>
-                      {DAYS_OF_WEEK.map((day) => {
-                        const cell = cellFor(day, period);
-                        return (
-                          <td key={day} className="p-3">
-                            {cell ? (
-                              <>
-                                <p className="font-medium">{cell.subject}</p>
-                                {cell.teacher_name && <p className="text-xs text-gray-500">{cell.teacher_name}</p>}
-                              </>
-                            ) : (
-                              <span className="text-gray-300">—</span>
-                            )}
-                          </td>
-                        );
-                      })}
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          )}
-        </div>
-      )}
+      <section className="wrap py-10">
+        <div className="mb-7 flex flex-wrap items-center gap-4">
+          <select
+            value={selectedClass}
+            onChange={(e) => setSelectedClass(e.target.value)}
+            className="border border-[var(--line)] bg-[var(--paper)] p-3 text-sm"
+          >
+            {CLASSES.map((c) => (
+              <option key={c}>{c}</option>
+            ))}
+          </select>
 
-      {tab === 'exam' && (
-        <div className="mt-8">
-          <div className="flex flex-wrap gap-4 mb-6">
-            <select
-              value={examSetup.session}
-              onChange={(e) => setExamSetup({ ...examSetup, session: e.target.value })}
-              className="rounded-xl border p-3"
-            >
-              {SESSIONS.map((s) => (
-                <option key={s}>{s}</option>
-              ))}
-            </select>
-            <select
-              value={examSetup.term}
-              onChange={(e) => setExamSetup({ ...examSetup, term: e.target.value })}
-              className="rounded-xl border p-3"
-            >
-              {TERMS.map((t) => (
-                <option key={t}>{t}</option>
-              ))}
-            </select>
+          <div className="flex gap-6">
+            <TabButton active={tab === 'class'} onClick={() => setTab('class')}>
+              Class Timetable
+            </TabButton>
+            <TabButton active={tab === 'exam'} onClick={() => setTab('exam')}>
+              Exam Timetable
+            </TabButton>
           </div>
+        </div>
 
-          <div className="bg-white rounded-2xl shadow p-6">
-            {examLoading ? (
-              <p className="text-gray-500">Loading...</p>
-            ) : examEntries.length === 0 ? (
-              <p className="text-gray-500">No exam timetable has been published for {selectedClass} yet.</p>
+        {tab === 'class' && (
+          <div className="overflow-x-auto bg-[var(--paper)] p-6">
+            {classLoading ? (
+              <p className="text-[var(--muted)]">Loading…</p>
+            ) : periods.length === 0 ? (
+              <p className="text-[var(--muted)]">No timetable has been published for {selectedClass} yet.</p>
             ) : (
-              <table className="w-full text-sm">
+              <table className="w-full min-w-[640px] border-collapse text-[13.5px]">
                 <thead>
-                  <tr className="bg-gray-100">
-                    <th className="text-left p-3">Subject</th>
-                    <th className="text-left p-3">Date</th>
-                    <th className="text-left p-3">Time</th>
-                    <th className="text-left p-3">Venue</th>
+                  <tr>
+                    <th className="border-b-2 border-[var(--ink)] p-3 text-left text-[11px] uppercase tracking-[0.06em] text-[var(--muted)]">
+                      Period
+                    </th>
+                    {DAYS_OF_WEEK.map((d) => (
+                      <th
+                        key={d}
+                        className="border-b-2 border-[var(--ink)] p-3 text-left text-[11px] uppercase tracking-[0.06em] text-[var(--muted)]"
+                      >
+                        {d}
+                      </th>
+                    ))}
                   </tr>
                 </thead>
                 <tbody>
-                  {examEntries.map((e) => (
-                    <tr key={e.id} className="border-b">
-                      <td className="p-3 font-medium">{e.subject}</td>
-                      <td className="p-3">{new Date(e.exam_date).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}</td>
-                      <td className="p-3">
-                        {e.start_time || '—'} {e.end_time ? `– ${e.end_time}` : ''}
-                      </td>
-                      <td className="p-3">{e.venue || '—'}</td>
-                    </tr>
-                  ))}
+                  {periods.map((period) => {
+                    const times = periodsByNumber.get(period);
+                    return (
+                      <tr key={period} className="align-top">
+                        <td className="border-b border-[var(--line)] p-3 font-semibold">
+                          {period}
+                          {(times?.start || times?.end) && (
+                            <div className="text-[11.5px] font-normal text-[var(--muted)]">
+                              {times?.start} {times?.end ? `– ${times.end}` : ''}
+                            </div>
+                          )}
+                        </td>
+                        {DAYS_OF_WEEK.map((day) => {
+                          const cell = cellFor(day, period);
+                          return (
+                            <td key={day} className="border-b border-[var(--line)] p-3">
+                              {cell ? (
+                                <>
+                                  <p className="font-semibold">{cell.subject}</p>
+                                  {cell.teacher_name && <p className="text-xs text-[var(--muted)]">{cell.teacher_name}</p>}
+                                </>
+                              ) : (
+                                <span className="text-[var(--line)]">—</span>
+                              )}
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             )}
           </div>
-        </div>
-      )}
-    </div>
+        )}
+
+        {tab === 'exam' && (
+          <div>
+            <div className="mb-5 flex flex-wrap gap-4">
+              <select
+                value={examSetup.session}
+                onChange={(e) => setExamSetup({ ...examSetup, session: e.target.value })}
+                className="border border-[var(--line)] bg-[var(--paper)] p-3 text-sm"
+              >
+                {SESSIONS.map((s) => (
+                  <option key={s}>{s}</option>
+                ))}
+              </select>
+              <select
+                value={examSetup.term}
+                onChange={(e) => setExamSetup({ ...examSetup, term: e.target.value })}
+                className="border border-[var(--line)] bg-[var(--paper)] p-3 text-sm"
+              >
+                {TERMS.map((t) => (
+                  <option key={t}>{t}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="overflow-x-auto bg-[var(--paper)] p-6">
+              {examLoading ? (
+                <p className="text-[var(--muted)]">Loading…</p>
+              ) : examEntries.length === 0 ? (
+                <p className="text-[var(--muted)]">No exam timetable has been published for {selectedClass} yet.</p>
+              ) : (
+                <table className="w-full text-[13.5px]">
+                  <thead>
+                    <tr>
+                      <th className="border-b-2 border-[var(--ink)] p-3 text-left text-[11px] uppercase tracking-[0.06em] text-[var(--muted)]">
+                        Subject
+                      </th>
+                      <th className="border-b-2 border-[var(--ink)] p-3 text-left text-[11px] uppercase tracking-[0.06em] text-[var(--muted)]">
+                        Date
+                      </th>
+                      <th className="border-b-2 border-[var(--ink)] p-3 text-left text-[11px] uppercase tracking-[0.06em] text-[var(--muted)]">
+                        Time
+                      </th>
+                      <th className="border-b-2 border-[var(--ink)] p-3 text-left text-[11px] uppercase tracking-[0.06em] text-[var(--muted)]">
+                        Venue
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {examEntries.map((e) => (
+                      <tr key={e.id}>
+                        <td className="border-b border-[var(--line)] p-3 font-semibold">{e.subject}</td>
+                        <td className="border-b border-[var(--line)] p-3">
+                          {new Date(e.exam_date).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}
+                        </td>
+                        <td className="border-b border-[var(--line)] p-3">
+                          {e.start_time || '—'} {e.end_time ? `– ${e.end_time}` : ''}
+                        </td>
+                        <td className="border-b border-[var(--line)] p-3">{e.venue || '—'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          </div>
+        )}
+      </section>
+    </main>
   );
 }

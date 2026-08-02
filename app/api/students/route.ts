@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseClient } from '@/lib/supabase';
 import { requireSchoolSession } from '@/lib/auth';
+import { CLASSES } from '@/lib/constants';
 
 export const dynamic = 'force-dynamic';
 
@@ -48,6 +49,9 @@ export async function POST(request: NextRequest) {
 
     if (!studentId || !fullName || !className) {
       return NextResponse.json({ error: 'studentId, fullName, and className are required.' }, { status: 400 });
+    }
+    if (!CLASSES.includes(className)) {
+      return NextResponse.json({ error: 'Invalid class.' }, { status: 400 });
     }
 
     const { data, error } = await supabase

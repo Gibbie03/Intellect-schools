@@ -199,16 +199,16 @@ export default function StudentPortal() {
 
   if (loggedIn) {
     return (
-      <div className="max-w-4xl mx-auto px-6 py-12">
-        <div className="flex flex-wrap justify-between items-center gap-4 mb-8">
+      <main className="wrap py-12" style={{ maxWidth: 900 }}>
+        <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold">Welcome, {studentName ?? 'Student'}</h1>
-            <p className="text-gray-600">
+            <h1 className="text-3xl">Welcome, {studentName ?? 'Student'}</h1>
+            <p className="text-[var(--muted)]">
               {studentId}
               {studentClass ? ` · ${studentClass}` : ''} &middot; Your approved results
             </p>
             {usesRemaining !== null && (
-              <p className="text-sm text-gray-500 mt-1">
+              <p className="mt-1 text-sm text-[var(--muted)]">
                 {usesRemaining > 0
                   ? `This card can be used ${usesRemaining} more time${usesRemaining === 1 ? '' : 's'}.`
                   : 'This card has now been fully used.'}
@@ -216,10 +216,7 @@ export default function StudentPortal() {
             )}
           </div>
           <div className="flex gap-3">
-            <button
-              onClick={handlePrint}
-              className="text-sm rounded-xl border border-gray-300 px-4 py-2 font-medium hover:bg-gray-50"
-            >
+            <button onClick={handlePrint} className="btn btn-outline !px-4 !py-2 !text-sm">
               Print Report Card
             </button>
             <button
@@ -234,46 +231,45 @@ export default function StudentPortal() {
                 setReportCards([]);
                 setUsesRemaining(null);
               }}
-              className="text-sm text-red-600 hover:underline"
+              className="text-sm font-semibold text-[var(--brand-color-2)] hover:underline"
             >
               Logout
             </button>
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl shadow p-8">
+        <div className="p-8" style={{ background: 'var(--paper)' }}>
           {sessions.length === 0 ? (
-            <p className="text-gray-500">
+            <p className="text-[var(--muted)]">
               No approved results are available yet. Check back after your teacher uploads results and the admin
               approves them.
             </p>
           ) : (
             <>
-              <div className="flex flex-wrap gap-2 mb-4">
+              <div className="mb-4 flex flex-wrap gap-2">
                 {sessions.map((session) => (
                   <button
                     key={session}
                     onClick={() => setActiveSession(session)}
-                    className={`rounded-xl px-4 py-2 text-sm font-medium ${
-                      activeSession === session
-                        ? 'bg-gray-900 text-white'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    className={`px-4 py-2 text-sm font-medium ${
+                      activeSession === session ? 'text-white' : 'bg-[var(--cream)] text-[var(--muted)]'
                     }`}
+                    style={activeSession === session ? { background: 'var(--ink)' } : undefined}
                   >
                     {session} Session
                   </button>
                 ))}
               </div>
 
-              <div className="flex flex-wrap gap-2 mb-6 border-b border-gray-200 pb-4">
+              <div className="mb-6 flex flex-wrap gap-6 border-b border-[var(--line)] pb-3">
                 {TERMS.map((term) => (
                   <button
                     key={term}
                     onClick={() => setActiveTerm(term)}
-                    className={`rounded-xl px-4 py-2 text-sm font-medium ${
+                    className={`font-display border-b-2 pb-1 text-sm font-bold ${
                       activeTerm === term
-                        ? 'bg-[var(--brand-color)] text-white'
-                        : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'
+                        ? 'border-[var(--brand-color-2)] text-[var(--ink)]'
+                        : 'border-transparent text-[var(--muted)]'
                     }`}
                   >
                     {term}
@@ -281,52 +277,66 @@ export default function StudentPortal() {
                 ))}
               </div>
 
-              <h2 className="text-2xl font-semibold mb-6">
+              <h2 className="mb-6 text-2xl">
                 {activeTerm}, {activeSession} Session
               </h2>
 
               {activeReportCard && (
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6 text-sm">
-                  <div className="rounded-xl bg-gray-50 p-4">
-                    <p className="text-gray-500 mb-1">Attendance</p>
+                <div className="mb-6 grid grid-cols-1 gap-4 text-sm sm:grid-cols-3">
+                  <div className="p-4" style={{ background: 'var(--cream)' }}>
+                    <p className="mb-1 text-[var(--muted)]">Attendance</p>
                     <p className="font-medium">
                       {activeReportCard.days_present ?? '—'} / {activeReportCard.days_school_opened ?? '—'} days present
                     </p>
-                    <p className="text-gray-500">Punctual {activeReportCard.times_punctual ?? '—'} time(s)</p>
+                    <p className="text-[var(--muted)]">Punctual {activeReportCard.times_punctual ?? '—'} time(s)</p>
                   </div>
-                  <div className="rounded-xl bg-gray-50 p-4">
-                    <p className="text-gray-500 mb-1">Conduct</p>
+                  <div className="p-4" style={{ background: 'var(--cream)' }}>
+                    <p className="mb-1 text-[var(--muted)]">Conduct</p>
                     <p className="font-medium">{activeReportCard.conduct_rating ?? 'Not recorded'}</p>
                   </div>
-                  <div className="rounded-xl bg-gray-50 p-4 sm:col-span-1">
-                    <p className="text-gray-500 mb-1">Class Teacher&apos;s Comment</p>
+                  <div className="p-4 sm:col-span-1" style={{ background: 'var(--cream)' }}>
+                    <p className="mb-1 text-[var(--muted)]">Class Teacher&apos;s Comment</p>
                     <p className="font-medium">{activeReportCard.teacher_comment ?? 'Not recorded'}</p>
                   </div>
                 </div>
               )}
 
               {visibleResults.length === 0 ? (
-                <p className="text-gray-500">No approved results for this term yet.</p>
+                <p className="text-[var(--muted)]">No approved results for this term yet.</p>
               ) : (
-                <table className="w-full border-collapse">
+                <table className="w-full border-collapse text-sm">
                   <thead>
-                    <tr className="bg-gray-100">
-                      <th className="text-left p-4">Subject</th>
-                      <th className="text-center p-4">CA</th>
-                      <th className="text-center p-4">Exam</th>
-                      <th className="text-center p-4">Total</th>
-                      <th className="text-center p-4">Grade</th>
+                    <tr>
+                      <th className="border-b-2 border-[var(--ink)] p-4 text-left text-[11px] uppercase tracking-[0.06em] text-[var(--muted)]">
+                        Subject
+                      </th>
+                      <th className="border-b-2 border-[var(--ink)] p-4 text-center text-[11px] uppercase tracking-[0.06em] text-[var(--muted)]">
+                        CA
+                      </th>
+                      <th className="border-b-2 border-[var(--ink)] p-4 text-center text-[11px] uppercase tracking-[0.06em] text-[var(--muted)]">
+                        Exam
+                      </th>
+                      <th className="border-b-2 border-[var(--ink)] p-4 text-center text-[11px] uppercase tracking-[0.06em] text-[var(--muted)]">
+                        Total
+                      </th>
+                      <th className="border-b-2 border-[var(--ink)] p-4 text-center text-[11px] uppercase tracking-[0.06em] text-[var(--muted)]">
+                        Grade
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
                     {visibleResults.map((result) => (
-                      <tr key={result.id} className="border-b">
-                        <td className="p-4 font-medium">{result.subject}</td>
-                        <td className="p-4 text-center text-gray-500">{result.ca_score ?? '—'}</td>
-                        <td className="p-4 text-center text-gray-500">{result.exam_score ?? '—'}</td>
-                        <td className="p-4 text-center">{result.score}</td>
-                        <td className="p-4 text-center">
-                          <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm font-medium">
+                      <tr key={result.id}>
+                        <td className="border-b border-[var(--line)] p-4 font-medium">{result.subject}</td>
+                        <td className="border-b border-[var(--line)] p-4 text-center text-[var(--muted)]">
+                          {result.ca_score ?? '—'}
+                        </td>
+                        <td className="border-b border-[var(--line)] p-4 text-center text-[var(--muted)]">
+                          {result.exam_score ?? '—'}
+                        </td>
+                        <td className="border-b border-[var(--line)] p-4 text-center">{result.score}</td>
+                        <td className="border-b border-[var(--line)] p-4 text-center">
+                          <span className="pill" style={{ background: 'var(--brand-tint)', color: 'var(--brand-color)' }}>
                             {result.grade}
                           </span>
                         </td>
@@ -337,62 +347,76 @@ export default function StudentPortal() {
               )}
 
               {activeReportCard?.principal_comment && (
-                <div className="mt-6 rounded-xl bg-gray-50 p-4 text-sm">
-                  <p className="text-gray-500 mb-1">Principal&apos;s Comment</p>
+                <div className="mt-6 p-4 text-sm" style={{ background: 'var(--cream)' }}>
+                  <p className="mb-1 text-[var(--muted)]">Principal&apos;s Comment</p>
                   <p className="font-medium">{activeReportCard.principal_comment}</p>
                 </div>
               )}
             </>
           )}
         </div>
-      </div>
+      </main>
     );
   }
 
   return (
-    <div className="max-w-md mx-auto mt-20 p-8 border rounded-3xl">
-      <h1 className="text-3xl font-bold text-center mb-2">Student Results Portal</h1>
-      <p className="text-center text-gray-600 mb-8">Enter your details from your result checker card</p>
+    <main className="flex flex-col items-center px-5 py-14">
+      <div style={{ width: 'min(420px, 100%)' }}>
+        <div className="mb-7 text-center">
+          <h1 className="mb-2 text-[27px]">
+            Student <span style={{ color: 'var(--brand-color-2)' }}>Results Portal</span>
+          </h1>
+          <p className="m-0 text-[14.5px] text-[var(--muted)]">Enter your details from your result checker card.</p>
+        </div>
 
-      <form onSubmit={handleLogin} className="space-y-4">
-        <input
-          type="text"
-          placeholder="Student ID (e.g. ICS/2025/001)"
-          value={studentId}
-          onChange={(e) => setStudentId(e.target.value)}
-          className="w-full border p-3 rounded-xl"
-          required
-        />
-        <input
-          type="text"
-          placeholder="Serial Number (e.g. ICS-25T2-0001)"
-          value={serial}
-          onChange={(e) => setSerial(e.target.value)}
-          className="w-full border p-3 rounded-xl"
-          required
-        />
-        <input
-          type="text"
-          inputMode="numeric"
-          placeholder="PIN"
-          value={pin}
-          onChange={(e) => setPin(e.target.value)}
-          className="w-full border p-3 rounded-xl"
-          required
-        />
-        {error && <p className="text-sm text-red-600">{error}</p>}
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full bg-[var(--brand-color)] text-white py-3 rounded-xl font-semibold hover:brightness-90 disabled:opacity-60"
+        <form
+          onSubmit={handleLogin}
+          className="frame flex flex-col gap-5 p-8"
+          style={{ background: 'var(--paper)', boxShadow: '0 20px 48px rgba(21,32,26,0.1)' }}
         >
-          {loading ? 'Checking...' : 'Check Result'}
-        </button>
-      </form>
-
-      <p className="text-center text-sm mt-4 text-gray-500">
-        Don&rsquo;t have a card? Get a result checker card from your school.
-      </p>
-    </div>
+          <div>
+            <label className="mb-1.5 block text-xs font-semibold text-[var(--muted)]">Student ID</label>
+            <input
+              type="text"
+              placeholder="e.g. ICS/2025/001"
+              value={studentId}
+              onChange={(e) => setStudentId(e.target.value)}
+              className="w-full border border-[var(--line)] p-3 text-[14.5px]"
+              required
+            />
+          </div>
+          <div>
+            <label className="mb-1.5 block text-xs font-semibold text-[var(--muted)]">Serial Number</label>
+            <input
+              type="text"
+              placeholder="e.g. ICS-25T2-0001"
+              value={serial}
+              onChange={(e) => setSerial(e.target.value)}
+              className="w-full border border-[var(--line)] p-3 text-[14.5px]"
+              required
+            />
+          </div>
+          <div>
+            <label className="mb-1.5 block text-xs font-semibold text-[var(--muted)]">PIN</label>
+            <input
+              type="text"
+              inputMode="numeric"
+              placeholder="PIN"
+              value={pin}
+              onChange={(e) => setPin(e.target.value)}
+              className="w-full border border-[var(--line)] p-3 text-[14.5px]"
+              required
+            />
+          </div>
+          {error && <p className="text-sm text-red-600">{error}</p>}
+          <button type="submit" disabled={loading} className="btn btn-primary w-full justify-center disabled:opacity-60">
+            {loading ? 'Checking…' : 'Check Result'}
+          </button>
+        </form>
+        <p className="mt-5 text-center text-[13px] text-[var(--muted)]">
+          Don&rsquo;t have a card? Get a result checker card from your school.
+        </p>
+      </div>
+    </main>
   );
 }
