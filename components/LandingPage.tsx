@@ -39,14 +39,14 @@ const tiers = [
     name: 'Standard',
     setup: '₦200,000–250,000',
     term: '₦60,000',
-    features: ['Your own custom domain', 'Custom brand colors, tagline & hero photo', 'Results, admissions & staff workflows'],
+    features: ['Your own custom domain', 'Custom brand colors, tagline & hero photo', 'Up to 10 staff accounts'],
     highlight: true,
   },
   {
     name: 'Premium',
-    setup: '₦250,000–400,000',
+    setup: '₦400,000+',
     term: '₦100,000',
-    features: ['Everything in Standard', 'More staff accounts', 'Priority support & 24-hour setup'],
+    features: ['Everything in Standard', 'Unlimited staff accounts', 'Priority support & 24-hour setup'],
     highlight: false,
   },
 ];
