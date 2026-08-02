@@ -2,11 +2,21 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseClient } from '@/lib/supabase';
 import { getSchoolFromHost } from '@/lib/tenant';
 import { verifyPassword, signSession, SESSION_COOKIE } from '@/lib/auth';
+import { checkRateLimit, getClientIp } from '@/lib/rateLimit';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(request: NextRequest) {
   try {
+    const ip = getClientIp(request);
+    const { allowed, retryAfterSeconds } = await checkRateLimit(`login:${ip}`, 10, 300);
+    if (!allowed) {
+      return NextResponse.json(
+        { error: 'Too many login attempts. Please try again in a few minutes.' },
+        { status: 429, headers: { 'Retry-After': String(retryAfterSeconds) } }
+      );
+    }
+
     const supabase = getSupabaseClient();
     const school = await getSchoolFromHost(request.headers.get('host'));
     if (!school) return NextResponse.json({ error: 'School not found for this domain.' }, { status: 404 });
