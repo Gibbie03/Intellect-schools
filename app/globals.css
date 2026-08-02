@@ -329,6 +329,6 @@ h1, h2, h3 {
      here; desktop keeps the original design's 15px/30px. */
   .btn-primary,
   .btn-secondary {
-    padding: 13px 22px;
+    padding: 10px 22px;
   }
 }
