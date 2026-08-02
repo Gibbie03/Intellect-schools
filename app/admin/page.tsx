@@ -449,7 +449,7 @@ type StudentRow = {
 const emptyStudentForm = {
   studentId: '',
   fullName: '',
-  className: '',
+  className: CLASSES[0],
   gender: '',
   parentName: '',
   parentEmail: '',
@@ -537,6 +537,24 @@ function StudentsSection() {
     }
   };
 
+  const updateClass = async (id: string, className: string) => {
+    setUpdatingId(id);
+    try {
+      const res = await fetch(`/api/students/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ className }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to update student.');
+      setStudents((prev) => prev.map((s) => (s.id === id ? { ...s, class: className } : s)));
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setUpdatingId(null);
+    }
+  };
+
   const handlePromote = async (e: React.FormEvent) => {
     e.preventDefault();
     setPromoteSubmitting(true);
@@ -615,14 +633,15 @@ function StudentsSection() {
             className="w-full rounded-xl border p-3"
             required
           />
-          <input
-            type="text"
-            placeholder="Class (e.g. Primary 4)"
+          <select
             value={form.className}
             onChange={(e) => setForm({ ...form, className: e.target.value })}
             className="w-full rounded-xl border p-3"
-            required
-          />
+          >
+            {CLASSES.map((c) => (
+              <option key={c}>{c}</option>
+            ))}
+          </select>
           <input
             type="text"
             placeholder="Parent/Guardian Name"
@@ -770,7 +789,25 @@ function StudentsSection() {
                 <tr key={s.id} className="border-b">
                   <td className="p-4 font-mono">{s.student_id}</td>
                   <td className="p-4">{s.full_name}</td>
-                  <td className="p-4">{s.class}</td>
+                  <td className="p-4">
+                    <select
+                      disabled={updatingId === s.id}
+                      value={CLASSES.includes(s.class) ? s.class : ''}
+                      onChange={(e) => updateClass(s.id, e.target.value)}
+                      className="rounded-lg border p-2 text-sm"
+                    >
+                      {!CLASSES.includes(s.class) && (
+                        <option value="" disabled>
+                          {s.class} (unrecognized)
+                        </option>
+                      )}
+                      {CLASSES.map((c) => (
+                        <option key={c} value={c}>
+                          {c}
+                        </option>
+                      ))}
+                    </select>
+                  </td>
                   <td className="p-4 text-center">
                     <select
                       disabled={updatingId === s.id}
@@ -813,7 +850,6 @@ const emptyStaffForm = {
   email: '',
   phone: '',
   classTeacherOf: '',
-  photoUrl: '',
   bio: '',
 };
 
@@ -834,6 +870,7 @@ function StaffSection() {
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState(emptyStaffForm);
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
 
   const [accounts, setAccounts] = useState<AccountRow[]>([]);
@@ -925,14 +962,17 @@ function StaffSection() {
     setSubmitting(true);
     setError('');
     try {
-      const res = await fetch('/api/teachers', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
+      const formData = new FormData();
+      Object.entries(form).forEach(([key, value]) => {
+        if (value) formData.append(key, value);
       });
+      if (photoFile) formData.append('file', photoFile);
+
+      const res = await fetch('/api/teachers', { method: 'POST', body: formData });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to create staff profile.');
       setForm(emptyStaffForm);
+      setPhotoFile(null);
       load();
     } catch (err) {
       setError((err as Error).message);
@@ -1080,13 +1120,15 @@ function StaffSection() {
             </option>
           ))}
         </select>
-        <input
-          type="text"
-          placeholder="Photo URL (optional, shown on the public Staff Directory)"
-          value={form.photoUrl}
-          onChange={(e) => setForm({ ...form, photoUrl: e.target.value })}
-          className="w-full rounded-xl border p-3 md:col-span-2"
-        />
+        <label className="flex flex-col gap-1 text-sm text-gray-600 md:col-span-2">
+          Photo (optional, shown on the public Staff Directory)
+          <input
+            type="file"
+            accept="image/*"
+            onChange={(e) => setPhotoFile(e.target.files?.[0] ?? null)}
+            className="w-full rounded-xl border p-3"
+          />
+        </label>
         <textarea
           placeholder="Short Bio (optional, shown on the public Staff Directory)"
           value={form.bio}
@@ -1448,7 +1490,8 @@ function GallerySection() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const [file, setFile] = useState<File | null>(null);
+  const [uploadProgress, setUploadProgress] = useState('');
+  const [files, setFiles] = useState<File[]>([]);
   const [caption, setCaption] = useState('');
 
   const load = () => {
@@ -1467,25 +1510,29 @@ function GallerySection() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!file) return;
+    if (files.length === 0) return;
 
     setSubmitting(true);
     setError('');
     try {
-      const formData = new FormData();
-      formData.append('file', file);
-      if (caption) formData.append('caption', caption);
+      for (let i = 0; i < files.length; i++) {
+        setUploadProgress(`Uploading ${i + 1} of ${files.length}...`);
+        const formData = new FormData();
+        formData.append('file', files[i]);
+        if (caption) formData.append('caption', caption);
 
-      const res = await fetch('/api/gallery', { method: 'POST', body: formData });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to add image.');
-      setFile(null);
+        const res = await fetch('/api/gallery', { method: 'POST', body: formData });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || `Failed to upload "${files[i].name}".`);
+      }
+      setFiles([]);
       setCaption('');
       load();
     } catch (err) {
       setError((err as Error).message);
     } finally {
       setSubmitting(false);
+      setUploadProgress('');
     }
   };
 
@@ -1506,27 +1553,33 @@ function GallerySection() {
       {error && <div className="mb-6 rounded-xl bg-red-50 p-4 text-sm text-red-700">{error}</div>}
 
       <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow p-8 mb-8 space-y-4">
-        <h2 className="text-xl font-semibold">Add a Photo</h2>
+        <h2 className="text-xl font-semibold">Add Photos</h2>
         <input
           type="file"
           accept="image/*"
-          onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+          multiple
+          onChange={(e) => setFiles(Array.from(e.target.files ?? []))}
           className="w-full rounded-xl border p-3"
           required
         />
+        {files.length > 0 && (
+          <p className="text-sm text-gray-500">
+            {files.length} photo{files.length === 1 ? '' : 's'} selected.
+          </p>
+        )}
         <input
           type="text"
-          placeholder="Caption (optional)"
+          placeholder="Caption (optional, applied to all selected photos)"
           value={caption}
           onChange={(e) => setCaption(e.target.value)}
           className="w-full rounded-xl border p-3"
         />
         <button
           type="submit"
-          disabled={submitting || !file}
+          disabled={submitting || files.length === 0}
           className="rounded-xl bg-[var(--brand-color)] px-6 py-3 font-semibold text-white hover:brightness-90 disabled:opacity-60"
         >
-          {submitting ? 'Uploading...' : 'Add Photo'}
+          {submitting ? uploadProgress || 'Uploading...' : `Add Photo${files.length === 1 ? '' : 's'}`}
         </button>
       </form>
 

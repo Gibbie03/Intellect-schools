@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseClient } from '@/lib/supabase';
 import { Database } from '@/lib/database.types';
 import { requireSchoolSession } from '@/lib/auth';
+import { CLASSES } from '@/lib/constants';
 
 export const dynamic = 'force-dynamic';
 
@@ -26,6 +27,9 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     }
 
     if (body.className !== undefined) {
+      if (!CLASSES.includes(body.className)) {
+        return NextResponse.json({ error: 'Invalid class.' }, { status: 400 });
+      }
       update.class = body.className;
     }
 
