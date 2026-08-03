@@ -19,6 +19,7 @@ const HEADER_MAP: Record<string, keyof StudentInsert> = {
   name: 'full_name',
   class: 'class',
   department: 'department',
+  campus: 'campus',
   gender: 'gender',
   dateofbirth: 'date_of_birth',
   dob: 'date_of_birth',

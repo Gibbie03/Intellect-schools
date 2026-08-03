@@ -21,6 +21,7 @@ export type Database = {
           principal_welcome_message: string | null;
           principal_photo_url: string | null;
           prospectus_url: string | null;
+          campuses: string | null;
           template: string;
           status: 'Active' | 'Suspended';
           plan: string;
@@ -46,6 +47,7 @@ export type Database = {
           principal_welcome_message?: string | null;
           principal_photo_url?: string | null;
           prospectus_url?: string | null;
+          campuses?: string | null;
           template?: string;
           status?: 'Active' | 'Suspended';
           plan?: string;
@@ -71,6 +73,7 @@ export type Database = {
           principal_welcome_message?: string | null;
           principal_photo_url?: string | null;
           prospectus_url?: string | null;
+          campuses?: string | null;
           template?: string;
           status?: 'Active' | 'Suspended';
           plan?: string;
@@ -335,6 +338,7 @@ export type Database = {
           staff_id: string;
           full_name: string;
           role: 'Teacher' | 'Head Teacher' | 'Admin' | 'Bursar' | 'Non-Teaching Staff';
+          campus: string | null;
           subject: string | null;
           email: string | null;
           phone: string | null;
@@ -351,6 +355,7 @@ export type Database = {
           staff_id: string;
           full_name: string;
           role?: 'Teacher' | 'Head Teacher' | 'Admin' | 'Bursar' | 'Non-Teaching Staff';
+          campus?: string | null;
           subject?: string | null;
           email?: string | null;
           phone?: string | null;
@@ -367,6 +372,7 @@ export type Database = {
           staff_id?: string;
           full_name?: string;
           role?: 'Teacher' | 'Head Teacher' | 'Admin' | 'Bursar' | 'Non-Teaching Staff';
+          campus?: string | null;
           subject?: string | null;
           email?: string | null;
           phone?: string | null;
@@ -387,6 +393,7 @@ export type Database = {
           full_name: string;
           class: string;
           department: string | null;
+          campus: string | null;
           gender: string | null;
           date_of_birth: string | null;
           parent_name: string | null;
@@ -403,6 +410,7 @@ export type Database = {
           full_name: string;
           class: string;
           department?: string | null;
+          campus?: string | null;
           gender?: string | null;
           date_of_birth?: string | null;
           parent_name?: string | null;
@@ -419,6 +427,7 @@ export type Database = {
           full_name?: string;
           class?: string;
           department?: string | null;
+          campus?: string | null;
           gender?: string | null;
           date_of_birth?: string | null;
           parent_name?: string | null;

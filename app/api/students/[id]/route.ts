@@ -46,6 +46,10 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       update.department = body.department || null;
     }
 
+    if (body.campus !== undefined) {
+      update.campus = body.campus || null;
+    }
+
     if (Object.keys(update).length === 0) {
       return NextResponse.json({ error: 'No valid fields to update.' }, { status: 400 });
     }

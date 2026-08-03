@@ -432,6 +432,7 @@ type StudentRow = {
   full_name: string;
   class: string;
   department: string | null;
+  campus: string | null;
   status: 'Active' | 'Inactive';
 };
 
@@ -440,6 +441,7 @@ const emptyStudentForm = {
   fullName: '',
   className: CLASSES[0],
   department: '',
+  campus: '',
   gender: '',
   parentName: '',
   parentEmail: '',
@@ -453,6 +455,14 @@ function StudentsSection() {
   const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState(emptyStudentForm);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [campuses, setCampuses] = useState<string[]>([]);
+
+  useEffect(() => {
+    fetch('/api/auth/me')
+      .then((res) => res.json())
+      .then((data) => setCampuses(data.campuses ?? []))
+      .catch(() => {});
+  }, []);
 
   const [batchFile, setBatchFile] = useState<File | null>(null);
   const [batchSubmitting, setBatchSubmitting] = useState(false);
@@ -581,6 +591,24 @@ function StudentsSection() {
     }
   };
 
+  const updateCampus = async (id: string, campus: string) => {
+    setUpdatingId(id);
+    try {
+      const res = await fetch(`/api/students/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ campus }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to update student.');
+      setStudents((prev) => prev.map((s) => (s.id === id ? { ...s, campus: campus || null } : s)));
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setUpdatingId(null);
+    }
+  };
+
   const handlePromote = async (e: React.FormEvent) => {
     e.preventDefault();
     setPromoteSubmitting(true);
@@ -679,6 +707,18 @@ function StudentsSection() {
               <option value="">Department (optional)</option>
               {DEPARTMENTS.map((d) => (
                 <option key={d}>{d}</option>
+              ))}
+            </select>
+          )}
+          {campuses.length > 0 && (
+            <select
+              value={form.campus}
+              onChange={(e) => setForm({ ...form, campus: e.target.value })}
+              className="w-full rounded-xl border p-3"
+            >
+              <option value="">Campus (optional)</option>
+              {campuses.map((c) => (
+                <option key={c}>{c}</option>
               ))}
             </select>
           )}
@@ -828,6 +868,7 @@ function StudentsSection() {
                 <th className="text-left p-4">Name</th>
                 <th className="text-left p-4">Class</th>
                 <th className="text-left p-4">Department</th>
+                {campuses.length > 0 && <th className="text-left p-4">Campus</th>}
                 <th className="text-center p-4">Status</th>
                 <th className="text-center p-4">Action</th>
               </tr>
@@ -875,6 +916,23 @@ function StudentsSection() {
                       <span className="text-gray-300">—</span>
                     )}
                   </td>
+                  {campuses.length > 0 && (
+                    <td className="p-4">
+                      <select
+                        disabled={updatingId === s.id}
+                        value={s.campus ?? ''}
+                        onChange={(e) => updateCampus(s.id, e.target.value)}
+                        className="rounded-lg border p-2 text-sm"
+                      >
+                        <option value="">—</option>
+                        {campuses.map((c) => (
+                          <option key={c} value={c}>
+                            {c}
+                          </option>
+                        ))}
+                      </select>
+                    </td>
+                  )}
                   <td className="p-4 text-center">
                     <select
                       disabled={updatingId === s.id}
@@ -910,6 +968,7 @@ type TeacherRow = {
   staff_id: string;
   full_name: string;
   role: (typeof STAFF_ROLES)[number];
+  campus: string | null;
   subject: string | null;
   status: 'Active' | 'Inactive';
   class_teacher_of: string | null;
@@ -922,6 +981,7 @@ const emptyStaffForm = {
   staffId: '',
   fullName: '',
   role: STAFF_ROLES[0],
+  campus: '',
   subject: '',
   email: '',
   phone: '',
@@ -949,6 +1009,14 @@ function StaffSection() {
   const [form, setForm] = useState(emptyStaffForm);
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [campuses, setCampuses] = useState<string[]>([]);
+
+  useEffect(() => {
+    fetch('/api/auth/me')
+      .then((res) => res.json())
+      .then((data) => setCampuses(data.campuses ?? []))
+      .catch(() => {});
+  }, []);
 
   const [accounts, setAccounts] = useState<AccountRow[]>([]);
   const [accountsLoading, setAccountsLoading] = useState(true);
@@ -1130,6 +1198,24 @@ function StaffSection() {
     }
   };
 
+  const updateCampus = async (id: string, campus: string) => {
+    setUpdatingId(id);
+    try {
+      const res = await fetch(`/api/teachers/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ campus }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to update staff campus.');
+      setTeachers((prev) => prev.map((t) => (t.id === id ? { ...t, campus: campus || null } : t)));
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setUpdatingId(null);
+    }
+  };
+
   const updateClassTeacherOf = async (id: string, classTeacherOf: string) => {
     setUpdatingId(id);
     try {
@@ -1182,6 +1268,18 @@ function StaffSection() {
             </option>
           ))}
         </select>
+        {campuses.length > 0 && (
+          <select
+            value={form.campus}
+            onChange={(e) => setForm({ ...form, campus: e.target.value })}
+            className="w-full rounded-xl border p-3"
+          >
+            <option value="">Campus (optional)</option>
+            {campuses.map((c) => (
+              <option key={c}>{c}</option>
+            ))}
+          </select>
+        )}
         <input
           type="text"
           placeholder="Subject (if Teacher)"
@@ -1253,6 +1351,7 @@ function StaffSection() {
                 <th className="text-left p-4">Staff ID</th>
                 <th className="text-left p-4">Name</th>
                 <th className="text-left p-4">Subject</th>
+                {campuses.length > 0 && <th className="text-left p-4">Campus</th>}
                 <th className="text-center p-4">Role</th>
                 <th className="text-center p-4">Class Teacher Of</th>
                 <th className="text-center p-4">Employment Status</th>
@@ -1265,6 +1364,23 @@ function StaffSection() {
                   <td className="p-4 font-mono">{t.staff_id}</td>
                   <td className="p-4">{t.full_name}</td>
                   <td className="p-4">{t.subject || '—'}</td>
+                  {campuses.length > 0 && (
+                    <td className="p-4">
+                      <select
+                        disabled={updatingId === t.id}
+                        value={t.campus ?? ''}
+                        onChange={(e) => updateCampus(t.id, e.target.value)}
+                        className="rounded-lg border p-2 text-sm"
+                      >
+                        <option value="">—</option>
+                        {campuses.map((c) => (
+                          <option key={c} value={c}>
+                            {c}
+                          </option>
+                        ))}
+                      </select>
+                    </td>
+                  )}
                   <td className="p-4 text-center">
                     <select
                       disabled={updatingId === t.id}

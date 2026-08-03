@@ -50,6 +50,7 @@ export async function POST(request: NextRequest) {
     const staffId = formData.get('staffId');
     const fullName = formData.get('fullName');
     const role = formData.get('role');
+    const campus = formData.get('campus');
     const subject = formData.get('subject');
     const email = formData.get('email');
     const phone = formData.get('phone');
@@ -96,6 +97,7 @@ export async function POST(request: NextRequest) {
         staff_id: staffId,
         full_name: fullName,
         role: ((role as string) || 'Teacher') as (typeof STAFF_ROLES)[number],
+        campus: (campus as string) || null,
         subject: (subject as string) || null,
         email: (email as string) || null,
         phone: (phone as string) || null,

@@ -33,6 +33,7 @@ export default function StudentPortal() {
   const [studentName, setStudentName] = useState<string | null>(null);
   const [studentClass, setStudentClass] = useState<string | null>(null);
   const [studentDepartment, setStudentDepartment] = useState<string | null>(null);
+  const [studentCampus, setStudentCampus] = useState<string | null>(null);
   const [results, setResults] = useState<Result[]>([]);
   const [reportCards, setReportCards] = useState<ReportCard[]>([]);
   const [loading, setLoading] = useState(false);
@@ -92,6 +93,7 @@ export default function StudentPortal() {
       setStudentName(data.student?.fullName ?? null);
       setStudentClass(data.student?.class ?? null);
       setStudentDepartment(data.student?.department ?? null);
+      setStudentCampus(data.student?.campus ?? null);
       setUsesRemaining(data.usesRemaining ?? null);
 
       const sessions = Array.from(new Set(fetchedResults.map((r) => r.session))).sort();
@@ -208,7 +210,8 @@ export default function StudentPortal() {
             <p className="text-[var(--muted)]">
               {studentId}
               {studentClass ? ` · ${studentClass}` : ''}
-              {studentDepartment ? ` (${studentDepartment})` : ''} &middot; Your approved results
+              {studentDepartment ? ` (${studentDepartment})` : ''}
+              {studentCampus ? ` · ${studentCampus}` : ''} &middot; Your approved results
             </p>
             {usesRemaining !== null && (
               <p className="mt-1 text-sm text-[var(--muted)]">

@@ -37,6 +37,7 @@ export const STUDENT_TEMPLATE_HEADERS = [
   'Full Name',
   'Class',
   'Department',
+  'Campus',
   'Gender',
   'Date of Birth',
   'Parent Name',

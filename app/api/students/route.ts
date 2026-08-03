@@ -22,11 +22,13 @@ export async function GET(request: NextRequest) {
     const className = request.nextUrl.searchParams.get('class');
     const status = request.nextUrl.searchParams.get('status') as 'Active' | 'Inactive' | null;
     const studentId = request.nextUrl.searchParams.get('studentId');
+    const campus = request.nextUrl.searchParams.get('campus');
 
     let query = supabase.from('students').select('*').eq('school_id', school.id).order('full_name', { ascending: true });
     if (className) query = query.eq('class', className);
     if (status) query = query.eq('status', status);
     if (studentId) query = query.eq('student_id', studentId);
+    if (campus) query = query.eq('campus', campus);
 
     const { data, error } = await query;
     if (error) throw error;
@@ -44,7 +46,7 @@ export async function POST(request: NextRequest) {
     const { school } = staff;
 
     const supabase = getSupabaseClient();
-    const { studentId, fullName, className, department, gender, dateOfBirth, parentName, parentEmail, parentPhone, address } =
+    const { studentId, fullName, className, department, campus, gender, dateOfBirth, parentName, parentEmail, parentPhone, address } =
       await request.json();
 
     if (!studentId || !fullName || !className) {
@@ -65,6 +67,7 @@ export async function POST(request: NextRequest) {
         full_name: fullName,
         class: className,
         department: isSeniorSecondaryClass(className) ? department || null : null,
+        campus: campus || null,
         gender: gender || null,
         date_of_birth: dateOfBirth || null,
         parent_name: parentName || null,
