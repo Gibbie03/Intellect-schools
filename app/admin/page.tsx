@@ -4389,6 +4389,21 @@ function SecuritySection() {
           </button>
         )}
       </div>
+
+      <div className="bg-white rounded-2xl shadow p-8 max-w-xl mt-8">
+        <h2 className="text-xl font-semibold mb-2">Export School Data</h2>
+        <p className="text-sm text-gray-600 mb-4">
+          Download every student, staff, admissions, results, fees, and attendance record for your school as a single
+          JSON file &mdash; your data is yours, independent of your subscription with SchoolOS.
+        </p>
+        {/* eslint-disable-next-line @next/next/no-html-link-for-pages -- file download, not a page route */}
+        <a
+          href="/api/school/export"
+          className="inline-block rounded-xl bg-[var(--brand-color)] px-6 py-3 font-semibold text-white hover:brightness-90"
+        >
+          Download Data Export (.json)
+        </a>
+      </div>
     </div>
   );
 }
