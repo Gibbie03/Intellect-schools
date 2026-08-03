@@ -38,6 +38,17 @@ export default function Navbar({
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
 
+  // The mobile menu is an inline dropdown, not a full-screen modal, so
+  // without this the page underneath keeps scrolling right along with it --
+  // lock body scroll for as long as it's open, and always restore it on
+  // unmount so a route change while open can't leave scrolling stuck off.
+  useEffect(() => {
+    document.body.style.overflow = open ? 'hidden' : '';
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [open]);
+
   // Hides the sticky header on scroll-down and brings it back on scroll-up,
   // so it doesn't sit fixed over content the whole way down a long page.
   // Ignored near the very top (so it doesn't twitch away on a tiny scroll)
