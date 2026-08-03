@@ -3,6 +3,7 @@ import { getSupabaseClient } from '@/lib/supabase';
 import { getSchoolFromHost } from '@/lib/tenant';
 import { verifyPassword } from '@/lib/auth';
 import { checkRateLimit, getClientIp } from '@/lib/rateLimit';
+import { apiError } from '@/lib/apiError';
 
 export const dynamic = 'force-dynamic';
 
@@ -146,6 +147,6 @@ export async function POST(request: NextRequest) {
       usesRemaining: card.max_uses - usesCount,
     });
   } catch (error) {
-    return NextResponse.json({ error: (error as Error).message }, { status: 500 });
+    return apiError(error);
   }
 }

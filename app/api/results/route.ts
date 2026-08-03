@@ -4,6 +4,7 @@ import { gradeFromScore, resolveScore } from '@/lib/grade';
 import { requireSchoolSession } from '@/lib/auth';
 import { logAudit } from '@/lib/auditLog';
 import { getSectionStudentIds, isStudentInSection } from '@/lib/sectionScope';
+import { apiError } from '@/lib/apiError';
 
 export const dynamic = 'force-dynamic';
 
@@ -41,7 +42,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ results: data });
   } catch (error) {
-    return NextResponse.json({ error: (error as Error).message }, { status: 500 });
+    return apiError(error);
   }
 }
 
@@ -105,6 +106,6 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ result: data }, { status: 201 });
   } catch (error) {
-    return NextResponse.json({ error: (error as Error).message }, { status: 500 });
+    return apiError(error);
   }
 }

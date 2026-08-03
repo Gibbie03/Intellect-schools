@@ -3,6 +3,7 @@ import { getSupabaseClient } from '@/lib/supabase';
 import { STAFF_ROLES, CLASSES, getSectionClasses } from '@/lib/constants';
 import { Database } from '@/lib/database.types';
 import { requireSchoolSession } from '@/lib/auth';
+import { apiError } from '@/lib/apiError';
 
 export const dynamic = 'force-dynamic';
 
@@ -77,6 +78,6 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
     return NextResponse.json({ teacher: data });
   } catch (error) {
-    return NextResponse.json({ error: (error as Error).message }, { status: 500 });
+    return apiError(error);
   }
 }

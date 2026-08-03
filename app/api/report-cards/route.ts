@@ -6,6 +6,7 @@ import { logAudit } from '@/lib/auditLog';
 import { Database } from '@/lib/database.types';
 import { getSectionClasses, getClassSection, SECTION_ADMIN_ROLE } from '@/lib/constants';
 import { sectionHeadExists } from '@/lib/sectionScope';
+import { apiError } from '@/lib/apiError';
 
 export const dynamic = 'force-dynamic';
 
@@ -108,7 +109,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ reportCard: data, section, canSetHeadComment });
   } catch (error) {
-    return NextResponse.json({ error: (error as Error).message }, { status: 500 });
+    return apiError(error);
   }
 }
 
@@ -237,6 +238,6 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ reportCard: data }, { status: 200 });
   } catch (error) {
-    return NextResponse.json({ error: (error as Error).message }, { status: 500 });
+    return apiError(error);
   }
 }

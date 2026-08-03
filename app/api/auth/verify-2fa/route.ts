@@ -4,6 +4,7 @@ import { getSchoolFromHost } from '@/lib/tenant';
 import { signSession, SESSION_COOKIE, verifyPendingTwoFactorToken } from '@/lib/auth';
 import { verifyTotpCode } from '@/lib/totp';
 import { checkRateLimit, getClientIp } from '@/lib/rateLimit';
+import { apiError } from '@/lib/apiError';
 
 export const dynamic = 'force-dynamic';
 
@@ -85,6 +86,6 @@ export async function POST(request: NextRequest) {
 
     return response;
   } catch (error) {
-    return NextResponse.json({ error: (error as Error).message }, { status: 500 });
+    return apiError(error);
   }
 }

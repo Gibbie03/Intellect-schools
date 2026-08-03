@@ -4,6 +4,7 @@ import { gradeFromScore, resolveScore } from '@/lib/grade';
 import { Database } from '@/lib/database.types';
 import { requireSchoolSession } from '@/lib/auth';
 import { getSectionStudentIds } from '@/lib/sectionScope';
+import { apiError } from '@/lib/apiError';
 
 export const dynamic = 'force-dynamic';
 
@@ -76,6 +77,6 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ created: data.length, skipped: errors.length, errors }, { status: 201 });
   } catch (error) {
-    return NextResponse.json({ error: (error as Error).message }, { status: 500 });
+    return apiError(error);
   }
 }

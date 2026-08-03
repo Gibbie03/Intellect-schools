@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseClient } from '@/lib/supabase';
 import { hashPassword, verifyOwnerSession, PLATFORM_SESSION_COOKIE } from '@/lib/auth';
+import { apiError } from '@/lib/apiError';
 
 export const dynamic = 'force-dynamic';
 
@@ -53,6 +54,6 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     if (error) throw error;
     return NextResponse.json({ user: data });
   } catch (error) {
-    return NextResponse.json({ error: (error as Error).message }, { status: 500 });
+    return apiError(error);
   }
 }

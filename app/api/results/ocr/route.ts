@@ -4,6 +4,7 @@ import { requireSchoolSession } from '@/lib/auth';
 import { extractMarkSheet } from '@/lib/markSheetOcr';
 import { getEffectiveClassScope } from '@/lib/sectionScope';
 import { validateImageUpload } from '@/lib/imageUpload';
+import { apiError } from '@/lib/apiError';
 
 export const dynamic = 'force-dynamic';
 
@@ -69,6 +70,6 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ rows, roster });
   } catch (error) {
-    return NextResponse.json({ error: (error as Error).message }, { status: 500 });
+    return apiError(error);
   }
 }

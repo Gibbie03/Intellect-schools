@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto';
 import { getSupabaseClient } from '@/lib/supabase';
 import { verifyOwnerSession, PLATFORM_SESSION_COOKIE } from '@/lib/auth';
 import { validateImageUpload } from '@/lib/imageUpload';
+import { apiError } from '@/lib/apiError';
 
 export const dynamic = 'force-dynamic';
 
@@ -67,6 +68,6 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
     return NextResponse.json({ school: data, heroImageUrl: publicUrl });
   } catch (error) {
-    return NextResponse.json({ error: (error as Error).message }, { status: 500 });
+    return apiError(error);
   }
 }
