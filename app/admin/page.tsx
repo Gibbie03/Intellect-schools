@@ -27,6 +27,7 @@ type Tab =
   | 'result-pins'
   | 'report-cards'
   | 'timetables'
+  | 'subjects'
   | 'fees'
   | 'accounting'
   | 'messages'
@@ -49,6 +50,7 @@ const TABS: { id: Tab; label: string }[] = [
   { id: 'result-pins', label: 'Result Checker Cards' },
   { id: 'report-cards', label: 'Report Cards' },
   { id: 'timetables', label: 'Timetables' },
+  { id: 'subjects', label: 'Subjects' },
   { id: 'fees', label: 'Fees' },
   { id: 'accounting', label: 'Accounting' },
   { id: 'messages', label: 'Message Parents' },
@@ -109,6 +111,7 @@ export default function AdminDashboard() {
       {tab === 'result-pins' && <ResultPinsSection />}
       {tab === 'report-cards' && <ReportCardsSection />}
       {tab === 'timetables' && <TimetablesSection />}
+      {tab === 'subjects' && <SubjectsSection />}
       {tab === 'fees' && <FeesSection />}
       {tab === 'accounting' && <AccountingSection />}
       {tab === 'messages' && <MessagesSection />}
@@ -2713,6 +2716,19 @@ function TimetablesSection() {
   const [examError, setExamError] = useState('');
   const [examForm, setExamForm] = useState({ subject: SUBJECTS[0], examDate: '', startTime: '', endTime: '', venue: '' });
   const [examSubmitting, setExamSubmitting] = useState(false);
+  const [examSubjects, setExamSubjects] = useState<string[]>(SUBJECTS);
+
+  useEffect(() => {
+    fetch(`/api/class-subjects?class=${encodeURIComponent(selectedClass)}`)
+      .then((res) => res.json())
+      .then((data) => {
+        const list = ((data.subjects ?? []) as { subject: string }[]).map((s) => s.subject);
+        const options = list.length > 0 ? list : SUBJECTS;
+        setExamSubjects(options);
+        setExamForm((prev) => (options.includes(prev.subject) ? prev : { ...prev, subject: options[0] }));
+      })
+      .catch(() => setExamSubjects(SUBJECTS));
+  }, [selectedClass]);
 
   const cellKey = (day: string, period: number) => `${day}|${period}`;
 
@@ -2990,7 +3006,7 @@ function TimetablesSection() {
             onChange={(e) => setExamForm({ ...examForm, subject: e.target.value })}
             className="rounded-xl border p-3"
           >
-            {SUBJECTS.map((s) => (
+            {examSubjects.map((s) => (
               <option key={s}>{s}</option>
             ))}
           </select>
@@ -3078,6 +3094,139 @@ type FeeRow = {
   last_reminded_at: string | null;
   student: { full_name: string; parent_name: string | null; parent_phone: string | null } | null;
 };
+
+type ClassSubjectRow = { id: string; class: string; subject: string };
+
+function SubjectsSection() {
+  const [myClasses, setMyClasses] = useState<string[]>(CLASSES);
+  const [selectedClass, setSelectedClass] = useState(CLASSES[0]);
+  const [subjects, setSubjects] = useState<ClassSubjectRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [newSubject, setNewSubject] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    fetch('/api/auth/me')
+      .then((res) => res.json())
+      .then((data) => {
+        const allowed = getSectionClasses(data.role) ?? CLASSES;
+        setMyClasses(allowed);
+        setSelectedClass((prev) => (allowed.includes(prev) ? prev : allowed[0]));
+      })
+      .catch(() => {});
+  }, []);
+
+  const load = () => {
+    setLoading(true);
+    setError('');
+    fetch(`/api/class-subjects?class=${encodeURIComponent(selectedClass)}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.error) throw new Error(data.error);
+        setSubjects(data.subjects);
+      })
+      .catch((err) => setError(err.message))
+      .finally(() => setLoading(false));
+  };
+
+  useEffect(load, [selectedClass]);
+
+  const handleAdd = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newSubject.trim()) return;
+
+    setSubmitting(true);
+    setError('');
+    try {
+      const res = await fetch('/api/class-subjects', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ class: selectedClass, subject: newSubject.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to add subject.');
+      setNewSubject('');
+      load();
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleRemove = async (id: string) => {
+    try {
+      const res = await fetch(`/api/class-subjects/${id}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to remove subject.');
+      setSubjects((prev) => prev.filter((s) => s.id !== id));
+    } catch (err) {
+      setError((err as Error).message);
+    }
+  };
+
+  return (
+    <div>
+      <h1 className="text-4xl font-bold mb-2">Subjects</h1>
+      <p className="text-gray-600 mb-8">
+        Set which subjects each class studies. Teachers and admins uploading results only see subjects configured
+        here for that class; classes with nothing configured yet fall back to the default subject list.
+      </p>
+      {error && <div className="mb-6 rounded-xl bg-red-50 p-4 text-sm text-red-700">{error}</div>}
+
+      <div className="bg-white rounded-2xl shadow p-8 max-w-xl">
+        <label className="block text-sm font-medium mb-2">Class</label>
+        <select
+          value={selectedClass}
+          onChange={(e) => setSelectedClass(e.target.value)}
+          className="w-full rounded-xl border p-3 mb-6"
+        >
+          {myClasses.map((c) => (
+            <option key={c}>{c}</option>
+          ))}
+        </select>
+
+        <form onSubmit={handleAdd} className="flex gap-3 mb-6">
+          <input
+            type="text"
+            placeholder="e.g. Mathematics"
+            value={newSubject}
+            onChange={(e) => setNewSubject(e.target.value)}
+            className="flex-1 rounded-xl border p-3"
+          />
+          <button
+            type="submit"
+            disabled={submitting || !newSubject.trim()}
+            className="rounded-xl bg-[var(--brand-color)] px-6 py-3 font-semibold text-white hover:brightness-90 disabled:opacity-60"
+          >
+            {submitting ? 'Adding...' : 'Add'}
+          </button>
+        </form>
+
+        {loading ? (
+          <p className="text-gray-500">Loading...</p>
+        ) : subjects.length === 0 ? (
+          <p className="text-gray-500">
+            No subjects configured for {selectedClass} yet &mdash; result-entry forms will show the default subject
+            list until you add some here.
+          </p>
+        ) : (
+          <ul className="divide-y">
+            {subjects.map((s) => (
+              <li key={s.id} className="flex items-center justify-between py-3">
+                <span>{s.subject}</span>
+                <button onClick={() => handleRemove(s.id)} className="text-xs text-red-600 hover:underline">
+                  Remove
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </div>
+  );
+}
 
 type FeeRosterStudent = { student_id: string; full_name: string };
 

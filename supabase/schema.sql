@@ -245,6 +245,20 @@ create table if not exists exam_timetables (
 
 create index if not exists exam_timetables_school_lookup_idx on exam_timetables (school_id, class, session, term);
 
+-- Each class studies a different set of subjects -- replaces a single fixed
+-- global subject list with a per-school, per-class configurable one.
+-- Classes with no rows here fall back to the app's built-in default list.
+create table if not exists class_subjects (
+  id uuid primary key default gen_random_uuid(),
+  school_id uuid not null references schools(id) on delete cascade,
+  class text not null,
+  subject text not null,
+  created_at timestamptz not null default now(),
+  unique (school_id, class, subject)
+);
+
+create index if not exists class_subjects_school_class_idx on class_subjects (school_id, class);
+
 -- Fee records: tracked and reminded about manually (a WhatsApp deep link, not
 -- an automated send) -- no online payment collection here, matching the
 -- earlier decision to leave real payments out of scope for now.
@@ -409,5 +423,6 @@ alter table academic_calendar enable row level security;
 alter table testimonials enable row level security;
 alter table attendance enable row level security;
 alter table expenses enable row level security;
+alter table class_subjects enable row level security;
 alter table rate_limit_hits enable row level security;
 alter table audit_log enable row level security;

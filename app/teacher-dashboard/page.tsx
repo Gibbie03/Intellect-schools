@@ -66,6 +66,19 @@ export default function TeacherDashboard() {
     session: CURRENT_SESSION,
     term: TERMS[0],
   });
+  const [batchSubjects, setBatchSubjects] = useState<string[]>(SUBJECTS);
+
+  useEffect(() => {
+    fetch(`/api/class-subjects?class=${encodeURIComponent(batchSetup.className)}`)
+      .then((res) => res.json())
+      .then((data) => {
+        const list = ((data.subjects ?? []) as { subject: string }[]).map((s) => s.subject);
+        const options = list.length > 0 ? list : SUBJECTS;
+        setBatchSubjects(options);
+        setBatchSetup((prev) => (options.includes(prev.subject) ? prev : { ...prev, subject: options[0] }));
+      })
+      .catch(() => setBatchSubjects(SUBJECTS));
+  }, [batchSetup.className]);
   const [roster, setRoster] = useState<RosterStudent[] | null>(null);
   const [rosterLoading, setRosterLoading] = useState(false);
   const [rosterError, setRosterError] = useState('');
@@ -85,6 +98,19 @@ export default function TeacherDashboard() {
     session: CURRENT_SESSION,
     term: TERMS[0],
   });
+  const [ocrSubjects, setOcrSubjects] = useState<string[]>(SUBJECTS);
+
+  useEffect(() => {
+    fetch(`/api/class-subjects?class=${encodeURIComponent(ocrSetup.className)}`)
+      .then((res) => res.json())
+      .then((data) => {
+        const list = ((data.subjects ?? []) as { subject: string }[]).map((s) => s.subject);
+        const options = list.length > 0 ? list : SUBJECTS;
+        setOcrSubjects(options);
+        setOcrSetup((prev) => (options.includes(prev.subject) ? prev : { ...prev, subject: options[0] }));
+      })
+      .catch(() => setOcrSubjects(SUBJECTS));
+  }, [ocrSetup.className]);
   const [ocrFile, setOcrFile] = useState<File | null>(null);
   const [ocrLoading, setOcrLoading] = useState(false);
   const [ocrError, setOcrError] = useState('');
@@ -684,7 +710,7 @@ export default function TeacherDashboard() {
                 onChange={(e) => setBatchSetup({ ...batchSetup, subject: e.target.value })}
                 className="w-full border p-3 rounded-xl"
               >
-                {SUBJECTS.map((s) => (
+                {batchSubjects.map((s) => (
                   <option key={s}>{s}</option>
                 ))}
               </select>
@@ -846,7 +872,7 @@ export default function TeacherDashboard() {
                   onChange={(e) => setOcrSetup({ ...ocrSetup, subject: e.target.value })}
                   className="w-full border p-3 rounded-xl"
                 >
-                  {SUBJECTS.map((s) => (
+                  {ocrSubjects.map((s) => (
                     <option key={s}>{s}</option>
                   ))}
                 </select>

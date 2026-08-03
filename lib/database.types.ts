@@ -601,6 +601,30 @@ export type Database = {
         };
         Relationships: [];
       };
+      class_subjects: {
+        Row: {
+          id: string;
+          school_id: string;
+          class: string;
+          subject: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          school_id: string;
+          class: string;
+          subject: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          school_id?: string;
+          class?: string;
+          subject?: string;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
       fees: {
         Row: {
           id: string;
