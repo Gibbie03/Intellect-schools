@@ -149,20 +149,24 @@ export async function POST(request: NextRequest) {
     const accessError = await checkClassTeacherAccess(supabase, school.id, staffSession.role, staffSession.userId, studentId);
     if (accessError) return NextResponse.json({ error: accessError }, { status: 403 });
 
+    // Fetched once: used both for the head-of-section comment permission
+    // check below and to snapshot the student's class onto this term's
+    // report card, so a printed history stays labeled correctly for old
+    // terms even after the student later moves from Primary into Secondary.
+    const { data: student } = await supabase
+      .from('students')
+      .select('class')
+      .eq('school_id', school.id)
+      .eq('student_id', studentId)
+      .maybeSingle();
+    const section = student ? getClassSection(student.class) : null;
+
     // The head-of-section comment (Headmaster's for Primary, Principal's for
     // Secondary) belongs to that section's own admin once one exists for
     // this school; the unscoped 'admin' (proprietor) is a fallback only
     // until a headmaster/principal account is set up, and a class teacher
     // never gets to set it.
     if (principalComment !== undefined) {
-      const { data: student } = await supabase
-        .from('students')
-        .select('class')
-        .eq('school_id', school.id)
-        .eq('student_id', studentId)
-        .maybeSingle();
-      const section = student ? getClassSection(student.class) : null;
-
       let allowed = false;
       if (staffSession.role === 'primary_admin' && section === 'Primary') allowed = true;
       else if (staffSession.role === 'secondary_admin' && section === 'Secondary') allowed = true;
@@ -190,6 +194,7 @@ export async function POST(request: NextRequest) {
       student_id: studentId,
       session,
       term,
+      class: student?.class ?? null,
       updated_at: new Date().toISOString(),
     };
     if (daysSchoolOpened !== undefined) update.days_school_opened = daysSchoolOpened === '' ? null : Number(daysSchoolOpened);

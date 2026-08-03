@@ -76,6 +76,7 @@ create table if not exists report_cards (
   student_id text not null,
   session text not null,
   term text not null,
+  class text,
   days_school_opened int,
   days_present int,
   times_punctual int,

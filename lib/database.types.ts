@@ -182,6 +182,7 @@ export type Database = {
           student_id: string;
           session: string;
           term: string;
+          class: string | null;
           days_school_opened: number | null;
           days_present: number | null;
           times_punctual: number | null;
@@ -199,6 +200,7 @@ export type Database = {
           student_id: string;
           session: string;
           term: string;
+          class?: string | null;
           days_school_opened?: number | null;
           days_present?: number | null;
           times_punctual?: number | null;
@@ -216,6 +218,7 @@ export type Database = {
           student_id?: string;
           session?: string;
           term?: string;
+          class?: string | null;
           days_school_opened?: number | null;
           days_present?: number | null;
           times_punctual?: number | null;

@@ -654,6 +654,7 @@ function StudentsSection() {
       const reportCards: {
         session: string;
         term: string;
+        class: string | null;
         days_school_opened: number | null;
         days_present: number | null;
         times_punctual: number | null;
@@ -676,16 +677,16 @@ function StudentsSection() {
         return TERMS.indexOf(a.term as (typeof TERMS)[number]) - TERMS.indexOf(b.term as (typeof TERMS)[number]);
       });
 
-      // Historical per-term class isn't tracked, only the student's current
-      // one -- close enough to label the whole printed history, since a
-      // student rarely crosses Primary/Secondary mid-history.
-      const headCommentLabel = getClassSection(student.class) === 'Secondary' ? "Principal's" : "Headmaster's";
-
       const win = window.open('', '_blank');
       if (!win) return;
 
       const sections = sorted
         .map((rc) => {
+          // Each term's report card snapshots the class it was saved under;
+          // older rows saved before that existed fall back to the student's
+          // current class, same as before.
+          const termSection = getClassSection(rc.class ?? student.class);
+          const headCommentLabel = termSection === 'Secondary' ? "Principal's" : "Headmaster's";
           const termResults = results.filter((r) => r.session === rc.session && r.term === rc.term);
           const rows = termResults
             .map(

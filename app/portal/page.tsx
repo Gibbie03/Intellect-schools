@@ -18,6 +18,7 @@ type Result = {
 type ReportCard = {
   session: string;
   term: string;
+  class: string | null;
   days_school_opened: number | null;
   days_present: number | null;
   times_punctual: number | null;
@@ -122,7 +123,11 @@ export default function StudentPortal() {
     [reportCards, activeSession, activeTerm]
   );
 
-  const headCommentLabel = studentClass && getClassSection(studentClass) === 'Secondary' ? "Principal's" : "Headmaster's";
+  // A report card snapshots the class it was saved under; older rows saved
+  // before that existed fall back to the student's current class.
+  const headCommentLabelFor = (rc: { class: string | null } | null) =>
+    getClassSection((rc?.class ?? studentClass) || '') === 'Secondary' ? "Principal's" : "Headmaster's";
+  const headCommentLabel = headCommentLabelFor(activeReportCard);
 
   const handlePrint = () => {
     const win = window.open('', '_blank');
@@ -250,7 +255,7 @@ export default function StudentPortal() {
               <tbody>${rows || '<tr><td colspan="5" class="c">No approved results for this term.</td></tr>'}</tbody>
             </table>
             <p class="muted"><strong>Class Teacher&apos;s Comment:</strong> ${rc.teacher_comment ?? 'Not recorded'}</p>
-            <p class="muted"><strong>${headCommentLabel} Comment:</strong> ${rc.principal_comment ?? 'Not recorded'}</p>
+            <p class="muted"><strong>${headCommentLabelFor(rc)} Comment:</strong> ${rc.principal_comment ?? 'Not recorded'}</p>
           </div>`;
       })
       .join('');
