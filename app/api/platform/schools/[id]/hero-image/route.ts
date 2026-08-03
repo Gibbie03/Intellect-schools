@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { randomUUID } from 'node:crypto';
 import { getSupabaseClient } from '@/lib/supabase';
 import { verifyOwnerSession, PLATFORM_SESSION_COOKIE } from '@/lib/auth';
+import { validateImageUpload } from '@/lib/imageUpload';
 
 export const dynamic = 'force-dynamic';
 
@@ -34,8 +35,9 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     if (!file || typeof file === 'string') {
       return NextResponse.json({ error: 'An image file is required.' }, { status: 400 });
     }
-    if (!file.type.startsWith('image/')) {
-      return NextResponse.json({ error: 'Only image files are allowed.' }, { status: 400 });
+    const validation = validateImageUpload(file);
+    if (!validation.ok) {
+      return NextResponse.json({ error: validation.error }, { status: 400 });
     }
     const MAX_BYTES = 8 * 1024 * 1024;
     if (file.size > MAX_BYTES) {
@@ -44,8 +46,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
     await ensureBucketExists(supabase);
 
-    const extension = file.name.includes('.') ? file.name.split('.').pop() : file.type.split('/')[1];
-    const path = `${id}/${randomUUID()}.${extension}`;
+    const path = `${id}/${randomUUID()}.${validation.extension}`;
 
     const { error: uploadError } = await supabase.storage
       .from(BUCKET)

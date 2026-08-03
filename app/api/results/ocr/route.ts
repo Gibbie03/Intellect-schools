@@ -3,6 +3,7 @@ import { getSupabaseClient } from '@/lib/supabase';
 import { requireSchoolSession } from '@/lib/auth';
 import { extractMarkSheet } from '@/lib/markSheetOcr';
 import { getEffectiveClassScope } from '@/lib/sectionScope';
+import { validateImageUpload } from '@/lib/imageUpload';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,8 +25,9 @@ export async function POST(request: NextRequest) {
     if (!file || typeof file === 'string') {
       return NextResponse.json({ error: 'An image file is required.' }, { status: 400 });
     }
-    if (!file.type.startsWith('image/')) {
-      return NextResponse.json({ error: 'Only image files are allowed.' }, { status: 400 });
+    const validation = validateImageUpload(file);
+    if (!validation.ok) {
+      return NextResponse.json({ error: validation.error }, { status: 400 });
     }
     const MAX_BYTES = 10 * 1024 * 1024;
     if (file.size > MAX_BYTES) {

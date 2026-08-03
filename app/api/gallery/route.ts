@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto';
 import { getSupabaseClient } from '@/lib/supabase';
 import { getSchoolFromHost } from '@/lib/tenant';
 import { requireSchoolSession } from '@/lib/auth';
+import { validateImageUpload } from '@/lib/imageUpload';
 
 export const dynamic = 'force-dynamic';
 
@@ -50,8 +51,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'An image file is required.' }, { status: 400 });
     }
 
-    if (!file.type.startsWith('image/')) {
-      return NextResponse.json({ error: 'Only image files are allowed.' }, { status: 400 });
+    const validation = validateImageUpload(file);
+    if (!validation.ok) {
+      return NextResponse.json({ error: validation.error }, { status: 400 });
     }
 
     const MAX_BYTES = 8 * 1024 * 1024;
@@ -61,8 +63,7 @@ export async function POST(request: NextRequest) {
 
     await ensureBucketExists(supabase);
 
-    const extension = file.name.includes('.') ? file.name.split('.').pop() : file.type.split('/')[1];
-    const path = `${school.id}/${randomUUID()}.${extension}`;
+    const path = `${school.id}/${randomUUID()}.${validation.extension}`;
 
     const { error: uploadError } = await supabase.storage
       .from(BUCKET)
