@@ -47,8 +47,8 @@ export type AdminRole = 'admin' | 'primary_admin' | 'secondary_admin';
 
 export const ADMIN_ROLE_LABELS: Record<AdminRole, string> = {
   admin: 'Admin (Full School)',
-  primary_admin: 'Primary Admin',
-  secondary_admin: 'Secondary Admin',
+  primary_admin: 'Headmaster (Primary)',
+  secondary_admin: 'Principal (Secondary)',
 };
 
 // null return = unrestricted (the plain 'admin' role, or any non-admin role
@@ -58,6 +58,21 @@ export function getSectionClasses(role: string): string[] | null {
   if (role === 'secondary_admin') return SECTION_CLASSES.Secondary;
   return null;
 }
+
+// Reverse lookup: which section a class belongs to (null for an
+// unrecognized class name). Used to decide whether a report card's
+// "head of section" comment should be labeled Headmaster's or Principal's,
+// and which role is allowed to write it.
+export function getClassSection(className: string): 'Primary' | 'Secondary' | null {
+  if (SECTION_CLASSES.Primary.includes(className)) return 'Primary';
+  if (SECTION_CLASSES.Secondary.includes(className)) return 'Secondary';
+  return null;
+}
+
+export const SECTION_ADMIN_ROLE: Record<'Primary' | 'Secondary', 'primary_admin' | 'secondary_admin'> = {
+  Primary: 'primary_admin',
+  Secondary: 'secondary_admin',
+};
 
 export const STUDENT_TEMPLATE_HEADERS = [
   'Student ID',

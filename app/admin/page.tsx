@@ -10,6 +10,7 @@ import {
   isSeniorSecondaryClass,
   ADMIN_ROLE_LABELS,
   getSectionClasses,
+  getClassSection,
 } from '@/lib/constants';
 import { SESSIONS, TERMS, CURRENT_SESSION, SUBJECTS } from '@/lib/grade';
 import { buildWhatsAppLink } from '@/lib/whatsapp';
@@ -675,6 +676,11 @@ function StudentsSection() {
         return TERMS.indexOf(a.term as (typeof TERMS)[number]) - TERMS.indexOf(b.term as (typeof TERMS)[number]);
       });
 
+      // Historical per-term class isn't tracked, only the student's current
+      // one -- close enough to label the whole printed history, since a
+      // student rarely crosses Primary/Secondary mid-history.
+      const headCommentLabel = getClassSection(student.class) === 'Secondary' ? "Principal's" : "Headmaster's";
+
       const win = window.open('', '_blank');
       if (!win) return;
 
@@ -706,7 +712,7 @@ function StudentsSection() {
                 <tbody>${rows || '<tr><td colspan="5" class="c">No approved results for this term.</td></tr>'}</tbody>
               </table>
               <p class="muted"><strong>Class Teacher&apos;s Comment:</strong> ${rc.teacher_comment ?? 'Not recorded'}</p>
-              <p class="muted"><strong>Principal&apos;s Comment:</strong> ${rc.principal_comment ?? 'Not recorded'}</p>
+              <p class="muted"><strong>${headCommentLabel} Comment:</strong> ${rc.principal_comment ?? 'Not recorded'}</p>
             </div>`;
         })
         .join('');
@@ -2452,6 +2458,10 @@ function ReportCardsSection() {
     teacherComment: '',
     principalComment: '',
   });
+  const [section, setSection] = useState<'Primary' | 'Secondary' | null>(null);
+  const [canSetHeadComment, setCanSetHeadComment] = useState(true);
+
+  const headCommentLabel = section === 'Secondary' ? "Principal's Comment" : "Headmaster's Comment";
 
   const load = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -2477,6 +2487,8 @@ function ReportCardsSection() {
         principalComment: rc?.principal_comment ?? '',
       });
       setStatus(rc?.status ?? 'Draft');
+      setSection(data.section ?? null);
+      setCanSetHeadComment(data.canSetHeadComment ?? true);
     } catch (err) {
       setError((err as Error).message);
     } finally {
@@ -2492,6 +2504,11 @@ function ReportCardsSection() {
     setNotice('');
 
     try {
+      // Omit principalComment entirely when this admin isn't allowed to set
+      // it, rather than resubmitting the unchanged value -- the field being
+      // present at all is what the API gates on, and an upsert that never
+      // mentions the column leaves it untouched in the database.
+      const { principalComment, ...restForm } = form;
       const res = await fetch('/api/report-cards', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -2499,7 +2516,8 @@ function ReportCardsSection() {
           studentId: lookup.studentId,
           session: lookup.session,
           term: lookup.term,
-          ...form,
+          ...restForm,
+          ...(canSetHeadComment ? { principalComment } : {}),
           ...(publish !== undefined ? { publish } : {}),
         }),
       });
@@ -2636,13 +2654,17 @@ function ReportCardsSection() {
             />
           </div>
           <div className="md:col-span-3">
-            <label className="block text-sm font-medium mb-2">Principal&apos;s Comment</label>
+            <label className="block text-sm font-medium mb-2">{headCommentLabel}</label>
             <textarea
               value={form.principalComment}
               onChange={(e) => setForm({ ...form, principalComment: e.target.value })}
-              className="w-full border p-3 rounded-xl"
+              className="w-full border p-3 rounded-xl disabled:bg-gray-50 disabled:text-gray-400"
               rows={3}
+              disabled={!canSetHeadComment}
             />
+            {!canSetHeadComment && (
+              <p className="mt-1 text-xs text-gray-500">Only the section&apos;s {headCommentLabel.replace("'s Comment", '')} can set this.</p>
+            )}
           </div>
           <div className="md:col-span-3 flex flex-wrap gap-3">
             <button

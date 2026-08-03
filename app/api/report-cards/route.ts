@@ -4,7 +4,8 @@ import { requireSchoolSession } from '@/lib/auth';
 import { getClassTeacherAssignment } from '@/lib/classTeacher';
 import { logAudit } from '@/lib/auditLog';
 import { Database } from '@/lib/database.types';
-import { getSectionClasses } from '@/lib/constants';
+import { getSectionClasses, getClassSection, SECTION_ADMIN_ROLE } from '@/lib/constants';
+import { sectionHeadExists } from '@/lib/sectionScope';
 
 export const dynamic = 'force-dynamic';
 
@@ -80,6 +81,21 @@ export async function GET(request: NextRequest) {
     const accessError = await checkClassTeacherAccess(supabase, school.id, staffSession.role, staffSession.userId, studentId);
     if (accessError) return NextResponse.json({ error: accessError }, { status: 403 });
 
+    const { data: student } = await supabase
+      .from('students')
+      .select('class')
+      .eq('school_id', school.id)
+      .eq('student_id', studentId)
+      .maybeSingle();
+    const section = student ? getClassSection(student.class) : null;
+
+    let canSetHeadComment = staffSession.role !== 'teacher';
+    if (staffSession.role === 'primary_admin') canSetHeadComment = section === 'Primary';
+    else if (staffSession.role === 'secondary_admin') canSetHeadComment = section === 'Secondary';
+    else if (staffSession.role === 'admin' && section) {
+      canSetHeadComment = !(await sectionHeadExists(supabase, school.id, SECTION_ADMIN_ROLE[section]));
+    }
+
     const { data, error } = await supabase
       .from('report_cards')
       .select('*')
@@ -90,15 +106,17 @@ export async function GET(request: NextRequest) {
       .maybeSingle();
     if (error) throw error;
 
-    return NextResponse.json({ reportCard: data });
+    return NextResponse.json({ reportCard: data, section, canSetHeadComment });
   } catch (error) {
     return NextResponse.json({ error: (error as Error).message }, { status: 500 });
   }
 }
 
 // Upsert the whole-term parts of a student's report card. Any staff member
-// can set attendance/conduct/teacher's comment; principal's comment is
-// admin-only (enforced here, not just in the UI).
+// can set attendance/conduct/teacher's comment; the head-of-section comment
+// is restricted to that section's headmaster/principal (or the unscoped
+// 'admin' as a fallback until one is set up) -- enforced here, not just in
+// the UI.
 export async function POST(request: NextRequest) {
   const staff = await requireSchoolSession(request, ['admin', 'primary_admin', 'secondary_admin', 'teacher']);
   if (!staff) return NextResponse.json({ error: 'Not authenticated.' }, { status: 401 });
@@ -125,14 +143,38 @@ export async function POST(request: NextRequest) {
     if (conductRating && !CONDUCT_RATINGS.includes(conductRating)) {
       return NextResponse.json({ error: 'Invalid conduct rating.' }, { status: 400 });
     }
-    if (principalComment !== undefined && staffSession.role === 'teacher') {
-      return NextResponse.json({ error: "Only an admin can set the principal's comment." }, { status: 403 });
-    }
 
     const supabase = getSupabaseClient();
 
     const accessError = await checkClassTeacherAccess(supabase, school.id, staffSession.role, staffSession.userId, studentId);
     if (accessError) return NextResponse.json({ error: accessError }, { status: 403 });
+
+    // The head-of-section comment (Headmaster's for Primary, Principal's for
+    // Secondary) belongs to that section's own admin once one exists for
+    // this school; the unscoped 'admin' (proprietor) is a fallback only
+    // until a headmaster/principal account is set up, and a class teacher
+    // never gets to set it.
+    if (principalComment !== undefined) {
+      const { data: student } = await supabase
+        .from('students')
+        .select('class')
+        .eq('school_id', school.id)
+        .eq('student_id', studentId)
+        .maybeSingle();
+      const section = student ? getClassSection(student.class) : null;
+
+      let allowed = false;
+      if (staffSession.role === 'primary_admin' && section === 'Primary') allowed = true;
+      else if (staffSession.role === 'secondary_admin' && section === 'Secondary') allowed = true;
+      else if (staffSession.role === 'admin' && section) {
+        allowed = !(await sectionHeadExists(supabase, school.id, SECTION_ADMIN_ROLE[section]));
+      }
+
+      if (!allowed) {
+        const label = section === 'Secondary' ? "Principal's" : "Headmaster's";
+        return NextResponse.json({ error: `Only the ${label} comment field can be set by that section's head.` }, { status: 403 });
+      }
+    }
 
     const { data: before } = await supabase
       .from('report_cards')

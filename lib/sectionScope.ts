@@ -40,3 +40,22 @@ export async function isStudentInSection(
     .maybeSingle();
   return !!data && sectionClasses.includes(data.class);
 }
+
+// Whether this school has an active headmaster/principal account for the
+// given section -- used to decide whether the unscoped 'admin' (proprietor)
+// can still fall back to writing the section's report-card comment, or
+// whether that's now that section head's job.
+export async function sectionHeadExists(
+  supabase: SupabaseClient,
+  schoolId: string,
+  sectionRole: 'primary_admin' | 'secondary_admin'
+): Promise<boolean> {
+  const { data } = await supabase
+    .from('school_users')
+    .select('id')
+    .eq('school_id', schoolId)
+    .eq('role', sectionRole)
+    .eq('status', 'Active')
+    .limit(1);
+  return (data?.length ?? 0) > 0;
+}

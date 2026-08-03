@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { TERMS } from '@/lib/grade';
+import { getClassSection } from '@/lib/constants';
 
 type Result = {
   id: string;
@@ -121,6 +122,8 @@ export default function StudentPortal() {
     [reportCards, activeSession, activeTerm]
   );
 
+  const headCommentLabel = studentClass && getClassSection(studentClass) === 'Secondary' ? "Principal's" : "Headmaster's";
+
   const handlePrint = () => {
     const win = window.open('', '_blank');
     if (!win) return;
@@ -185,13 +188,13 @@ export default function StudentPortal() {
             <div class="box">${rc?.teacher_comment ?? 'Not recorded'}</div>
           </div>
           <div class="section">
-            <h2>Principal's Comment</h2>
+            <h2>${headCommentLabel} Comment</h2>
             <div class="box">${rc?.principal_comment ?? 'Not recorded'}</div>
           </div>
 
           <div class="sign">
             <div>Class Teacher&apos;s Signature</div>
-            <div>Principal&apos;s Signature</div>
+            <div>${headCommentLabel} Signature</div>
           </div>
         </body>
       </html>
@@ -247,7 +250,7 @@ export default function StudentPortal() {
               <tbody>${rows || '<tr><td colspan="5" class="c">No approved results for this term.</td></tr>'}</tbody>
             </table>
             <p class="muted"><strong>Class Teacher&apos;s Comment:</strong> ${rc.teacher_comment ?? 'Not recorded'}</p>
-            <p class="muted"><strong>Principal&apos;s Comment:</strong> ${rc.principal_comment ?? 'Not recorded'}</p>
+            <p class="muted"><strong>${headCommentLabel} Comment:</strong> ${rc.principal_comment ?? 'Not recorded'}</p>
           </div>`;
       })
       .join('');
@@ -438,7 +441,7 @@ export default function StudentPortal() {
 
               {activeReportCard?.principal_comment && (
                 <div className="mt-6 p-4 text-sm" style={{ background: 'var(--cream)' }}>
-                  <p className="mb-1 text-[var(--muted)]">Principal&apos;s Comment</p>
+                  <p className="mb-1 text-[var(--muted)]">{headCommentLabel} Comment</p>
                   <p className="font-medium">{activeReportCard.principal_comment}</p>
                 </div>
               )}
