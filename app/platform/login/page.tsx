@@ -1,10 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 
 export default function PlatformLoginPage() {
-  const router = useRouter();
   const [password, setPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -23,8 +21,10 @@ export default function PlatformLoginPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Login failed.');
 
-      router.push('/platform');
-      router.refresh();
+      // Hard navigation, not router.push/refresh -- a client-side push can
+      // serve a stale cached render from before the session cookie existed
+      // (that's why this used to need a second click or a manual reload).
+      window.location.href = '/platform';
     } catch (err) {
       setError((err as Error).message);
     } finally {

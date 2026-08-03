@@ -1,10 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 
 export default function LoginPage() {
-  const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -14,9 +12,15 @@ export default function LoginPage() {
   const [code, setCode] = useState('');
   const [verifying, setVerifying] = useState(false);
 
+  // A plain client-side router.push() here can serve a stale cached render
+  // of /admin or /teacher-dashboard from Next's client router cache (e.g.
+  // one previously redirected to /login before the session cookie existed)
+  // -- router.refresh() is meant to bust that, but calling it right after
+  // push doesn't reliably win the race, which is why this used to need a
+  // second click or a manual reload. A hard navigation always issues a
+  // fresh top-level request, so middleware sees the new cookie immediately.
   const finishLogin = (role: string) => {
-    router.push(role === 'admin' ? '/admin' : '/teacher-dashboard');
-    router.refresh();
+    window.location.href = role === 'admin' ? '/admin' : '/teacher-dashboard';
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
