@@ -20,6 +20,7 @@ type Tab =
   | 'report-cards'
   | 'timetables'
   | 'fees'
+  | 'accounting'
   | 'messages'
   | 'spotlight'
   | 'calendar'
@@ -41,6 +42,7 @@ const TABS: { id: Tab; label: string }[] = [
   { id: 'report-cards', label: 'Report Cards' },
   { id: 'timetables', label: 'Timetables' },
   { id: 'fees', label: 'Fees' },
+  { id: 'accounting', label: 'Accounting' },
   { id: 'messages', label: 'Message Parents' },
   { id: 'spotlight', label: 'Spotlight' },
   { id: 'calendar', label: 'Academic Calendar' },
@@ -90,6 +92,7 @@ export default function AdminDashboard() {
       {tab === 'report-cards' && <ReportCardsSection />}
       {tab === 'timetables' && <TimetablesSection />}
       {tab === 'fees' && <FeesSection />}
+      {tab === 'accounting' && <AccountingSection />}
       {tab === 'messages' && <MessagesSection />}
       {tab === 'spotlight' && <SpotlightSection />}
       {tab === 'calendar' && <CalendarSection />}
@@ -3171,6 +3174,223 @@ function FeesSection() {
                   </td>
                   <td className="p-3 text-right">
                     <button onClick={() => deleteFee(f.id)} className="text-sm text-red-600 hover:underline">
+                      Delete
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+    </div>
+  );
+}
+
+type ExpenseRow = {
+  id: string;
+  session: string;
+  term: string;
+  category: string;
+  description: string | null;
+  amount: number;
+  expense_date: string;
+};
+
+const EXPENSE_CATEGORIES = ['Salaries', 'Utilities', 'Maintenance', 'Supplies', 'Transport', 'General'];
+
+function AccountingSection() {
+  const [lookup, setLookup] = useState({ session: CURRENT_SESSION, term: TERMS[0] });
+  const [expenses, setExpenses] = useState<ExpenseRow[]>([]);
+  const [summary, setSummary] = useState<{ income: number; expenses: number; net: number } | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [form, setForm] = useState({
+    category: EXPENSE_CATEGORIES[0],
+    description: '',
+    amount: '',
+    expenseDate: new Date().toISOString().slice(0, 10),
+  });
+
+  const load = () => {
+    setLoading(true);
+    setError('');
+    const qs = `session=${encodeURIComponent(lookup.session)}&term=${encodeURIComponent(lookup.term)}`;
+    Promise.all([
+      fetch(`/api/expenses?${qs}`).then((res) => res.json()),
+      fetch(`/api/accounting/summary?${qs}`).then((res) => res.json()),
+    ])
+      .then(([expensesData, summaryData]) => {
+        if (expensesData.error) throw new Error(expensesData.error);
+        if (summaryData.error) throw new Error(summaryData.error);
+        setExpenses(expensesData.expenses);
+        setSummary(summaryData);
+      })
+      .catch((err) => setError(err.message))
+      .finally(() => setLoading(false));
+  };
+
+  useEffect(load, [lookup.session, lookup.term]);
+
+  const handleAdd = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.amount) return;
+
+    setSubmitting(true);
+    setError('');
+    try {
+      const res = await fetch('/api/expenses', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          session: lookup.session,
+          term: lookup.term,
+          category: form.category,
+          description: form.description,
+          amount: form.amount,
+          expenseDate: form.expenseDate,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to add expense.');
+      setForm({ category: EXPENSE_CATEGORIES[0], description: '', amount: '', expenseDate: new Date().toISOString().slice(0, 10) });
+      load();
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const deleteExpense = async (id: string) => {
+    if (!confirm('Delete this expense record?')) return;
+    try {
+      const res = await fetch(`/api/expenses/${id}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to delete expense.');
+      load();
+    } catch (err) {
+      setError((err as Error).message);
+    }
+  };
+
+  const naira = (n: number) => `₦${n.toLocaleString()}`;
+
+  return (
+    <div>
+      <h1 className="text-4xl font-bold mb-2">Accounting</h1>
+      <p className="text-gray-500 mb-8">
+        A running income &amp; expense summary for the term &mdash; income counts fees actually marked Paid, not just
+        invoiced. This is a summary statement, not a full double-entry ledger.
+      </p>
+      {error && <div className="mb-6 rounded-xl bg-red-50 p-4 text-sm text-red-700">{error}</div>}
+
+      <div className="flex flex-wrap gap-4 mb-8">
+        <select
+          value={lookup.session}
+          onChange={(e) => setLookup({ ...lookup, session: e.target.value })}
+          className="rounded-xl border p-3"
+        >
+          {SESSIONS.map((s) => (
+            <option key={s}>{s}</option>
+          ))}
+        </select>
+        <select value={lookup.term} onChange={(e) => setLookup({ ...lookup, term: e.target.value })} className="rounded-xl border p-3">
+          {TERMS.map((t) => (
+            <option key={t}>{t}</option>
+          ))}
+        </select>
+      </div>
+
+      {summary && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <div className="bg-white rounded-2xl shadow p-6">
+            <p className="text-sm text-gray-500">Income (fees paid)</p>
+            <p className="text-2xl font-bold text-green-700">{naira(summary.income)}</p>
+          </div>
+          <div className="bg-white rounded-2xl shadow p-6">
+            <p className="text-sm text-gray-500">Expenses</p>
+            <p className="text-2xl font-bold text-red-700">{naira(summary.expenses)}</p>
+          </div>
+          <div className="bg-white rounded-2xl shadow p-6">
+            <p className="text-sm text-gray-500">Net position</p>
+            <p className={`text-2xl font-bold ${summary.net >= 0 ? 'text-green-700' : 'text-red-700'}`}>{naira(summary.net)}</p>
+          </div>
+        </div>
+      )}
+
+      <form onSubmit={handleAdd} className="bg-white rounded-2xl shadow p-8 mb-8 grid grid-cols-1 md:grid-cols-2 gap-4">
+        <h2 className="md:col-span-2 text-xl font-semibold">Record an Expense</h2>
+        <select
+          value={form.category}
+          onChange={(e) => setForm({ ...form, category: e.target.value })}
+          className="w-full rounded-xl border p-3"
+        >
+          {EXPENSE_CATEGORIES.map((c) => (
+            <option key={c}>{c}</option>
+          ))}
+        </select>
+        <input
+          type="number"
+          min="0"
+          step="0.01"
+          placeholder="Amount (₦)"
+          value={form.amount}
+          onChange={(e) => setForm({ ...form, amount: e.target.value })}
+          className="w-full rounded-xl border p-3"
+          required
+        />
+        <input
+          type="date"
+          value={form.expenseDate}
+          onChange={(e) => setForm({ ...form, expenseDate: e.target.value })}
+          className="w-full rounded-xl border p-3"
+        />
+        <input
+          type="text"
+          placeholder="Description (optional)"
+          value={form.description}
+          onChange={(e) => setForm({ ...form, description: e.target.value })}
+          className="w-full rounded-xl border p-3"
+        />
+        <button
+          type="submit"
+          disabled={submitting}
+          className="md:col-span-2 w-full rounded-xl bg-[var(--brand-color)] py-3 font-semibold text-white hover:brightness-90 disabled:opacity-60"
+        >
+          {submitting ? 'Saving...' : 'Record Expense'}
+        </button>
+      </form>
+
+      <div className="bg-white rounded-2xl shadow p-8">
+        <h2 className="text-xl font-semibold mb-6">
+          Expenses &mdash; {lookup.term}, {lookup.session} ({expenses.length})
+        </h2>
+        {loading ? (
+          <p className="text-gray-500">Loading...</p>
+        ) : expenses.length === 0 ? (
+          <p className="text-gray-500">No expenses recorded for this term yet.</p>
+        ) : (
+          <table className="w-full">
+            <thead>
+              <tr className="bg-gray-100">
+                <th className="text-left p-4">Date</th>
+                <th className="text-left p-4">Category</th>
+                <th className="text-left p-4">Description</th>
+                <th className="text-right p-4">Amount</th>
+                <th className="text-right p-4">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {expenses.map((ex) => (
+                <tr key={ex.id} className="border-b">
+                  <td className="p-4">{new Date(ex.expense_date).toLocaleDateString()}</td>
+                  <td className="p-4">{ex.category}</td>
+                  <td className="p-4">{ex.description || '—'}</td>
+                  <td className="p-4 text-right">{naira(Number(ex.amount))}</td>
+                  <td className="p-4 text-right">
+                    <button onClick={() => deleteExpense(ex.id)} className="text-sm text-red-600 hover:underline">
                       Delete
                     </button>
                   </td>

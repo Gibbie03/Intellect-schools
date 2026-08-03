@@ -264,6 +264,23 @@ create table if not exists fees (
 
 create index if not exists fees_school_student_idx on fees (school_id, student_id);
 
+-- A simple, single-entry expense ledger -- not a full double-entry
+-- accounting system. Paired with fees (income) for a session/term Income &
+-- Expense summary; see app/admin's Accounting tab.
+create table if not exists expenses (
+  id uuid primary key default gen_random_uuid(),
+  school_id uuid not null references schools(id) on delete cascade,
+  session text not null,
+  term text not null,
+  category text not null default 'General',
+  description text,
+  amount numeric not null check (amount >= 0),
+  expense_date date not null default current_date,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists expenses_school_session_term_idx on expenses (school_id, session, term);
+
 -- Student/Staff of the Month style homepage spotlight.
 create table if not exists spotlights (
   id uuid primary key default gen_random_uuid(),
@@ -391,5 +408,6 @@ alter table spotlights enable row level security;
 alter table academic_calendar enable row level security;
 alter table testimonials enable row level security;
 alter table attendance enable row level security;
+alter table expenses enable row level security;
 alter table rate_limit_hits enable row level security;
 alter table audit_log enable row level security;

@@ -643,6 +643,42 @@ export type Database = {
         };
         Relationships: [];
       };
+      expenses: {
+        Row: {
+          id: string;
+          school_id: string;
+          session: string;
+          term: string;
+          category: string;
+          description: string | null;
+          amount: number;
+          expense_date: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          school_id: string;
+          session: string;
+          term: string;
+          category?: string;
+          description?: string | null;
+          amount: number;
+          expense_date?: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          school_id?: string;
+          session?: string;
+          term?: string;
+          category?: string;
+          description?: string | null;
+          amount?: number;
+          expense_date?: string;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
       spotlights: {
         Row: {
           id: string;
