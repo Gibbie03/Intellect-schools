@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic';
 // security, so it shouldn't be doable from e.g. a hijacked, already-open
 // browser tab without re-proving who you are.
 export async function POST(request: NextRequest) {
-  const staff = await requireSchoolSession(request, ['admin', 'teacher']);
+  const staff = await requireSchoolSession(request, ['admin', 'primary_admin', 'secondary_admin', 'teacher']);
   if (!staff) return NextResponse.json({ error: 'Not authenticated.' }, { status: 401 });
   const { school, session } = staff;
 

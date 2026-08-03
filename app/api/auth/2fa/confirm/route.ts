@@ -6,7 +6,7 @@ import { verifyTotpCode } from '@/lib/totp';
 export const dynamic = 'force-dynamic';
 
 export async function POST(request: NextRequest) {
-  const staff = await requireSchoolSession(request, ['admin', 'teacher']);
+  const staff = await requireSchoolSession(request, ['admin', 'primary_admin', 'secondary_admin', 'teacher']);
   if (!staff) return NextResponse.json({ error: 'Not authenticated.' }, { status: 401 });
   const { school, session } = staff;
 
