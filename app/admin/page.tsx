@@ -1,6 +1,6 @@
 'use client';
 
-import { Fragment, useEffect, useState } from 'react';
+import { Fragment, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   STAFF_ROLES,
@@ -498,7 +498,7 @@ function StudentsSection() {
           toClass: allowed.includes(prev.toClass) ? prev.toClass : (allowed[1] ?? allowed[0]),
         }));
       })
-      .catch(() => {});
+      .catch((err) => console.error(err));
   }, []);
 
   const [batchFile, setBatchFile] = useState<File | null>(null);
@@ -1170,7 +1170,7 @@ function StaffSection() {
         setCampuses(data.campuses ?? []);
         setMyRole(data.role ?? null);
       })
-      .catch(() => {});
+      .catch((err) => console.error(err));
   }, []);
 
   const [accounts, setAccounts] = useState<AccountRow[]>([]);
@@ -2164,7 +2164,7 @@ function ResultPinsSection() {
     fetch('/api/school')
       .then((res) => res.json())
       .then((data) => setSchoolName(data.name ?? ''))
-      .catch(() => {});
+      .catch((err) => console.error(err));
   }, []);
 
   const handleGenerate = async (e: React.FormEvent) => {
@@ -2741,28 +2741,38 @@ function TimetablesSection() {
   const [examForm, setExamForm] = useState({ subject: SUBJECTS[0], examDate: '', startTime: '', endTime: '', venue: '' });
   const [examSubmitting, setExamSubmitting] = useState(false);
   const [examSubjects, setExamSubjects] = useState<string[]>(SUBJECTS);
+  const examSubjectsSeq = useRef(0);
+  const ttLoadSeq = useRef(0);
+  const examLoadSeq = useRef(0);
 
   useEffect(() => {
+    const seq = ++examSubjectsSeq.current;
     fetch(`/api/class-subjects?class=${encodeURIComponent(selectedClass)}`)
       .then((res) => res.json())
       .then((data) => {
+        if (examSubjectsSeq.current !== seq) return;
         const list = ((data.subjects ?? []) as { subject: string }[]).map((s) => s.subject);
         const options = list.length > 0 ? list : SUBJECTS;
         setExamSubjects(options);
         setExamForm((prev) => (options.includes(prev.subject) ? prev : { ...prev, subject: options[0] }));
       })
-      .catch(() => setExamSubjects(SUBJECTS));
+      .catch((err) => {
+        console.error(err);
+        if (examSubjectsSeq.current === seq) setExamSubjects(SUBJECTS);
+      });
   }, [selectedClass]);
 
   const cellKey = (day: string, period: number) => `${day}|${period}`;
 
   const loadClassTimetable = async (className: string) => {
+    const seq = ++ttLoadSeq.current;
     setTtLoading(true);
     setTtError('');
     setTtNotice('');
     try {
       const res = await fetch(`/api/class-timetables?class=${encodeURIComponent(className)}`);
       const data = await res.json();
+      if (ttLoadSeq.current !== seq) return;
       if (!res.ok) throw new Error(data.error || 'Failed to load timetable.');
 
       const newGrid: Record<string, { subject: string; teacherName: string }> = {};
@@ -2776,9 +2786,9 @@ function TimetablesSection() {
       setGrid(newGrid);
       setPeriodTimes(newTimes);
     } catch (err) {
-      setTtError((err as Error).message);
+      if (ttLoadSeq.current === seq) setTtError((err as Error).message);
     } finally {
-      setTtLoading(false);
+      if (ttLoadSeq.current === seq) setTtLoading(false);
     }
   };
 
@@ -2823,6 +2833,7 @@ function TimetablesSection() {
   };
 
   const loadExams = async () => {
+    const seq = ++examLoadSeq.current;
     setExamLoading(true);
     setExamError('');
     try {
@@ -2830,12 +2841,13 @@ function TimetablesSection() {
         `/api/exam-timetables?class=${encodeURIComponent(selectedClass)}&session=${encodeURIComponent(examLookup.session)}&term=${encodeURIComponent(examLookup.term)}`
       );
       const data = await res.json();
+      if (examLoadSeq.current !== seq) return;
       if (!res.ok) throw new Error(data.error || 'Failed to load exam timetable.');
       setExamEntries(data.entries);
     } catch (err) {
-      setExamError((err as Error).message);
+      if (examLoadSeq.current === seq) setExamError((err as Error).message);
     } finally {
-      setExamLoading(false);
+      if (examLoadSeq.current === seq) setExamLoading(false);
     }
   };
 
@@ -3129,6 +3141,7 @@ function SubjectsSection() {
   const [error, setError] = useState('');
   const [newSubject, setNewSubject] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const loadSeq = useRef(0);
 
   useEffect(() => {
     fetch('/api/auth/me')
@@ -3138,20 +3151,26 @@ function SubjectsSection() {
         setMyClasses(allowed);
         setSelectedClass((prev) => (allowed.includes(prev) ? prev : allowed[0]));
       })
-      .catch(() => {});
+      .catch((err) => console.error(err));
   }, []);
 
   const load = () => {
+    const seq = ++loadSeq.current;
     setLoading(true);
     setError('');
     fetch(`/api/class-subjects?class=${encodeURIComponent(selectedClass)}`)
       .then((res) => res.json())
       .then((data) => {
+        if (loadSeq.current !== seq) return;
         if (data.error) throw new Error(data.error);
         setSubjects(data.subjects);
       })
-      .catch((err) => setError(err.message))
-      .finally(() => setLoading(false));
+      .catch((err) => {
+        if (loadSeq.current === seq) setError(err.message);
+      })
+      .finally(() => {
+        if (loadSeq.current === seq) setLoading(false);
+      });
   };
 
   useEffect(load, [selectedClass]);
@@ -3263,8 +3282,10 @@ function FeesSection() {
   const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState({ studentId: '', description: 'School Fees', amount: '', dueDate: '' });
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const loadSeq = useRef(0);
 
   const load = () => {
+    const seq = ++loadSeq.current;
     setLoading(true);
     setError('');
     fetch(
@@ -3272,12 +3293,17 @@ function FeesSection() {
     )
       .then((res) => res.json())
       .then((data) => {
+        if (loadSeq.current !== seq) return;
         if (data.error) throw new Error(data.error);
         setFees(data.fees);
         setRoster(data.roster ?? []);
       })
-      .catch((err) => setError(err.message))
-      .finally(() => setLoading(false));
+      .catch((err) => {
+        if (loadSeq.current === seq) setError(err.message);
+      })
+      .finally(() => {
+        if (loadSeq.current === seq) setLoading(false);
+      });
   };
 
   useEffect(load, [lookup.className, lookup.session, lookup.term]);
@@ -3546,8 +3572,10 @@ function AccountingSection() {
     amount: '',
     expenseDate: new Date().toISOString().slice(0, 10),
   });
+  const loadSeq = useRef(0);
 
   const load = () => {
+    const seq = ++loadSeq.current;
     setLoading(true);
     setError('');
     const qs = `session=${encodeURIComponent(lookup.session)}&term=${encodeURIComponent(lookup.term)}`;
@@ -3556,13 +3584,18 @@ function AccountingSection() {
       fetch(`/api/accounting/summary?${qs}`).then((res) => res.json()),
     ])
       .then(([expensesData, summaryData]) => {
+        if (loadSeq.current !== seq) return;
         if (expensesData.error) throw new Error(expensesData.error);
         if (summaryData.error) throw new Error(summaryData.error);
         setExpenses(expensesData.expenses);
         setSummary(summaryData);
       })
-      .catch((err) => setError(err.message))
-      .finally(() => setLoading(false));
+      .catch((err) => {
+        if (loadSeq.current === seq) setError(err.message);
+      })
+      .finally(() => {
+        if (loadSeq.current === seq) setLoading(false);
+      });
   };
 
   useEffect(load, [lookup.session, lookup.term]);
@@ -3752,18 +3785,25 @@ function MessagesSection() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
+  const loadSeq = useRef(0);
 
   const load = () => {
+    const seq = ++loadSeq.current;
     setLoading(true);
     setError('');
     fetch(`/api/students?class=${encodeURIComponent(className)}&status=Active`)
       .then((res) => res.json())
       .then((data) => {
+        if (loadSeq.current !== seq) return;
         if (data.error) throw new Error(data.error);
         setRoster(data.students);
       })
-      .catch((err) => setError(err.message))
-      .finally(() => setLoading(false));
+      .catch((err) => {
+        if (loadSeq.current === seq) setError(err.message);
+      })
+      .finally(() => {
+        if (loadSeq.current === seq) setLoading(false);
+      });
   };
 
   useEffect(load, [className]);
@@ -4037,17 +4077,24 @@ function CalendarSection() {
     startDate: '',
     endDate: '',
   });
+  const loadSeq = useRef(0);
 
   const load = () => {
+    const seq = ++loadSeq.current;
     setLoading(true);
     fetch(`/api/academic-calendar?session=${encodeURIComponent(selectedSession)}`)
       .then((res) => res.json())
       .then((data) => {
+        if (loadSeq.current !== seq) return;
         if (data.error) throw new Error(data.error);
         setEntries(data.entries);
       })
-      .catch((err) => setError(err.message))
-      .finally(() => setLoading(false));
+      .catch((err) => {
+        if (loadSeq.current === seq) setError(err.message);
+      })
+      .finally(() => {
+        if (loadSeq.current === seq) setLoading(false);
+      });
   };
 
   useEffect(load, [selectedSession]);
@@ -4386,14 +4433,17 @@ function AttendanceSection() {
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [saving, setSaving] = useState(false);
+  const loadSeq = useRef(0);
 
   const load = () => {
+    const seq = ++loadSeq.current;
     setLoading(true);
     setError('');
     setNotice('');
     fetch(`/api/attendance?class=${encodeURIComponent(selectedClass)}&date=${encodeURIComponent(date)}`)
       .then((res) => res.json())
       .then((data) => {
+        if (loadSeq.current !== seq) return;
         if (data.error) throw new Error(data.error);
         setRoster(data.roster ?? []);
         const initial: Record<string, (typeof ATTENDANCE_STATUSES)[number]> = {};
@@ -4405,8 +4455,12 @@ function AttendanceSection() {
         });
         setMarksByStudent(initial);
       })
-      .catch((err) => setError(err.message))
-      .finally(() => setLoading(false));
+      .catch((err) => {
+        if (loadSeq.current === seq) setError(err.message);
+      })
+      .finally(() => {
+        if (loadSeq.current === seq) setLoading(false);
+      });
   };
 
   useEffect(load, [selectedClass, date]);
@@ -4566,7 +4620,7 @@ function SecuritySection() {
     fetch('/api/auth/me')
       .then((res) => res.json())
       .then((data) => setTotpEnabled(Boolean(data.totpEnabled)))
-      .catch(() => {});
+      .catch((err) => console.error(err));
   };
 
   useEffect(load, []);
@@ -4766,8 +4820,10 @@ function AuditLogSection() {
   const [error, setError] = useState('');
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const pageSize = 50;
+  const loadSeq = useRef(0);
 
   useEffect(() => {
+    const seq = ++loadSeq.current;
     setLoading(true);
     setError('');
     const params = new URLSearchParams({ page: String(page) });
@@ -4775,12 +4831,17 @@ function AuditLogSection() {
     fetch(`/api/audit-log?${params.toString()}`)
       .then((res) => res.json())
       .then((data) => {
+        if (loadSeq.current !== seq) return;
         if (data.error) throw new Error(data.error);
         setEntries(data.entries);
         setTotal(data.total);
       })
-      .catch((err) => setError(err.message))
-      .finally(() => setLoading(false));
+      .catch((err) => {
+        if (loadSeq.current === seq) setError(err.message);
+      })
+      .finally(() => {
+        if (loadSeq.current === seq) setLoading(false);
+      });
   }, [page, entityType]);
 
   const totalPages = Math.max(Math.ceil(total / pageSize), 1);

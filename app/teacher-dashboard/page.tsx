@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { SUBJECTS, TERMS, SESSIONS, CURRENT_SESSION, CONDUCT_RATINGS } from '@/lib/grade';
 import { CLASSES } from '@/lib/constants';
@@ -67,17 +67,23 @@ export default function TeacherDashboard() {
     term: TERMS[0],
   });
   const [batchSubjects, setBatchSubjects] = useState<string[]>(SUBJECTS);
+  const batchSubjectsSeq = useRef(0);
 
   useEffect(() => {
+    const seq = ++batchSubjectsSeq.current;
     fetch(`/api/class-subjects?class=${encodeURIComponent(batchSetup.className)}`)
       .then((res) => res.json())
       .then((data) => {
+        if (batchSubjectsSeq.current !== seq) return;
         const list = ((data.subjects ?? []) as { subject: string }[]).map((s) => s.subject);
         const options = list.length > 0 ? list : SUBJECTS;
         setBatchSubjects(options);
         setBatchSetup((prev) => (options.includes(prev.subject) ? prev : { ...prev, subject: options[0] }));
       })
-      .catch(() => setBatchSubjects(SUBJECTS));
+      .catch((err) => {
+        console.error(err);
+        if (batchSubjectsSeq.current === seq) setBatchSubjects(SUBJECTS);
+      });
   }, [batchSetup.className]);
   const [roster, setRoster] = useState<RosterStudent[] | null>(null);
   const [rosterLoading, setRosterLoading] = useState(false);
@@ -99,17 +105,23 @@ export default function TeacherDashboard() {
     term: TERMS[0],
   });
   const [ocrSubjects, setOcrSubjects] = useState<string[]>(SUBJECTS);
+  const ocrSubjectsSeq = useRef(0);
 
   useEffect(() => {
+    const seq = ++ocrSubjectsSeq.current;
     fetch(`/api/class-subjects?class=${encodeURIComponent(ocrSetup.className)}`)
       .then((res) => res.json())
       .then((data) => {
+        if (ocrSubjectsSeq.current !== seq) return;
         const list = ((data.subjects ?? []) as { subject: string }[]).map((s) => s.subject);
         const options = list.length > 0 ? list : SUBJECTS;
         setOcrSubjects(options);
         setOcrSetup((prev) => (options.includes(prev.subject) ? prev : { ...prev, subject: options[0] }));
       })
-      .catch(() => setOcrSubjects(SUBJECTS));
+      .catch((err) => {
+        console.error(err);
+        if (ocrSubjectsSeq.current === seq) setOcrSubjects(SUBJECTS);
+      });
   }, [ocrSetup.className]);
   const [ocrFile, setOcrFile] = useState<File | null>(null);
   const [ocrLoading, setOcrLoading] = useState(false);
@@ -191,7 +203,7 @@ export default function TeacherDashboard() {
       .then((data) => {
         if (!data.error) setRcRoster(data.students);
       })
-      .catch(() => {});
+      .catch((err) => console.error(err));
   }, [classTeacherOf]);
 
   const handleLogout = async () => {

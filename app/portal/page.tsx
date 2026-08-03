@@ -50,7 +50,7 @@ export default function StudentPortal() {
     fetch('/api/school')
       .then((res) => res.json())
       .then((data) => setSchoolName(data.name ?? ''))
-      .catch(() => {});
+      .catch((err) => console.error(err));
   }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
