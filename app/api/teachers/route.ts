@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { randomUUID } from 'node:crypto';
 import { getSupabaseClient } from '@/lib/supabase';
-import { STAFF_ROLES, CLASSES } from '@/lib/constants';
+import { STAFF_ROLES, CLASSES, getSectionClasses } from '@/lib/constants';
 import { requireSchoolSession } from '@/lib/auth';
+import { validateImageUpload } from '@/lib/imageUpload';
+import { apiError } from '@/lib/apiError';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,9 +19,9 @@ async function ensureBucketExists(supabase: ReturnType<typeof getSupabaseClient>
 
 export async function GET(request: NextRequest) {
   try {
-    const staff = await requireSchoolSession(request, ['admin']);
+    const staff = await requireSchoolSession(request, ['admin', 'primary_admin', 'secondary_admin']);
     if (!staff) return NextResponse.json({ error: 'Not authenticated.' }, { status: 401 });
-    const { school } = staff;
+    const { school, session } = staff;
 
     const supabase = getSupabaseClient();
     const { data, error } = await supabase
@@ -30,9 +32,18 @@ export async function GET(request: NextRequest) {
 
     if (error) throw error;
 
-    return NextResponse.json({ teachers: data });
+    // Staff whose class_teacher_of isn't set (Head Teacher, Bursar, admin,
+    // non-teaching staff, or a subject teacher not tied to one class) aren't
+    // attributable to a single section, so they stay visible to both --
+    // only a specific class assignment outside the admin's section is hidden.
+    const sectionClasses = getSectionClasses(session.role);
+    const teachers = sectionClasses
+      ? (data ?? []).filter((t) => !t.class_teacher_of || sectionClasses.includes(t.class_teacher_of))
+      : data;
+
+    return NextResponse.json({ teachers });
   } catch (error) {
-    return NextResponse.json({ error: (error as Error).message }, { status: 500 });
+    return apiError(error);
   }
 }
 
@@ -41,15 +52,16 @@ export async function GET(request: NextRequest) {
 // hosted image link.
 export async function POST(request: NextRequest) {
   try {
-    const staff = await requireSchoolSession(request, ['admin']);
+    const staff = await requireSchoolSession(request, ['admin', 'primary_admin', 'secondary_admin']);
     if (!staff) return NextResponse.json({ error: 'Not authenticated.' }, { status: 401 });
-    const { school } = staff;
+    const { school, session } = staff;
 
     const supabase = getSupabaseClient();
     const formData = await request.formData();
     const staffId = formData.get('staffId');
     const fullName = formData.get('fullName');
     const role = formData.get('role');
+    const campus = formData.get('campus');
     const subject = formData.get('subject');
     const email = formData.get('email');
     const phone = formData.get('phone');
@@ -66,19 +78,23 @@ export async function POST(request: NextRequest) {
     if (classTeacherOf && (typeof classTeacherOf !== 'string' || !CLASSES.includes(classTeacherOf))) {
       return NextResponse.json({ error: 'Invalid class for Class Teacher Of.' }, { status: 400 });
     }
+    const sectionClasses = getSectionClasses(session.role);
+    if (sectionClasses && classTeacherOf && !sectionClasses.includes(classTeacherOf as string)) {
+      return NextResponse.json({ error: 'You do not have access to assign a class teacher for that class.' }, { status: 403 });
+    }
 
     let photoUrl: string | null = null;
     if (file && typeof file !== 'string') {
-      if (!file.type.startsWith('image/')) {
-        return NextResponse.json({ error: 'Only image files are allowed.' }, { status: 400 });
+      const validation = validateImageUpload(file);
+      if (!validation.ok) {
+        return NextResponse.json({ error: validation.error }, { status: 400 });
       }
       const MAX_BYTES = 8 * 1024 * 1024;
       if (file.size > MAX_BYTES) {
         return NextResponse.json({ error: 'Image must be smaller than 8MB.' }, { status: 400 });
       }
       await ensureBucketExists(supabase);
-      const extension = file.name.includes('.') ? file.name.split('.').pop() : file.type.split('/')[1];
-      const path = `${school.id}/${randomUUID()}.${extension}`;
+      const path = `${school.id}/${randomUUID()}.${validation.extension}`;
       const { error: uploadError } = await supabase.storage
         .from(BUCKET)
         .upload(path, await file.arrayBuffer(), { contentType: file.type });
@@ -96,6 +112,7 @@ export async function POST(request: NextRequest) {
         staff_id: staffId,
         full_name: fullName,
         role: ((role as string) || 'Teacher') as (typeof STAFF_ROLES)[number],
+        campus: (campus as string) || null,
         subject: (subject as string) || null,
         email: (email as string) || null,
         phone: (phone as string) || null,
@@ -116,6 +133,6 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ teacher: data }, { status: 201 });
   } catch (error) {
-    return NextResponse.json({ error: (error as Error).message }, { status: 500 });
+    return apiError(error);
   }
 }

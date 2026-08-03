@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseClient } from '@/lib/supabase';
 import { getSchoolFromHost } from '@/lib/tenant';
 import { hashPassword, verifySession, SESSION_COOKIE } from '@/lib/auth';
+import { apiError } from '@/lib/apiError';
 
 export const dynamic = 'force-dynamic';
 
@@ -33,7 +34,7 @@ export async function GET(request: NextRequest) {
     if (error) throw error;
     return NextResponse.json({ users: data });
   } catch (error) {
-    return NextResponse.json({ error: (error as Error).message }, { status: 500 });
+    return apiError(error);
   }
 }
 
@@ -48,8 +49,8 @@ export async function POST(request: NextRequest) {
     if (!email || !password || !fullName || !role) {
       return NextResponse.json({ error: 'email, password, fullName, and role are required.' }, { status: 400 });
     }
-    if (!['admin', 'teacher'].includes(role)) {
-      return NextResponse.json({ error: 'role must be admin or teacher.' }, { status: 400 });
+    if (!['admin', 'primary_admin', 'secondary_admin', 'teacher'].includes(role)) {
+      return NextResponse.json({ error: 'Invalid role.' }, { status: 400 });
     }
     if (password.length < 8) {
       return NextResponse.json({ error: 'password must be at least 8 characters.' }, { status: 400 });
@@ -78,6 +79,6 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ user: data }, { status: 201 });
   } catch (error) {
-    return NextResponse.json({ error: (error as Error).message }, { status: 500 });
+    return apiError(error);
   }
 }

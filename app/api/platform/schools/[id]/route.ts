@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseClient } from '@/lib/supabase';
 import { verifyOwnerSession, PLATFORM_SESSION_COOKIE } from '@/lib/auth';
 import { Database } from '@/lib/database.types';
+import { apiError } from '@/lib/apiError';
 
 export const dynamic = 'force-dynamic';
 
@@ -42,6 +43,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       update.principal_welcome_message = body.principalWelcomeMessage || null;
     if (body.principalPhotoUrl !== undefined) update.principal_photo_url = body.principalPhotoUrl || null;
     if (body.prospectusUrl !== undefined) update.prospectus_url = body.prospectusUrl || null;
+    if (body.campuses !== undefined) update.campuses = body.campuses || null;
     if (body.status !== undefined) {
       if (!['Active', 'Suspended'].includes(body.status)) {
         return NextResponse.json({ error: 'status must be Active or Suspended.' }, { status: 400 });
@@ -64,6 +66,6 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
     return NextResponse.json({ school: data });
   } catch (error) {
-    return NextResponse.json({ error: (error as Error).message }, { status: 500 });
+    return apiError(error);
   }
 }

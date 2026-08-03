@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { SUBJECTS, TERMS, SESSIONS, CURRENT_SESSION, CONDUCT_RATINGS } from '@/lib/grade';
 import { CLASSES } from '@/lib/constants';
@@ -27,6 +27,7 @@ type RosterStudent = {
   student_id: string;
   full_name: string;
   department: string | null;
+  campus: string | null;
 };
 
 type OcrRosterStudent = { student_id: string; full_name: string };
@@ -65,6 +66,25 @@ export default function TeacherDashboard() {
     session: CURRENT_SESSION,
     term: TERMS[0],
   });
+  const [batchSubjects, setBatchSubjects] = useState<string[]>(SUBJECTS);
+  const batchSubjectsSeq = useRef(0);
+
+  useEffect(() => {
+    const seq = ++batchSubjectsSeq.current;
+    fetch(`/api/class-subjects?class=${encodeURIComponent(batchSetup.className)}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (batchSubjectsSeq.current !== seq) return;
+        const list = ((data.subjects ?? []) as { subject: string }[]).map((s) => s.subject);
+        const options = list.length > 0 ? list : SUBJECTS;
+        setBatchSubjects(options);
+        setBatchSetup((prev) => (options.includes(prev.subject) ? prev : { ...prev, subject: options[0] }));
+      })
+      .catch((err) => {
+        console.error(err);
+        if (batchSubjectsSeq.current === seq) setBatchSubjects(SUBJECTS);
+      });
+  }, [batchSetup.className]);
   const [roster, setRoster] = useState<RosterStudent[] | null>(null);
   const [rosterLoading, setRosterLoading] = useState(false);
   const [rosterError, setRosterError] = useState('');
@@ -84,6 +104,25 @@ export default function TeacherDashboard() {
     session: CURRENT_SESSION,
     term: TERMS[0],
   });
+  const [ocrSubjects, setOcrSubjects] = useState<string[]>(SUBJECTS);
+  const ocrSubjectsSeq = useRef(0);
+
+  useEffect(() => {
+    const seq = ++ocrSubjectsSeq.current;
+    fetch(`/api/class-subjects?class=${encodeURIComponent(ocrSetup.className)}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (ocrSubjectsSeq.current !== seq) return;
+        const list = ((data.subjects ?? []) as { subject: string }[]).map((s) => s.subject);
+        const options = list.length > 0 ? list : SUBJECTS;
+        setOcrSubjects(options);
+        setOcrSetup((prev) => (options.includes(prev.subject) ? prev : { ...prev, subject: options[0] }));
+      })
+      .catch((err) => {
+        console.error(err);
+        if (ocrSubjectsSeq.current === seq) setOcrSubjects(SUBJECTS);
+      });
+  }, [ocrSetup.className]);
   const [ocrFile, setOcrFile] = useState<File | null>(null);
   const [ocrLoading, setOcrLoading] = useState(false);
   const [ocrError, setOcrError] = useState('');
@@ -164,7 +203,7 @@ export default function TeacherDashboard() {
       .then((data) => {
         if (!data.error) setRcRoster(data.students);
       })
-      .catch(() => {});
+      .catch((err) => console.error(err));
   }, [classTeacherOf]);
 
   const handleLogout = async () => {
@@ -683,7 +722,7 @@ export default function TeacherDashboard() {
                 onChange={(e) => setBatchSetup({ ...batchSetup, subject: e.target.value })}
                 className="w-full border p-3 rounded-xl"
               >
-                {SUBJECTS.map((s) => (
+                {batchSubjects.map((s) => (
                   <option key={s}>{s}</option>
                 ))}
               </select>
@@ -769,6 +808,7 @@ export default function TeacherDashboard() {
                             <td className="p-3">
                               {s.full_name}
                               {s.department && <span className="ml-2 text-xs text-gray-400">({s.department})</span>}
+                              {s.campus && <span className="ml-2 text-xs text-gray-400">[{s.campus}]</span>}
                             </td>
                             <td className="p-3 text-center">
                               <input
@@ -844,7 +884,7 @@ export default function TeacherDashboard() {
                   onChange={(e) => setOcrSetup({ ...ocrSetup, subject: e.target.value })}
                   className="w-full border p-3 rounded-xl"
                 >
-                  {SUBJECTS.map((s) => (
+                  {ocrSubjects.map((s) => (
                     <option key={s}>{s}</option>
                   ))}
                 </select>

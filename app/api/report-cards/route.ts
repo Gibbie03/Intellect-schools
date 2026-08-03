@@ -4,6 +4,9 @@ import { requireSchoolSession } from '@/lib/auth';
 import { getClassTeacherAssignment } from '@/lib/classTeacher';
 import { logAudit } from '@/lib/auditLog';
 import { Database } from '@/lib/database.types';
+import { getSectionClasses, getClassSection, SECTION_ADMIN_ROLE } from '@/lib/constants';
+import { sectionHeadExists } from '@/lib/sectionScope';
+import { apiError } from '@/lib/apiError';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,17 +16,34 @@ const CONDUCT_RATINGS = ['Excellent', 'Very Good', 'Good', 'Fair', 'Poor'];
 
 /**
  * Report cards are restricted to the one teacher assigned as class teacher
- * for that student's class (admins have full access regardless). Returns
- * null if the caller may proceed, or an error message to reject with.
+ * for that student's class. The unscoped 'admin' role has full access
+ * regardless; 'primary_admin'/'secondary_admin' have full access within
+ * their own section (not tied to being that exact class's teacher), but not
+ * the other section. Returns null if the caller may proceed, or an error
+ * message to reject with.
  */
 async function checkClassTeacherAccess(
   supabase: ReturnType<typeof getSupabaseClient>,
   schoolId: string,
-  role: 'admin' | 'teacher',
+  role: 'admin' | 'primary_admin' | 'secondary_admin' | 'teacher',
   userId: string,
   studentId: string
 ): Promise<string | null> {
   if (role === 'admin') return null;
+
+  const sectionClasses = getSectionClasses(role);
+  if (sectionClasses) {
+    const { data: student } = await supabase
+      .from('students')
+      .select('class')
+      .eq('school_id', schoolId)
+      .eq('student_id', studentId)
+      .maybeSingle();
+    if (!student || !sectionClasses.includes(student.class)) {
+      return 'You do not have access to report cards for that student.';
+    }
+    return null;
+  }
 
   const classTeacherOf = await getClassTeacherAssignment(userId);
   if (!classTeacherOf) {
@@ -45,7 +65,7 @@ async function checkClassTeacherAccess(
 }
 
 export async function GET(request: NextRequest) {
-  const staff = await requireSchoolSession(request, ['admin', 'teacher']);
+  const staff = await requireSchoolSession(request, ['admin', 'primary_admin', 'secondary_admin', 'teacher']);
   if (!staff) return NextResponse.json({ error: 'Not authenticated.' }, { status: 401 });
   const { school, session: staffSession } = staff;
 
@@ -62,6 +82,21 @@ export async function GET(request: NextRequest) {
     const accessError = await checkClassTeacherAccess(supabase, school.id, staffSession.role, staffSession.userId, studentId);
     if (accessError) return NextResponse.json({ error: accessError }, { status: 403 });
 
+    const { data: student } = await supabase
+      .from('students')
+      .select('class')
+      .eq('school_id', school.id)
+      .eq('student_id', studentId)
+      .maybeSingle();
+    const section = student ? getClassSection(student.class) : null;
+
+    let canSetHeadComment = staffSession.role !== 'teacher';
+    if (staffSession.role === 'primary_admin') canSetHeadComment = section === 'Primary';
+    else if (staffSession.role === 'secondary_admin') canSetHeadComment = section === 'Secondary';
+    else if (staffSession.role === 'admin' && section) {
+      canSetHeadComment = !(await sectionHeadExists(supabase, school.id, SECTION_ADMIN_ROLE[section]));
+    }
+
     const { data, error } = await supabase
       .from('report_cards')
       .select('*')
@@ -72,17 +107,19 @@ export async function GET(request: NextRequest) {
       .maybeSingle();
     if (error) throw error;
 
-    return NextResponse.json({ reportCard: data });
+    return NextResponse.json({ reportCard: data, section, canSetHeadComment });
   } catch (error) {
-    return NextResponse.json({ error: (error as Error).message }, { status: 500 });
+    return apiError(error);
   }
 }
 
 // Upsert the whole-term parts of a student's report card. Any staff member
-// can set attendance/conduct/teacher's comment; principal's comment is
-// admin-only (enforced here, not just in the UI).
+// can set attendance/conduct/teacher's comment; the head-of-section comment
+// is restricted to that section's headmaster/principal (or the unscoped
+// 'admin' as a fallback until one is set up) -- enforced here, not just in
+// the UI.
 export async function POST(request: NextRequest) {
-  const staff = await requireSchoolSession(request, ['admin', 'teacher']);
+  const staff = await requireSchoolSession(request, ['admin', 'primary_admin', 'secondary_admin', 'teacher']);
   if (!staff) return NextResponse.json({ error: 'Not authenticated.' }, { status: 401 });
   const { school, session: staffSession } = staff;
 
@@ -107,14 +144,42 @@ export async function POST(request: NextRequest) {
     if (conductRating && !CONDUCT_RATINGS.includes(conductRating)) {
       return NextResponse.json({ error: 'Invalid conduct rating.' }, { status: 400 });
     }
-    if (principalComment !== undefined && staffSession.role !== 'admin') {
-      return NextResponse.json({ error: "Only an admin can set the principal's comment." }, { status: 403 });
-    }
 
     const supabase = getSupabaseClient();
 
     const accessError = await checkClassTeacherAccess(supabase, school.id, staffSession.role, staffSession.userId, studentId);
     if (accessError) return NextResponse.json({ error: accessError }, { status: 403 });
+
+    // Fetched once: used both for the head-of-section comment permission
+    // check below and to snapshot the student's class onto this term's
+    // report card, so a printed history stays labeled correctly for old
+    // terms even after the student later moves from Primary into Secondary.
+    const { data: student } = await supabase
+      .from('students')
+      .select('class')
+      .eq('school_id', school.id)
+      .eq('student_id', studentId)
+      .maybeSingle();
+    const section = student ? getClassSection(student.class) : null;
+
+    // The head-of-section comment (Headmaster's for Primary, Principal's for
+    // Secondary) belongs to that section's own admin once one exists for
+    // this school; the unscoped 'admin' (proprietor) is a fallback only
+    // until a headmaster/principal account is set up, and a class teacher
+    // never gets to set it.
+    if (principalComment !== undefined) {
+      let allowed = false;
+      if (staffSession.role === 'primary_admin' && section === 'Primary') allowed = true;
+      else if (staffSession.role === 'secondary_admin' && section === 'Secondary') allowed = true;
+      else if (staffSession.role === 'admin' && section) {
+        allowed = !(await sectionHeadExists(supabase, school.id, SECTION_ADMIN_ROLE[section]));
+      }
+
+      if (!allowed) {
+        const label = section === 'Secondary' ? "Principal's" : "Headmaster's";
+        return NextResponse.json({ error: `Only the ${label} comment field can be set by that section's head.` }, { status: 403 });
+      }
+    }
 
     const { data: before } = await supabase
       .from('report_cards')
@@ -130,6 +195,7 @@ export async function POST(request: NextRequest) {
       student_id: studentId,
       session,
       term,
+      class: student?.class ?? null,
       updated_at: new Date().toISOString(),
     };
     if (daysSchoolOpened !== undefined) update.days_school_opened = daysSchoolOpened === '' ? null : Number(daysSchoolOpened);
@@ -172,6 +238,6 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ reportCard: data }, { status: 200 });
   } catch (error) {
-    return NextResponse.json({ error: (error as Error).message }, { status: 500 });
+    return apiError(error);
   }
 }

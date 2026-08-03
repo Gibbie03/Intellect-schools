@@ -46,7 +46,8 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  if (path.startsWith('/admin') && session.role !== 'admin') {
+  const adminRoles = ['admin', 'primary_admin', 'secondary_admin'];
+  if (path.startsWith('/admin') && !adminRoles.includes(session.role)) {
     return NextResponse.redirect(new URL('/login', request.url));
   }
 

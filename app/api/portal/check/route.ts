@@ -3,6 +3,7 @@ import { getSupabaseClient } from '@/lib/supabase';
 import { getSchoolFromHost } from '@/lib/tenant';
 import { verifyPassword } from '@/lib/auth';
 import { checkRateLimit, getClientIp } from '@/lib/rateLimit';
+import { apiError } from '@/lib/apiError';
 
 export const dynamic = 'force-dynamic';
 
@@ -134,12 +135,18 @@ export async function POST(request: NextRequest) {
     const results = (allResults ?? []).filter((r) => publishedTerms.has(`${r.session}|${r.term}`));
 
     return NextResponse.json({
-      student: { studentId: student.student_id, fullName: student.full_name, class: student.class, department: student.department },
+      student: {
+        studentId: student.student_id,
+        fullName: student.full_name,
+        class: student.class,
+        department: student.department,
+        campus: student.campus,
+      },
       results,
       reportCards: publishedReportCards,
       usesRemaining: card.max_uses - usesCount,
     });
   } catch (error) {
-    return NextResponse.json({ error: (error as Error).message }, { status: 500 });
+    return apiError(error);
   }
 }

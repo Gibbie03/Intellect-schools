@@ -10,7 +10,7 @@ type School = Database['public']['Tables']['schools']['Row'];
 
 export type SessionPayload = {
   userId: string;
-  role: 'admin' | 'teacher';
+  role: 'admin' | 'primary_admin' | 'secondary_admin' | 'teacher';
   schoolSubdomain: string;
   fullName: string;
 };
@@ -36,7 +36,7 @@ export async function verifySession(token: string): Promise<SessionPayload | nul
     const { payload } = await jwtVerify(token, getSecretKey());
     if (
       typeof payload.userId === 'string' &&
-      (payload.role === 'admin' || payload.role === 'teacher') &&
+      (payload.role === 'admin' || payload.role === 'primary_admin' || payload.role === 'secondary_admin' || payload.role === 'teacher') &&
       typeof payload.schoolSubdomain === 'string' &&
       typeof payload.fullName === 'string'
     ) {
@@ -113,7 +113,7 @@ export async function verifyOwnerSession(token: string): Promise<boolean> {
  */
 export async function requireSchoolSession(
   request: NextRequest,
-  allowedRoles: Array<'admin' | 'teacher'>
+  allowedRoles: Array<'admin' | 'primary_admin' | 'secondary_admin' | 'teacher'>
 ): Promise<{ school: School; session: SessionPayload } | null> {
   const token = request.cookies.get(SESSION_COOKIE)?.value;
   if (!token) return null;

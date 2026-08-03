@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { TERMS } from '@/lib/grade';
+import { getClassSection } from '@/lib/constants';
+import { escapeHtml } from '@/lib/escapeHtml';
 
 type Result = {
   id: string;
@@ -17,6 +19,7 @@ type Result = {
 type ReportCard = {
   session: string;
   term: string;
+  class: string | null;
   days_school_opened: number | null;
   days_present: number | null;
   times_punctual: number | null;
@@ -33,6 +36,7 @@ export default function StudentPortal() {
   const [studentName, setStudentName] = useState<string | null>(null);
   const [studentClass, setStudentClass] = useState<string | null>(null);
   const [studentDepartment, setStudentDepartment] = useState<string | null>(null);
+  const [studentCampus, setStudentCampus] = useState<string | null>(null);
   const [results, setResults] = useState<Result[]>([]);
   const [reportCards, setReportCards] = useState<ReportCard[]>([]);
   const [loading, setLoading] = useState(false);
@@ -46,7 +50,7 @@ export default function StudentPortal() {
     fetch('/api/school')
       .then((res) => res.json())
       .then((data) => setSchoolName(data.name ?? ''))
-      .catch(() => {});
+      .catch((err) => console.error(err));
   }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -92,6 +96,7 @@ export default function StudentPortal() {
       setStudentName(data.student?.fullName ?? null);
       setStudentClass(data.student?.class ?? null);
       setStudentDepartment(data.student?.department ?? null);
+      setStudentCampus(data.student?.campus ?? null);
       setUsesRemaining(data.usesRemaining ?? null);
 
       const sessions = Array.from(new Set(fetchedResults.map((r) => r.session))).sort();
@@ -119,6 +124,12 @@ export default function StudentPortal() {
     [reportCards, activeSession, activeTerm]
   );
 
+  // A report card snapshots the class it was saved under; older rows saved
+  // before that existed fall back to the student's current class.
+  const headCommentLabelFor = (rc: { class: string | null } | null) =>
+    getClassSection((rc?.class ?? studentClass) || '') === 'Secondary' ? "Principal's" : "Headmaster's";
+  const headCommentLabel = headCommentLabelFor(activeReportCard);
+
   const handlePrint = () => {
     const win = window.open('', '_blank');
     if (!win) return;
@@ -127,11 +138,11 @@ export default function StudentPortal() {
       .map(
         (r) => `
         <tr>
-          <td>${r.subject}</td>
+          <td>${escapeHtml(r.subject)}</td>
           <td class="c">${r.ca_score ?? '—'}</td>
           <td class="c">${r.exam_score ?? '—'}</td>
           <td class="c"><strong>${r.score}</strong></td>
-          <td class="c">${r.grade}</td>
+          <td class="c">${escapeHtml(r.grade)}</td>
         </tr>`
       )
       .join('');
@@ -144,7 +155,7 @@ export default function StudentPortal() {
     win.document.write(`
       <html>
         <head>
-          <title>${studentName ?? 'Student'} - ${activeTerm} ${activeSession} Report Card</title>
+          <title>${escapeHtml(studentName ?? 'Student')} - ${escapeHtml(activeTerm)} ${escapeHtml(activeSession)} Report Card</title>
           <style>
             * { box-sizing: border-box; }
             body { font-family: Arial, sans-serif; padding: 24px; color: #111; }
@@ -162,9 +173,9 @@ export default function StudentPortal() {
           </style>
         </head>
         <body>
-          <h1>${schoolName || 'School'}</h1>
-          <p class="muted">Report Card &mdash; ${activeTerm}, ${activeSession} Session</p>
-          <p class="muted">${studentName ?? ''} &middot; ${studentId} ${studentClass ? `&middot; ${studentClass}` : ''}${studentDepartment ? ` (${studentDepartment})` : ''}</p>
+          <h1>${escapeHtml(schoolName || 'School')}</h1>
+          <p class="muted">Report Card &mdash; ${escapeHtml(activeTerm)}, ${escapeHtml(activeSession)} Session</p>
+          <p class="muted">${escapeHtml(studentName ?? '')} &middot; ${escapeHtml(studentId)} ${studentClass ? `&middot; ${escapeHtml(studentClass)}` : ''}${studentDepartment ? ` (${escapeHtml(studentDepartment)})` : ''}</p>
           <p class="muted">Attendance: ${attendanceLine}</p>
 
           <table>
@@ -176,21 +187,102 @@ export default function StudentPortal() {
 
           <div class="section">
             <h2>Conduct</h2>
-            <div class="box">${rc?.conduct_rating ?? 'Not recorded'}</div>
+            <div class="box">${escapeHtml(rc?.conduct_rating ?? 'Not recorded')}</div>
           </div>
           <div class="section">
             <h2>Class Teacher's Comment</h2>
-            <div class="box">${rc?.teacher_comment ?? 'Not recorded'}</div>
+            <div class="box">${escapeHtml(rc?.teacher_comment ?? 'Not recorded')}</div>
           </div>
           <div class="section">
-            <h2>Principal's Comment</h2>
-            <div class="box">${rc?.principal_comment ?? 'Not recorded'}</div>
+            <h2>${escapeHtml(headCommentLabel)} Comment</h2>
+            <div class="box">${escapeHtml(rc?.principal_comment ?? 'Not recorded')}</div>
           </div>
 
           <div class="sign">
             <div>Class Teacher&apos;s Signature</div>
-            <div>Principal&apos;s Signature</div>
+            <div>${escapeHtml(headCommentLabel)} Signature</div>
           </div>
+        </body>
+      </html>
+    `);
+    win.document.close();
+    win.focus();
+    win.print();
+  };
+
+  // Every published term the school has ever released for this student,
+  // oldest first -- from their first published term through to their most
+  // recent (or, once they leave, their final one). Chronological order is by
+  // session string (sorts correctly since sessions are "YYYY/YYYY") then by
+  // TERMS position within a session.
+  const historyTerms = useMemo(
+    () =>
+      [...reportCards].sort((a, b) => {
+        if (a.session !== b.session) return a.session.localeCompare(b.session);
+        return TERMS.indexOf(a.term as (typeof TERMS)[number]) - TERMS.indexOf(b.term as (typeof TERMS)[number]);
+      }),
+    [reportCards]
+  );
+
+  const handleDownloadHistory = () => {
+    const win = window.open('', '_blank');
+    if (!win) return;
+
+    const sections = historyTerms
+      .map((rc) => {
+        const termResults = results.filter((r) => r.session === rc.session && r.term === rc.term);
+        const rows = termResults
+          .map(
+            (r) => `
+            <tr>
+              <td>${escapeHtml(r.subject)}</td>
+              <td class="c">${r.ca_score ?? '—'}</td>
+              <td class="c">${r.exam_score ?? '—'}</td>
+              <td class="c"><strong>${r.score}</strong></td>
+              <td class="c">${escapeHtml(r.grade)}</td>
+            </tr>`
+          )
+          .join('');
+        const attendanceLine = `${rc.days_present ?? '—'} / ${rc.days_school_opened ?? '—'} days present &middot; Punctual ${rc.times_punctual ?? '—'} time(s)`;
+
+        return `
+          <div class="term">
+            <h2>${escapeHtml(rc.term)}, ${escapeHtml(rc.session)} Session</h2>
+            <p class="muted">Attendance: ${attendanceLine} &middot; Conduct: ${escapeHtml(rc.conduct_rating ?? 'Not recorded')}</p>
+            <table>
+              <thead>
+                <tr><th>Subject</th><th class="c">CA</th><th class="c">Exam</th><th class="c">Total</th><th class="c">Grade</th></tr>
+              </thead>
+              <tbody>${rows || '<tr><td colspan="5" class="c">No approved results for this term.</td></tr>'}</tbody>
+            </table>
+            <p class="muted"><strong>Class Teacher&apos;s Comment:</strong> ${escapeHtml(rc.teacher_comment ?? 'Not recorded')}</p>
+            <p class="muted"><strong>${escapeHtml(headCommentLabelFor(rc))} Comment:</strong> ${escapeHtml(rc.principal_comment ?? 'Not recorded')}</p>
+          </div>`;
+      })
+      .join('');
+
+    win.document.write(`
+      <html>
+        <head>
+          <title>${escapeHtml(studentName ?? 'Student')} - Full Academic History</title>
+          <style>
+            * { box-sizing: border-box; }
+            body { font-family: Arial, sans-serif; padding: 24px; color: #111; }
+            h1 { font-size: 20px; margin: 0 0 4px; }
+            .muted { color: #666; font-size: 13px; }
+            table { width: 100%; border-collapse: collapse; margin: 10px 0; }
+            th, td { border: 1px solid #ccc; padding: 6px 8px; font-size: 12.5px; }
+            th { background: #f3f3f3; text-align: left; }
+            .c { text-align: center; }
+            .term { margin-top: 22px; padding-top: 18px; border-top: 2px solid #ddd; page-break-inside: avoid; }
+            .term:first-of-type { border-top: none; padding-top: 0; }
+          </style>
+        </head>
+        <body>
+          <h1>${escapeHtml(schoolName || 'School')}</h1>
+          <p class="muted">Full Academic History</p>
+          <p class="muted">${escapeHtml(studentName ?? '')} &middot; ${escapeHtml(studentId)}${studentClass ? ` &middot; ${escapeHtml(studentClass)}` : ''}${studentDepartment ? ` (${escapeHtml(studentDepartment)})` : ''}</p>
+          ${sections || '<p class="muted">No published terms yet.</p>'}
         </body>
       </html>
     `);
@@ -208,7 +300,8 @@ export default function StudentPortal() {
             <p className="text-[var(--muted)]">
               {studentId}
               {studentClass ? ` · ${studentClass}` : ''}
-              {studentDepartment ? ` (${studentDepartment})` : ''} &middot; Your approved results
+              {studentDepartment ? ` (${studentDepartment})` : ''}
+              {studentCampus ? ` · ${studentCampus}` : ''} &middot; Your approved results
             </p>
             {usesRemaining !== null && (
               <p className="mt-1 text-sm text-[var(--muted)]">
@@ -218,9 +311,12 @@ export default function StudentPortal() {
               </p>
             )}
           </div>
-          <div className="flex gap-3">
+          <div className="flex flex-wrap gap-3">
             <button onClick={handlePrint} className="btn btn-outline !px-4 !py-2 !text-sm">
               Print Report Card
+            </button>
+            <button onClick={handleDownloadHistory} className="btn btn-outline !px-4 !py-2 !text-sm">
+              Download Full Academic History
             </button>
             <button
               onClick={() => {
@@ -351,7 +447,7 @@ export default function StudentPortal() {
 
               {activeReportCard?.principal_comment && (
                 <div className="mt-6 p-4 text-sm" style={{ background: 'var(--cream)' }}>
-                  <p className="mb-1 text-[var(--muted)]">Principal&apos;s Comment</p>
+                  <p className="mb-1 text-[var(--muted)]">{headCommentLabel} Comment</p>
                   <p className="font-medium">{activeReportCard.principal_comment}</p>
                 </div>
               )}

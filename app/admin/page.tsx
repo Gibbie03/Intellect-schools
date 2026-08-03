@@ -1,10 +1,20 @@
 'use client';
 
-import { Fragment, useEffect, useState } from 'react';
+import { Fragment, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { STAFF_ROLES, CLASSES, DAYS_OF_WEEK, DEPARTMENTS, isSeniorSecondaryClass } from '@/lib/constants';
+import {
+  STAFF_ROLES,
+  CLASSES,
+  DAYS_OF_WEEK,
+  DEPARTMENTS,
+  isSeniorSecondaryClass,
+  ADMIN_ROLE_LABELS,
+  getSectionClasses,
+  getClassSection,
+} from '@/lib/constants';
 import { SESSIONS, TERMS, CURRENT_SESSION, SUBJECTS } from '@/lib/grade';
 import { buildWhatsAppLink } from '@/lib/whatsapp';
+import { escapeHtml } from '@/lib/escapeHtml';
 import DashboardShell from '@/components/DashboardShell';
 
 type Tab =
@@ -19,7 +29,9 @@ type Tab =
   | 'result-pins'
   | 'report-cards'
   | 'timetables'
+  | 'subjects'
   | 'fees'
+  | 'accounting'
   | 'messages'
   | 'spotlight'
   | 'calendar'
@@ -40,7 +52,9 @@ const TABS: { id: Tab; label: string }[] = [
   { id: 'result-pins', label: 'Result Checker Cards' },
   { id: 'report-cards', label: 'Report Cards' },
   { id: 'timetables', label: 'Timetables' },
+  { id: 'subjects', label: 'Subjects' },
   { id: 'fees', label: 'Fees' },
+  { id: 'accounting', label: 'Accounting' },
   { id: 'messages', label: 'Message Parents' },
   { id: 'spotlight', label: 'Spotlight' },
   { id: 'calendar', label: 'Academic Calendar' },
@@ -54,12 +68,14 @@ export default function AdminDashboard() {
   const router = useRouter();
   const [tab, setTab] = useState<Tab>('dashboard');
   const [adminName, setAdminName] = useState('');
+  const [adminRole, setAdminRole] = useState<'admin' | 'primary_admin' | 'secondary_admin' | 'teacher' | null>(null);
 
   useEffect(() => {
     fetch('/api/auth/me')
       .then((res) => res.json())
       .then((data) => {
         if (data.fullName) setAdminName(data.fullName);
+        if (data.role) setAdminRole(data.role);
       });
   }, []);
 
@@ -69,13 +85,21 @@ export default function AdminDashboard() {
     router.refresh();
   };
 
+  // A section-scoped admin doesn't get school-wide audit visibility (that
+  // log spans both sections, which is exactly what their account shouldn't
+  // see cross-section detail on).
+  const visibleTabs =
+    adminRole === 'primary_admin' || adminRole === 'secondary_admin' ? TABS.filter((t) => t.id !== 'audit-log') : TABS;
+
+  const userLabel = adminRole && adminRole !== 'admin' && adminRole !== 'teacher' ? `${adminName} (${ADMIN_ROLE_LABELS[adminRole]})` : adminName;
+
   return (
     <DashboardShell
       brandLabel="Admin Dashboard"
-      tabs={TABS}
+      tabs={visibleTabs}
       activeTab={tab}
       onTabChange={setTab}
-      userLabel={adminName}
+      userLabel={userLabel}
       onLogout={handleLogout}
     >
       {tab === 'dashboard' && <DashboardOverview />}
@@ -89,7 +113,9 @@ export default function AdminDashboard() {
       {tab === 'result-pins' && <ResultPinsSection />}
       {tab === 'report-cards' && <ReportCardsSection />}
       {tab === 'timetables' && <TimetablesSection />}
+      {tab === 'subjects' && <SubjectsSection />}
       {tab === 'fees' && <FeesSection />}
+      {tab === 'accounting' && <AccountingSection />}
       {tab === 'messages' && <MessagesSection />}
       {tab === 'spotlight' && <SpotlightSection />}
       {tab === 'calendar' && <CalendarSection />}
@@ -432,6 +458,7 @@ type StudentRow = {
   full_name: string;
   class: string;
   department: string | null;
+  campus: string | null;
   status: 'Active' | 'Inactive';
 };
 
@@ -440,6 +467,7 @@ const emptyStudentForm = {
   fullName: '',
   className: CLASSES[0],
   department: '',
+  campus: '',
   gender: '',
   parentName: '',
   parentEmail: '',
@@ -453,6 +481,25 @@ function StudentsSection() {
   const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState(emptyStudentForm);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [campuses, setCampuses] = useState<string[]>([]);
+  const [myClasses, setMyClasses] = useState<string[]>(CLASSES);
+
+  useEffect(() => {
+    fetch('/api/auth/me')
+      .then((res) => res.json())
+      .then((data) => {
+        setCampuses(data.campuses ?? []);
+        const allowed = getSectionClasses(data.role) ?? CLASSES;
+        setMyClasses(allowed);
+        setForm((prev) => (allowed.includes(prev.className) ? prev : { ...prev, className: allowed[0] }));
+        setPromoteForm((prev) => ({
+          ...prev,
+          fromClass: allowed.includes(prev.fromClass) ? prev.fromClass : allowed[0],
+          toClass: allowed.includes(prev.toClass) ? prev.toClass : (allowed[1] ?? allowed[0]),
+        }));
+      })
+      .catch((err) => console.error(err));
+  }, []);
 
   const [batchFile, setBatchFile] = useState<File | null>(null);
   const [batchSubmitting, setBatchSubmitting] = useState(false);
@@ -581,6 +628,129 @@ function StudentsSection() {
     }
   };
 
+  const updateCampus = async (id: string, campus: string) => {
+    setUpdatingId(id);
+    try {
+      const res = await fetch(`/api/students/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ campus }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to update student.');
+      setStudents((prev) => prev.map((s) => (s.id === id ? { ...s, campus: campus || null } : s)));
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setUpdatingId(null);
+    }
+  };
+
+  const viewHistory = async (student: StudentRow) => {
+    try {
+      const res = await fetch(`/api/students/${student.id}/history`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to load academic history.');
+
+      const reportCards: {
+        session: string;
+        term: string;
+        class: string | null;
+        days_school_opened: number | null;
+        days_present: number | null;
+        times_punctual: number | null;
+        conduct_rating: string | null;
+        teacher_comment: string | null;
+        principal_comment: string | null;
+      }[] = data.reportCards ?? [];
+      const results: {
+        subject: string;
+        score: number;
+        ca_score: number | null;
+        exam_score: number | null;
+        grade: string;
+        session: string;
+        term: string;
+      }[] = data.results ?? [];
+
+      const sorted = [...reportCards].sort((a, b) => {
+        if (a.session !== b.session) return a.session.localeCompare(b.session);
+        return TERMS.indexOf(a.term as (typeof TERMS)[number]) - TERMS.indexOf(b.term as (typeof TERMS)[number]);
+      });
+
+      const win = window.open('', '_blank');
+      if (!win) return;
+
+      const sections = sorted
+        .map((rc) => {
+          // Each term's report card snapshots the class it was saved under;
+          // older rows saved before that existed fall back to the student's
+          // current class, same as before.
+          const termSection = getClassSection(rc.class ?? student.class);
+          const headCommentLabel = termSection === 'Secondary' ? "Principal's" : "Headmaster's";
+          const termResults = results.filter((r) => r.session === rc.session && r.term === rc.term);
+          const rows = termResults
+            .map(
+              (r) => `
+              <tr>
+                <td>${escapeHtml(r.subject)}</td>
+                <td class="c">${r.ca_score ?? '—'}</td>
+                <td class="c">${r.exam_score ?? '—'}</td>
+                <td class="c"><strong>${r.score}</strong></td>
+                <td class="c">${escapeHtml(r.grade)}</td>
+              </tr>`
+            )
+            .join('');
+          const attendanceLine = `${rc.days_present ?? '—'} / ${rc.days_school_opened ?? '—'} days present &middot; Punctual ${rc.times_punctual ?? '—'} time(s)`;
+
+          return `
+            <div class="term">
+              <h2>${escapeHtml(rc.term)}, ${escapeHtml(rc.session)} Session</h2>
+              <p class="muted">Attendance: ${attendanceLine} &middot; Conduct: ${escapeHtml(rc.conduct_rating ?? 'Not recorded')}</p>
+              <table>
+                <thead>
+                  <tr><th>Subject</th><th class="c">CA</th><th class="c">Exam</th><th class="c">Total</th><th class="c">Grade</th></tr>
+                </thead>
+                <tbody>${rows || '<tr><td colspan="5" class="c">No approved results for this term.</td></tr>'}</tbody>
+              </table>
+              <p class="muted"><strong>Class Teacher&apos;s Comment:</strong> ${escapeHtml(rc.teacher_comment ?? 'Not recorded')}</p>
+              <p class="muted"><strong>${escapeHtml(headCommentLabel)} Comment:</strong> ${escapeHtml(rc.principal_comment ?? 'Not recorded')}</p>
+            </div>`;
+        })
+        .join('');
+
+      win.document.write(`
+        <html>
+          <head>
+            <title>${escapeHtml(student.full_name)} - Full Academic History</title>
+            <style>
+              * { box-sizing: border-box; }
+              body { font-family: Arial, sans-serif; padding: 24px; color: #111; }
+              h1 { font-size: 20px; margin: 0 0 4px; }
+              .muted { color: #666; font-size: 13px; }
+              table { width: 100%; border-collapse: collapse; margin: 10px 0; }
+              th, td { border: 1px solid #ccc; padding: 6px 8px; font-size: 12.5px; }
+              th { background: #f3f3f3; text-align: left; }
+              .c { text-align: center; }
+              .term { margin-top: 22px; padding-top: 18px; border-top: 2px solid #ddd; page-break-inside: avoid; }
+              .term:first-of-type { border-top: none; padding-top: 0; }
+            </style>
+          </head>
+          <body>
+            <h1>Full Academic History</h1>
+            <p class="muted">${escapeHtml(student.full_name)} &middot; ${escapeHtml(student.student_id)}</p>
+            ${sections || '<p class="muted">No published terms yet.</p>'}
+          </body>
+        </html>
+      `);
+      win.document.close();
+      win.focus();
+      win.print();
+    } catch (err) {
+      setError((err as Error).message);
+    }
+  };
+
   const handlePromote = async (e: React.FormEvent) => {
     e.preventDefault();
     setPromoteSubmitting(true);
@@ -666,7 +836,7 @@ function StudentsSection() {
             }
             className="w-full rounded-xl border p-3"
           >
-            {CLASSES.map((c) => (
+            {myClasses.map((c) => (
               <option key={c}>{c}</option>
             ))}
           </select>
@@ -679,6 +849,18 @@ function StudentsSection() {
               <option value="">Department (optional)</option>
               {DEPARTMENTS.map((d) => (
                 <option key={d}>{d}</option>
+              ))}
+            </select>
+          )}
+          {campuses.length > 0 && (
+            <select
+              value={form.campus}
+              onChange={(e) => setForm({ ...form, campus: e.target.value })}
+              className="w-full rounded-xl border p-3"
+            >
+              <option value="">Campus (optional)</option>
+              {campuses.map((c) => (
+                <option key={c}>{c}</option>
               ))}
             </select>
           )}
@@ -779,7 +961,7 @@ function StudentsSection() {
             onChange={(e) => setPromoteForm({ ...promoteForm, fromClass: e.target.value })}
             className="rounded-xl border p-3"
           >
-            {CLASSES.map((c) => (
+            {myClasses.map((c) => (
               <option key={c}>{c}</option>
             ))}
           </select>
@@ -792,7 +974,7 @@ function StudentsSection() {
             onChange={(e) => setPromoteForm({ ...promoteForm, toClass: e.target.value })}
             className="rounded-xl border p-3 disabled:opacity-50"
           >
-            {CLASSES.map((c) => (
+            {myClasses.map((c) => (
               <option key={c}>{c}</option>
             ))}
           </select>
@@ -828,6 +1010,7 @@ function StudentsSection() {
                 <th className="text-left p-4">Name</th>
                 <th className="text-left p-4">Class</th>
                 <th className="text-left p-4">Department</th>
+                {campuses.length > 0 && <th className="text-left p-4">Campus</th>}
                 <th className="text-center p-4">Status</th>
                 <th className="text-center p-4">Action</th>
               </tr>
@@ -849,7 +1032,7 @@ function StudentsSection() {
                           {s.class} (unrecognized)
                         </option>
                       )}
-                      {CLASSES.map((c) => (
+                      {myClasses.map((c) => (
                         <option key={c} value={c}>
                           {c}
                         </option>
@@ -875,6 +1058,23 @@ function StudentsSection() {
                       <span className="text-gray-300">—</span>
                     )}
                   </td>
+                  {campuses.length > 0 && (
+                    <td className="p-4">
+                      <select
+                        disabled={updatingId === s.id}
+                        value={s.campus ?? ''}
+                        onChange={(e) => updateCampus(s.id, e.target.value)}
+                        className="rounded-lg border p-2 text-sm"
+                      >
+                        <option value="">—</option>
+                        {campuses.map((c) => (
+                          <option key={c} value={c}>
+                            {c}
+                          </option>
+                        ))}
+                      </select>
+                    </td>
+                  )}
                   <td className="p-4 text-center">
                     <select
                       disabled={updatingId === s.id}
@@ -887,6 +1087,9 @@ function StudentsSection() {
                     </select>
                   </td>
                   <td className="p-4 text-center">
+                    <button onClick={() => viewHistory(s)} className="mr-3 text-xs text-[var(--brand-color)] hover:underline">
+                      History
+                    </button>
                     <button
                       onClick={() => handleDelete(s)}
                       disabled={updatingId === s.id}
@@ -910,6 +1113,7 @@ type TeacherRow = {
   staff_id: string;
   full_name: string;
   role: (typeof STAFF_ROLES)[number];
+  campus: string | null;
   subject: string | null;
   status: 'Active' | 'Inactive';
   class_teacher_of: string | null;
@@ -922,6 +1126,7 @@ const emptyStaffForm = {
   staffId: '',
   fullName: '',
   role: STAFF_ROLES[0],
+  campus: '',
   subject: '',
   email: '',
   phone: '',
@@ -932,14 +1137,20 @@ const emptyStaffForm = {
 type AccountRow = {
   id: string;
   email: string;
-  role: 'admin' | 'teacher';
+  role: 'admin' | 'primary_admin' | 'secondary_admin' | 'teacher';
   full_name: string;
   teacher_id: string | null;
   status: 'Active' | 'Inactive';
   totp_enabled: boolean;
 };
 
-const emptyAccountForm = { email: '', password: '', fullName: '', role: 'teacher' as 'admin' | 'teacher', teacherId: '' };
+const emptyAccountForm = {
+  email: '',
+  password: '',
+  fullName: '',
+  role: 'teacher' as 'admin' | 'primary_admin' | 'secondary_admin' | 'teacher',
+  teacherId: '',
+};
 
 function StaffSection() {
   const [teachers, setTeachers] = useState<TeacherRow[]>([]);
@@ -949,6 +1160,18 @@ function StaffSection() {
   const [form, setForm] = useState(emptyStaffForm);
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [campuses, setCampuses] = useState<string[]>([]);
+  const [myRole, setMyRole] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetch('/api/auth/me')
+      .then((res) => res.json())
+      .then((data) => {
+        setCampuses(data.campuses ?? []);
+        setMyRole(data.role ?? null);
+      })
+      .catch((err) => console.error(err));
+  }, []);
 
   const [accounts, setAccounts] = useState<AccountRow[]>([]);
   const [accountsLoading, setAccountsLoading] = useState(true);
@@ -1130,6 +1353,24 @@ function StaffSection() {
     }
   };
 
+  const updateCampus = async (id: string, campus: string) => {
+    setUpdatingId(id);
+    try {
+      const res = await fetch(`/api/teachers/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ campus }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to update staff campus.');
+      setTeachers((prev) => prev.map((t) => (t.id === id ? { ...t, campus: campus || null } : t)));
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setUpdatingId(null);
+    }
+  };
+
   const updateClassTeacherOf = async (id: string, classTeacherOf: string) => {
     setUpdatingId(id);
     try {
@@ -1182,6 +1423,18 @@ function StaffSection() {
             </option>
           ))}
         </select>
+        {campuses.length > 0 && (
+          <select
+            value={form.campus}
+            onChange={(e) => setForm({ ...form, campus: e.target.value })}
+            className="w-full rounded-xl border p-3"
+          >
+            <option value="">Campus (optional)</option>
+            {campuses.map((c) => (
+              <option key={c}>{c}</option>
+            ))}
+          </select>
+        )}
         <input
           type="text"
           placeholder="Subject (if Teacher)"
@@ -1253,6 +1506,7 @@ function StaffSection() {
                 <th className="text-left p-4">Staff ID</th>
                 <th className="text-left p-4">Name</th>
                 <th className="text-left p-4">Subject</th>
+                {campuses.length > 0 && <th className="text-left p-4">Campus</th>}
                 <th className="text-center p-4">Role</th>
                 <th className="text-center p-4">Class Teacher Of</th>
                 <th className="text-center p-4">Employment Status</th>
@@ -1265,6 +1519,23 @@ function StaffSection() {
                   <td className="p-4 font-mono">{t.staff_id}</td>
                   <td className="p-4">{t.full_name}</td>
                   <td className="p-4">{t.subject || '—'}</td>
+                  {campuses.length > 0 && (
+                    <td className="p-4">
+                      <select
+                        disabled={updatingId === t.id}
+                        value={t.campus ?? ''}
+                        onChange={(e) => updateCampus(t.id, e.target.value)}
+                        className="rounded-lg border p-2 text-sm"
+                      >
+                        <option value="">—</option>
+                        {campuses.map((c) => (
+                          <option key={c} value={c}>
+                            {c}
+                          </option>
+                        ))}
+                      </select>
+                    </td>
+                  )}
                   <td className="p-4 text-center">
                     <select
                       disabled={updatingId === t.id}
@@ -1320,6 +1591,7 @@ function StaffSection() {
         )}
       </div>
 
+      {myRole === 'admin' && (
       <div className="bg-white rounded-2xl shadow p-8 mt-8">
         <h2 className="text-xl font-semibold mb-2">Staff Login Accounts</h2>
         <p className="text-sm text-gray-500 mb-6">
@@ -1357,11 +1629,18 @@ function StaffSection() {
           />
           <select
             value={accountForm.role}
-            onChange={(e) => setAccountForm({ ...accountForm, role: e.target.value as 'admin' | 'teacher' })}
+            onChange={(e) =>
+              setAccountForm({
+                ...accountForm,
+                role: e.target.value as 'admin' | 'primary_admin' | 'secondary_admin' | 'teacher',
+              })
+            }
             className="w-full rounded-xl border p-3"
           >
             <option value="teacher">Teacher</option>
-            <option value="admin">Admin</option>
+            <option value="admin">Admin (Full School)</option>
+            <option value="primary_admin">Primary Admin</option>
+            <option value="secondary_admin">Secondary Admin</option>
           </select>
           <select
             value={accountForm.teacherId}
@@ -1405,7 +1684,7 @@ function StaffSection() {
                 <tr key={a.id} className="border-b">
                   <td className="p-4">{a.full_name}</td>
                   <td className="p-4">{a.email}</td>
-                  <td className="p-4 text-center capitalize">{a.role}</td>
+                  <td className="p-4 text-center">{a.role === 'teacher' ? 'Teacher' : ADMIN_ROLE_LABELS[a.role]}</td>
                   <td className="p-4 text-center">{a.status}</td>
                   <td className="p-4 text-center">
                     <button
@@ -1452,6 +1731,7 @@ function StaffSection() {
           </table>
         )}
       </div>
+      )}
     </div>
   );
 }
@@ -1884,7 +2164,7 @@ function ResultPinsSection() {
     fetch('/api/school')
       .then((res) => res.json())
       .then((data) => setSchoolName(data.name ?? ''))
-      .catch(() => {});
+      .catch((err) => console.error(err));
   }, []);
 
   const handleGenerate = async (e: React.FormEvent) => {
@@ -1950,10 +2230,10 @@ function ResultPinsSection() {
       .map(
         (c) => `
         <div class="card">
-          <div class="card-school">${schoolName || 'Result Checker'}</div>
+          <div class="card-school">${escapeHtml(schoolName || 'Result Checker')}</div>
           <div class="card-label">Result Checker Card</div>
-          <div class="card-row"><span>Serial</span><strong>${c.serial}</strong></div>
-          <div class="card-row"><span>PIN</span><strong>${c.pin}</strong></div>
+          <div class="card-row"><span>Serial</span><strong>${escapeHtml(c.serial)}</strong></div>
+          <div class="card-row"><span>PIN</span><strong>${escapeHtml(c.pin)}</strong></div>
           <div class="card-note">Enter your Student ID + this Serial + PIN on the school portal to check your result.</div>
         </div>`
       )
@@ -1962,7 +2242,7 @@ function ResultPinsSection() {
     win.document.write(`
       <html>
         <head>
-          <title>${generated.batchLabel} - Result Checker Cards</title>
+          <title>${escapeHtml(generated.batchLabel)} - Result Checker Cards</title>
           <style>
             * { box-sizing: border-box; }
             body { font-family: Arial, sans-serif; margin: 0; padding: 16px; }
@@ -2180,6 +2460,10 @@ function ReportCardsSection() {
     teacherComment: '',
     principalComment: '',
   });
+  const [section, setSection] = useState<'Primary' | 'Secondary' | null>(null);
+  const [canSetHeadComment, setCanSetHeadComment] = useState(true);
+
+  const headCommentLabel = section === 'Secondary' ? "Principal's Comment" : "Headmaster's Comment";
 
   const load = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -2205,6 +2489,8 @@ function ReportCardsSection() {
         principalComment: rc?.principal_comment ?? '',
       });
       setStatus(rc?.status ?? 'Draft');
+      setSection(data.section ?? null);
+      setCanSetHeadComment(data.canSetHeadComment ?? true);
     } catch (err) {
       setError((err as Error).message);
     } finally {
@@ -2220,6 +2506,11 @@ function ReportCardsSection() {
     setNotice('');
 
     try {
+      // Omit principalComment entirely when this admin isn't allowed to set
+      // it, rather than resubmitting the unchanged value -- the field being
+      // present at all is what the API gates on, and an upsert that never
+      // mentions the column leaves it untouched in the database.
+      const { principalComment, ...restForm } = form;
       const res = await fetch('/api/report-cards', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -2227,7 +2518,8 @@ function ReportCardsSection() {
           studentId: lookup.studentId,
           session: lookup.session,
           term: lookup.term,
-          ...form,
+          ...restForm,
+          ...(canSetHeadComment ? { principalComment } : {}),
           ...(publish !== undefined ? { publish } : {}),
         }),
       });
@@ -2364,13 +2656,17 @@ function ReportCardsSection() {
             />
           </div>
           <div className="md:col-span-3">
-            <label className="block text-sm font-medium mb-2">Principal&apos;s Comment</label>
+            <label className="block text-sm font-medium mb-2">{headCommentLabel}</label>
             <textarea
               value={form.principalComment}
               onChange={(e) => setForm({ ...form, principalComment: e.target.value })}
-              className="w-full border p-3 rounded-xl"
+              className="w-full border p-3 rounded-xl disabled:bg-gray-50 disabled:text-gray-400"
               rows={3}
+              disabled={!canSetHeadComment}
             />
+            {!canSetHeadComment && (
+              <p className="mt-1 text-xs text-gray-500">Only the section&apos;s {headCommentLabel.replace("'s Comment", '')} can set this.</p>
+            )}
           </div>
           <div className="md:col-span-3 flex flex-wrap gap-3">
             <button
@@ -2444,16 +2740,39 @@ function TimetablesSection() {
   const [examError, setExamError] = useState('');
   const [examForm, setExamForm] = useState({ subject: SUBJECTS[0], examDate: '', startTime: '', endTime: '', venue: '' });
   const [examSubmitting, setExamSubmitting] = useState(false);
+  const [examSubjects, setExamSubjects] = useState<string[]>(SUBJECTS);
+  const examSubjectsSeq = useRef(0);
+  const ttLoadSeq = useRef(0);
+  const examLoadSeq = useRef(0);
+
+  useEffect(() => {
+    const seq = ++examSubjectsSeq.current;
+    fetch(`/api/class-subjects?class=${encodeURIComponent(selectedClass)}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (examSubjectsSeq.current !== seq) return;
+        const list = ((data.subjects ?? []) as { subject: string }[]).map((s) => s.subject);
+        const options = list.length > 0 ? list : SUBJECTS;
+        setExamSubjects(options);
+        setExamForm((prev) => (options.includes(prev.subject) ? prev : { ...prev, subject: options[0] }));
+      })
+      .catch((err) => {
+        console.error(err);
+        if (examSubjectsSeq.current === seq) setExamSubjects(SUBJECTS);
+      });
+  }, [selectedClass]);
 
   const cellKey = (day: string, period: number) => `${day}|${period}`;
 
   const loadClassTimetable = async (className: string) => {
+    const seq = ++ttLoadSeq.current;
     setTtLoading(true);
     setTtError('');
     setTtNotice('');
     try {
       const res = await fetch(`/api/class-timetables?class=${encodeURIComponent(className)}`);
       const data = await res.json();
+      if (ttLoadSeq.current !== seq) return;
       if (!res.ok) throw new Error(data.error || 'Failed to load timetable.');
 
       const newGrid: Record<string, { subject: string; teacherName: string }> = {};
@@ -2467,9 +2786,9 @@ function TimetablesSection() {
       setGrid(newGrid);
       setPeriodTimes(newTimes);
     } catch (err) {
-      setTtError((err as Error).message);
+      if (ttLoadSeq.current === seq) setTtError((err as Error).message);
     } finally {
-      setTtLoading(false);
+      if (ttLoadSeq.current === seq) setTtLoading(false);
     }
   };
 
@@ -2514,6 +2833,7 @@ function TimetablesSection() {
   };
 
   const loadExams = async () => {
+    const seq = ++examLoadSeq.current;
     setExamLoading(true);
     setExamError('');
     try {
@@ -2521,12 +2841,13 @@ function TimetablesSection() {
         `/api/exam-timetables?class=${encodeURIComponent(selectedClass)}&session=${encodeURIComponent(examLookup.session)}&term=${encodeURIComponent(examLookup.term)}`
       );
       const data = await res.json();
+      if (examLoadSeq.current !== seq) return;
       if (!res.ok) throw new Error(data.error || 'Failed to load exam timetable.');
       setExamEntries(data.entries);
     } catch (err) {
-      setExamError((err as Error).message);
+      if (examLoadSeq.current === seq) setExamError((err as Error).message);
     } finally {
-      setExamLoading(false);
+      if (examLoadSeq.current === seq) setExamLoading(false);
     }
   };
 
@@ -2721,7 +3042,7 @@ function TimetablesSection() {
             onChange={(e) => setExamForm({ ...examForm, subject: e.target.value })}
             className="rounded-xl border p-3"
           >
-            {SUBJECTS.map((s) => (
+            {examSubjects.map((s) => (
               <option key={s}>{s}</option>
             ))}
           </select>
@@ -2810,6 +3131,146 @@ type FeeRow = {
   student: { full_name: string; parent_name: string | null; parent_phone: string | null } | null;
 };
 
+type ClassSubjectRow = { id: string; class: string; subject: string };
+
+function SubjectsSection() {
+  const [myClasses, setMyClasses] = useState<string[]>(CLASSES);
+  const [selectedClass, setSelectedClass] = useState(CLASSES[0]);
+  const [subjects, setSubjects] = useState<ClassSubjectRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [newSubject, setNewSubject] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const loadSeq = useRef(0);
+
+  useEffect(() => {
+    fetch('/api/auth/me')
+      .then((res) => res.json())
+      .then((data) => {
+        const allowed = getSectionClasses(data.role) ?? CLASSES;
+        setMyClasses(allowed);
+        setSelectedClass((prev) => (allowed.includes(prev) ? prev : allowed[0]));
+      })
+      .catch((err) => console.error(err));
+  }, []);
+
+  const load = () => {
+    const seq = ++loadSeq.current;
+    setLoading(true);
+    setError('');
+    fetch(`/api/class-subjects?class=${encodeURIComponent(selectedClass)}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (loadSeq.current !== seq) return;
+        if (data.error) throw new Error(data.error);
+        setSubjects(data.subjects);
+      })
+      .catch((err) => {
+        if (loadSeq.current === seq) setError(err.message);
+      })
+      .finally(() => {
+        if (loadSeq.current === seq) setLoading(false);
+      });
+  };
+
+  useEffect(load, [selectedClass]);
+
+  const handleAdd = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newSubject.trim()) return;
+
+    setSubmitting(true);
+    setError('');
+    try {
+      const res = await fetch('/api/class-subjects', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ class: selectedClass, subject: newSubject.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to add subject.');
+      setNewSubject('');
+      load();
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleRemove = async (id: string) => {
+    try {
+      const res = await fetch(`/api/class-subjects/${id}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to remove subject.');
+      setSubjects((prev) => prev.filter((s) => s.id !== id));
+    } catch (err) {
+      setError((err as Error).message);
+    }
+  };
+
+  return (
+    <div>
+      <h1 className="text-4xl font-bold mb-2">Subjects</h1>
+      <p className="text-gray-600 mb-8">
+        Set which subjects each class studies. Teachers and admins uploading results only see subjects configured
+        here for that class; classes with nothing configured yet fall back to the default subject list.
+      </p>
+      {error && <div className="mb-6 rounded-xl bg-red-50 p-4 text-sm text-red-700">{error}</div>}
+
+      <div className="bg-white rounded-2xl shadow p-8 max-w-xl">
+        <label className="block text-sm font-medium mb-2">Class</label>
+        <select
+          value={selectedClass}
+          onChange={(e) => setSelectedClass(e.target.value)}
+          className="w-full rounded-xl border p-3 mb-6"
+        >
+          {myClasses.map((c) => (
+            <option key={c}>{c}</option>
+          ))}
+        </select>
+
+        <form onSubmit={handleAdd} className="flex gap-3 mb-6">
+          <input
+            type="text"
+            placeholder="e.g. Mathematics"
+            value={newSubject}
+            onChange={(e) => setNewSubject(e.target.value)}
+            className="flex-1 rounded-xl border p-3"
+          />
+          <button
+            type="submit"
+            disabled={submitting || !newSubject.trim()}
+            className="rounded-xl bg-[var(--brand-color)] px-6 py-3 font-semibold text-white hover:brightness-90 disabled:opacity-60"
+          >
+            {submitting ? 'Adding...' : 'Add'}
+          </button>
+        </form>
+
+        {loading ? (
+          <p className="text-gray-500">Loading...</p>
+        ) : subjects.length === 0 ? (
+          <p className="text-gray-500">
+            No subjects configured for {selectedClass} yet &mdash; result-entry forms will show the default subject
+            list until you add some here.
+          </p>
+        ) : (
+          <ul className="divide-y">
+            {subjects.map((s) => (
+              <li key={s.id} className="flex items-center justify-between py-3">
+                <span>{s.subject}</span>
+                <button onClick={() => handleRemove(s.id)} className="text-xs text-red-600 hover:underline">
+                  Remove
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </div>
+  );
+}
+
 type FeeRosterStudent = { student_id: string; full_name: string };
 
 function FeesSection() {
@@ -2820,8 +3281,11 @@ function FeesSection() {
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState({ studentId: '', description: 'School Fees', amount: '', dueDate: '' });
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const loadSeq = useRef(0);
 
   const load = () => {
+    const seq = ++loadSeq.current;
     setLoading(true);
     setError('');
     fetch(
@@ -2829,12 +3293,17 @@ function FeesSection() {
     )
       .then((res) => res.json())
       .then((data) => {
+        if (loadSeq.current !== seq) return;
         if (data.error) throw new Error(data.error);
         setFees(data.fees);
         setRoster(data.roster ?? []);
       })
-      .catch((err) => setError(err.message))
-      .finally(() => setLoading(false));
+      .catch((err) => {
+        if (loadSeq.current === seq) setError(err.message);
+      })
+      .finally(() => {
+        if (loadSeq.current === seq) setLoading(false);
+      });
   };
 
   useEffect(load, [lookup.className, lookup.session, lookup.term]);
@@ -2870,7 +3339,9 @@ function FeesSection() {
   };
 
   const toggleStatus = async (fee: FeeRow) => {
+    if (updatingId) return;
     const nextStatus = fee.status === 'Paid' ? 'Unpaid' : 'Paid';
+    setUpdatingId(fee.id);
     try {
       const res = await fetch(`/api/fees/${fee.id}`, {
         method: 'PATCH',
@@ -2882,10 +3353,13 @@ function FeesSection() {
       setFees((prev) => prev.map((f) => (f.id === fee.id ? { ...f, status: nextStatus } : f)));
     } catch (err) {
       setError((err as Error).message);
+    } finally {
+      setUpdatingId(null);
     }
   };
 
   const remind = async (fee: FeeRow) => {
+    if (updatingId) return;
     if (!fee.student?.parent_phone) {
       setError(`No parent phone number on file for ${fee.student?.full_name ?? fee.student_id}.`);
       return;
@@ -2895,6 +3369,7 @@ function FeesSection() {
     const message = `Hello ${fee.student.parent_name || ''}, this is a reminder that ${fee.description} (${amountStr})${dueStr} for ${fee.student.full_name} is still outstanding. Kindly make payment at your earliest convenience. Thank you.`;
     window.open(buildWhatsAppLink(fee.student.parent_phone, message), '_blank');
 
+    setUpdatingId(fee.id);
     try {
       await fetch(`/api/fees/${fee.id}`, {
         method: 'PATCH',
@@ -2904,6 +3379,8 @@ function FeesSection() {
       setFees((prev) => prev.map((f) => (f.id === fee.id ? { ...f, last_reminded_at: new Date().toISOString() } : f)));
     } catch {
       // Non-critical -- the WhatsApp link already opened either way.
+    } finally {
+      setUpdatingId(null);
     }
   };
 
@@ -3033,7 +3510,8 @@ function FeesSection() {
                   <td className="p-3 text-center">
                     <button
                       onClick={() => toggleStatus(f)}
-                      className={`rounded-full px-3 py-1 text-xs font-medium ${
+                      disabled={updatingId === f.id}
+                      className={`rounded-full px-3 py-1 text-xs font-medium disabled:opacity-50 ${
                         f.status === 'Paid' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'
                       }`}
                     >
@@ -3044,7 +3522,8 @@ function FeesSection() {
                     {f.status === 'Unpaid' && (
                       <button
                         onClick={() => remind(f)}
-                        className="text-sm text-green-700 hover:underline whitespace-nowrap"
+                        disabled={updatingId === f.id}
+                        className="text-sm text-green-700 hover:underline whitespace-nowrap disabled:opacity-50"
                       >
                         WhatsApp
                       </button>
@@ -3055,6 +3534,230 @@ function FeesSection() {
                   </td>
                   <td className="p-3 text-right">
                     <button onClick={() => deleteFee(f.id)} className="text-sm text-red-600 hover:underline">
+                      Delete
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+    </div>
+  );
+}
+
+type ExpenseRow = {
+  id: string;
+  session: string;
+  term: string;
+  category: string;
+  description: string | null;
+  amount: number;
+  expense_date: string;
+};
+
+const EXPENSE_CATEGORIES = ['Salaries', 'Utilities', 'Maintenance', 'Supplies', 'Transport', 'General'];
+
+function AccountingSection() {
+  const [lookup, setLookup] = useState({ session: CURRENT_SESSION, term: TERMS[0] });
+  const [expenses, setExpenses] = useState<ExpenseRow[]>([]);
+  const [summary, setSummary] = useState<{ income: number; expenses: number; net: number } | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [form, setForm] = useState({
+    category: EXPENSE_CATEGORIES[0],
+    description: '',
+    amount: '',
+    expenseDate: new Date().toISOString().slice(0, 10),
+  });
+  const loadSeq = useRef(0);
+
+  const load = () => {
+    const seq = ++loadSeq.current;
+    setLoading(true);
+    setError('');
+    const qs = `session=${encodeURIComponent(lookup.session)}&term=${encodeURIComponent(lookup.term)}`;
+    Promise.all([
+      fetch(`/api/expenses?${qs}`).then((res) => res.json()),
+      fetch(`/api/accounting/summary?${qs}`).then((res) => res.json()),
+    ])
+      .then(([expensesData, summaryData]) => {
+        if (loadSeq.current !== seq) return;
+        if (expensesData.error) throw new Error(expensesData.error);
+        if (summaryData.error) throw new Error(summaryData.error);
+        setExpenses(expensesData.expenses);
+        setSummary(summaryData);
+      })
+      .catch((err) => {
+        if (loadSeq.current === seq) setError(err.message);
+      })
+      .finally(() => {
+        if (loadSeq.current === seq) setLoading(false);
+      });
+  };
+
+  useEffect(load, [lookup.session, lookup.term]);
+
+  const handleAdd = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.amount) return;
+
+    setSubmitting(true);
+    setError('');
+    try {
+      const res = await fetch('/api/expenses', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          session: lookup.session,
+          term: lookup.term,
+          category: form.category,
+          description: form.description,
+          amount: form.amount,
+          expenseDate: form.expenseDate,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to add expense.');
+      setForm({ category: EXPENSE_CATEGORIES[0], description: '', amount: '', expenseDate: new Date().toISOString().slice(0, 10) });
+      load();
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const deleteExpense = async (id: string) => {
+    if (!confirm('Delete this expense record?')) return;
+    try {
+      const res = await fetch(`/api/expenses/${id}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to delete expense.');
+      load();
+    } catch (err) {
+      setError((err as Error).message);
+    }
+  };
+
+  const naira = (n: number) => `₦${n.toLocaleString()}`;
+
+  return (
+    <div>
+      <h1 className="text-4xl font-bold mb-2">Accounting</h1>
+      <p className="text-gray-500 mb-8">
+        A running income &amp; expense summary for the term &mdash; income counts fees actually marked Paid, not just
+        invoiced. This is a summary statement, not a full double-entry ledger.
+      </p>
+      {error && <div className="mb-6 rounded-xl bg-red-50 p-4 text-sm text-red-700">{error}</div>}
+
+      <div className="flex flex-wrap gap-4 mb-8">
+        <select
+          value={lookup.session}
+          onChange={(e) => setLookup({ ...lookup, session: e.target.value })}
+          className="rounded-xl border p-3"
+        >
+          {SESSIONS.map((s) => (
+            <option key={s}>{s}</option>
+          ))}
+        </select>
+        <select value={lookup.term} onChange={(e) => setLookup({ ...lookup, term: e.target.value })} className="rounded-xl border p-3">
+          {TERMS.map((t) => (
+            <option key={t}>{t}</option>
+          ))}
+        </select>
+      </div>
+
+      {summary && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <div className="bg-white rounded-2xl shadow p-6">
+            <p className="text-sm text-gray-500">Income (fees paid)</p>
+            <p className="text-2xl font-bold text-green-700">{naira(summary.income)}</p>
+          </div>
+          <div className="bg-white rounded-2xl shadow p-6">
+            <p className="text-sm text-gray-500">Expenses</p>
+            <p className="text-2xl font-bold text-red-700">{naira(summary.expenses)}</p>
+          </div>
+          <div className="bg-white rounded-2xl shadow p-6">
+            <p className="text-sm text-gray-500">Net position</p>
+            <p className={`text-2xl font-bold ${summary.net >= 0 ? 'text-green-700' : 'text-red-700'}`}>{naira(summary.net)}</p>
+          </div>
+        </div>
+      )}
+
+      <form onSubmit={handleAdd} className="bg-white rounded-2xl shadow p-8 mb-8 grid grid-cols-1 md:grid-cols-2 gap-4">
+        <h2 className="md:col-span-2 text-xl font-semibold">Record an Expense</h2>
+        <select
+          value={form.category}
+          onChange={(e) => setForm({ ...form, category: e.target.value })}
+          className="w-full rounded-xl border p-3"
+        >
+          {EXPENSE_CATEGORIES.map((c) => (
+            <option key={c}>{c}</option>
+          ))}
+        </select>
+        <input
+          type="number"
+          min="0"
+          step="0.01"
+          placeholder="Amount (₦)"
+          value={form.amount}
+          onChange={(e) => setForm({ ...form, amount: e.target.value })}
+          className="w-full rounded-xl border p-3"
+          required
+        />
+        <input
+          type="date"
+          value={form.expenseDate}
+          onChange={(e) => setForm({ ...form, expenseDate: e.target.value })}
+          className="w-full rounded-xl border p-3"
+        />
+        <input
+          type="text"
+          placeholder="Description (optional)"
+          value={form.description}
+          onChange={(e) => setForm({ ...form, description: e.target.value })}
+          className="w-full rounded-xl border p-3"
+        />
+        <button
+          type="submit"
+          disabled={submitting}
+          className="md:col-span-2 w-full rounded-xl bg-[var(--brand-color)] py-3 font-semibold text-white hover:brightness-90 disabled:opacity-60"
+        >
+          {submitting ? 'Saving...' : 'Record Expense'}
+        </button>
+      </form>
+
+      <div className="bg-white rounded-2xl shadow p-8">
+        <h2 className="text-xl font-semibold mb-6">
+          Expenses &mdash; {lookup.term}, {lookup.session} ({expenses.length})
+        </h2>
+        {loading ? (
+          <p className="text-gray-500">Loading...</p>
+        ) : expenses.length === 0 ? (
+          <p className="text-gray-500">No expenses recorded for this term yet.</p>
+        ) : (
+          <table className="w-full">
+            <thead>
+              <tr className="bg-gray-100">
+                <th className="text-left p-4">Date</th>
+                <th className="text-left p-4">Category</th>
+                <th className="text-left p-4">Description</th>
+                <th className="text-right p-4">Amount</th>
+                <th className="text-right p-4">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {expenses.map((ex) => (
+                <tr key={ex.id} className="border-b">
+                  <td className="p-4">{new Date(ex.expense_date).toLocaleDateString()}</td>
+                  <td className="p-4">{ex.category}</td>
+                  <td className="p-4">{ex.description || '—'}</td>
+                  <td className="p-4 text-right">{naira(Number(ex.amount))}</td>
+                  <td className="p-4 text-right">
+                    <button onClick={() => deleteExpense(ex.id)} className="text-sm text-red-600 hover:underline">
                       Delete
                     </button>
                   </td>
@@ -3082,18 +3785,25 @@ function MessagesSection() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
+  const loadSeq = useRef(0);
 
   const load = () => {
+    const seq = ++loadSeq.current;
     setLoading(true);
     setError('');
     fetch(`/api/students?class=${encodeURIComponent(className)}&status=Active`)
       .then((res) => res.json())
       .then((data) => {
+        if (loadSeq.current !== seq) return;
         if (data.error) throw new Error(data.error);
         setRoster(data.students);
       })
-      .catch((err) => setError(err.message))
-      .finally(() => setLoading(false));
+      .catch((err) => {
+        if (loadSeq.current === seq) setError(err.message);
+      })
+      .finally(() => {
+        if (loadSeq.current === seq) setLoading(false);
+      });
   };
 
   useEffect(load, [className]);
@@ -3367,17 +4077,24 @@ function CalendarSection() {
     startDate: '',
     endDate: '',
   });
+  const loadSeq = useRef(0);
 
   const load = () => {
+    const seq = ++loadSeq.current;
     setLoading(true);
     fetch(`/api/academic-calendar?session=${encodeURIComponent(selectedSession)}`)
       .then((res) => res.json())
       .then((data) => {
+        if (loadSeq.current !== seq) return;
         if (data.error) throw new Error(data.error);
         setEntries(data.entries);
       })
-      .catch((err) => setError(err.message))
-      .finally(() => setLoading(false));
+      .catch((err) => {
+        if (loadSeq.current === seq) setError(err.message);
+      })
+      .finally(() => {
+        if (loadSeq.current === seq) setLoading(false);
+      });
   };
 
   useEffect(load, [selectedSession]);
@@ -3716,14 +4433,17 @@ function AttendanceSection() {
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [saving, setSaving] = useState(false);
+  const loadSeq = useRef(0);
 
   const load = () => {
+    const seq = ++loadSeq.current;
     setLoading(true);
     setError('');
     setNotice('');
     fetch(`/api/attendance?class=${encodeURIComponent(selectedClass)}&date=${encodeURIComponent(date)}`)
       .then((res) => res.json())
       .then((data) => {
+        if (loadSeq.current !== seq) return;
         if (data.error) throw new Error(data.error);
         setRoster(data.roster ?? []);
         const initial: Record<string, (typeof ATTENDANCE_STATUSES)[number]> = {};
@@ -3735,8 +4455,12 @@ function AttendanceSection() {
         });
         setMarksByStudent(initial);
       })
-      .catch((err) => setError(err.message))
-      .finally(() => setLoading(false));
+      .catch((err) => {
+        if (loadSeq.current === seq) setError(err.message);
+      })
+      .finally(() => {
+        if (loadSeq.current === seq) setLoading(false);
+      });
   };
 
   useEffect(load, [selectedClass, date]);
@@ -3896,7 +4620,7 @@ function SecuritySection() {
     fetch('/api/auth/me')
       .then((res) => res.json())
       .then((data) => setTotpEnabled(Boolean(data.totpEnabled)))
-      .catch(() => {});
+      .catch((err) => console.error(err));
   };
 
   useEffect(load, []);
@@ -4053,6 +4777,21 @@ function SecuritySection() {
           </button>
         )}
       </div>
+
+      <div className="bg-white rounded-2xl shadow p-8 max-w-xl mt-8">
+        <h2 className="text-xl font-semibold mb-2">Export School Data</h2>
+        <p className="text-sm text-gray-600 mb-4">
+          Download every student, staff, admissions, results, fees, and attendance record for your school as a single
+          JSON file &mdash; your data is yours, independent of your subscription with SchoolOS.
+        </p>
+        {/* eslint-disable-next-line @next/next/no-html-link-for-pages -- file download, not a page route */}
+        <a
+          href="/api/school/export"
+          className="inline-block rounded-xl bg-[var(--brand-color)] px-6 py-3 font-semibold text-white hover:brightness-90"
+        >
+          Download Data Export (.json)
+        </a>
+      </div>
     </div>
   );
 }
@@ -4081,8 +4820,10 @@ function AuditLogSection() {
   const [error, setError] = useState('');
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const pageSize = 50;
+  const loadSeq = useRef(0);
 
   useEffect(() => {
+    const seq = ++loadSeq.current;
     setLoading(true);
     setError('');
     const params = new URLSearchParams({ page: String(page) });
@@ -4090,12 +4831,17 @@ function AuditLogSection() {
     fetch(`/api/audit-log?${params.toString()}`)
       .then((res) => res.json())
       .then((data) => {
+        if (loadSeq.current !== seq) return;
         if (data.error) throw new Error(data.error);
         setEntries(data.entries);
         setTotal(data.total);
       })
-      .catch((err) => setError(err.message))
-      .finally(() => setLoading(false));
+      .catch((err) => {
+        if (loadSeq.current === seq) setError(err.message);
+      })
+      .finally(() => {
+        if (loadSeq.current === seq) setLoading(false);
+      });
   }, [page, entityType]);
 
   const totalPages = Math.max(Math.ceil(total / pageSize), 1);

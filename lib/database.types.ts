@@ -21,6 +21,7 @@ export type Database = {
           principal_welcome_message: string | null;
           principal_photo_url: string | null;
           prospectus_url: string | null;
+          campuses: string | null;
           template: string;
           status: 'Active' | 'Suspended';
           plan: string;
@@ -46,6 +47,7 @@ export type Database = {
           principal_welcome_message?: string | null;
           principal_photo_url?: string | null;
           prospectus_url?: string | null;
+          campuses?: string | null;
           template?: string;
           status?: 'Active' | 'Suspended';
           plan?: string;
@@ -71,6 +73,7 @@ export type Database = {
           principal_welcome_message?: string | null;
           principal_photo_url?: string | null;
           prospectus_url?: string | null;
+          campuses?: string | null;
           template?: string;
           status?: 'Active' | 'Suspended';
           plan?: string;
@@ -85,7 +88,7 @@ export type Database = {
           school_id: string;
           email: string;
           password_hash: string;
-          role: 'admin' | 'teacher';
+          role: 'admin' | 'primary_admin' | 'secondary_admin' | 'teacher';
           full_name: string;
           teacher_id: string | null;
           status: 'Active' | 'Inactive';
@@ -99,7 +102,7 @@ export type Database = {
           school_id: string;
           email: string;
           password_hash: string;
-          role: 'admin' | 'teacher';
+          role: 'admin' | 'primary_admin' | 'secondary_admin' | 'teacher';
           full_name: string;
           teacher_id?: string | null;
           status?: 'Active' | 'Inactive';
@@ -113,7 +116,7 @@ export type Database = {
           school_id?: string;
           email?: string;
           password_hash?: string;
-          role?: 'admin' | 'teacher';
+          role?: 'admin' | 'primary_admin' | 'secondary_admin' | 'teacher';
           full_name?: string;
           teacher_id?: string | null;
           status?: 'Active' | 'Inactive';
@@ -179,6 +182,7 @@ export type Database = {
           student_id: string;
           session: string;
           term: string;
+          class: string | null;
           days_school_opened: number | null;
           days_present: number | null;
           times_punctual: number | null;
@@ -196,6 +200,7 @@ export type Database = {
           student_id: string;
           session: string;
           term: string;
+          class?: string | null;
           days_school_opened?: number | null;
           days_present?: number | null;
           times_punctual?: number | null;
@@ -213,6 +218,7 @@ export type Database = {
           student_id?: string;
           session?: string;
           term?: string;
+          class?: string | null;
           days_school_opened?: number | null;
           days_present?: number | null;
           times_punctual?: number | null;
@@ -335,6 +341,7 @@ export type Database = {
           staff_id: string;
           full_name: string;
           role: 'Teacher' | 'Head Teacher' | 'Admin' | 'Bursar' | 'Non-Teaching Staff';
+          campus: string | null;
           subject: string | null;
           email: string | null;
           phone: string | null;
@@ -351,6 +358,7 @@ export type Database = {
           staff_id: string;
           full_name: string;
           role?: 'Teacher' | 'Head Teacher' | 'Admin' | 'Bursar' | 'Non-Teaching Staff';
+          campus?: string | null;
           subject?: string | null;
           email?: string | null;
           phone?: string | null;
@@ -367,6 +375,7 @@ export type Database = {
           staff_id?: string;
           full_name?: string;
           role?: 'Teacher' | 'Head Teacher' | 'Admin' | 'Bursar' | 'Non-Teaching Staff';
+          campus?: string | null;
           subject?: string | null;
           email?: string | null;
           phone?: string | null;
@@ -387,6 +396,7 @@ export type Database = {
           full_name: string;
           class: string;
           department: string | null;
+          campus: string | null;
           gender: string | null;
           date_of_birth: string | null;
           parent_name: string | null;
@@ -403,6 +413,7 @@ export type Database = {
           full_name: string;
           class: string;
           department?: string | null;
+          campus?: string | null;
           gender?: string | null;
           date_of_birth?: string | null;
           parent_name?: string | null;
@@ -419,6 +430,7 @@ export type Database = {
           full_name?: string;
           class?: string;
           department?: string | null;
+          campus?: string | null;
           gender?: string | null;
           date_of_birth?: string | null;
           parent_name?: string | null;
@@ -592,6 +604,30 @@ export type Database = {
         };
         Relationships: [];
       };
+      class_subjects: {
+        Row: {
+          id: string;
+          school_id: string;
+          class: string;
+          subject: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          school_id: string;
+          class: string;
+          subject: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          school_id?: string;
+          class?: string;
+          subject?: string;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
       fees: {
         Row: {
           id: string;
@@ -630,6 +666,42 @@ export type Database = {
           due_date?: string | null;
           status?: 'Unpaid' | 'Paid';
           last_reminded_at?: string | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      expenses: {
+        Row: {
+          id: string;
+          school_id: string;
+          session: string;
+          term: string;
+          category: string;
+          description: string | null;
+          amount: number;
+          expense_date: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          school_id: string;
+          session: string;
+          term: string;
+          category?: string;
+          description?: string | null;
+          amount: number;
+          expense_date?: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          school_id?: string;
+          session?: string;
+          term?: string;
+          category?: string;
+          description?: string | null;
+          amount?: number;
+          expense_date?: string;
           created_at?: string;
         };
         Relationships: [];

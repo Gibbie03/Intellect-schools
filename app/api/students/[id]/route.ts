@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseClient } from '@/lib/supabase';
 import { Database } from '@/lib/database.types';
 import { requireSchoolSession } from '@/lib/auth';
-import { CLASSES, isSeniorSecondaryClass, isValidDepartment } from '@/lib/constants';
+import { CLASSES, isSeniorSecondaryClass, isValidDepartment, getSectionClasses } from '@/lib/constants';
 import { logAudit } from '@/lib/auditLog';
+import { apiError } from '@/lib/apiError';
 
 export const dynamic = 'force-dynamic';
 
@@ -11,14 +12,22 @@ type StudentUpdate = Database['public']['Tables']['students']['Update'];
 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const staff = await requireSchoolSession(request, ['admin']);
+    const staff = await requireSchoolSession(request, ['admin', 'primary_admin', 'secondary_admin']);
     if (!staff) return NextResponse.json({ error: 'Not authenticated.' }, { status: 401 });
-    const { school } = staff;
+    const { school, session } = staff;
 
     const supabase = getSupabaseClient();
     const { id } = await params;
     const body = await request.json();
     const update: StudentUpdate = {};
+    const sectionClasses = getSectionClasses(session.role);
+
+    if (sectionClasses) {
+      const { data: existing } = await supabase.from('students').select('class').eq('id', id).eq('school_id', school.id).maybeSingle();
+      if (!existing || !sectionClasses.includes(existing.class)) {
+        return NextResponse.json({ error: 'Student not found.' }, { status: 404 });
+      }
+    }
 
     if (body.status !== undefined) {
       if (!['Active', 'Inactive'].includes(body.status)) {
@@ -30,6 +39,9 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     if (body.className !== undefined) {
       if (!CLASSES.includes(body.className)) {
         return NextResponse.json({ error: 'Invalid class.' }, { status: 400 });
+      }
+      if (sectionClasses && !sectionClasses.includes(body.className)) {
+        return NextResponse.json({ error: 'You do not have access to move a student into that class.' }, { status: 403 });
       }
       update.class = body.className;
       // Moving out of SSS (e.g. a correction, not a promotion) drops the
@@ -44,6 +56,10 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
         return NextResponse.json({ error: 'Invalid department.' }, { status: 400 });
       }
       update.department = body.department || null;
+    }
+
+    if (body.campus !== undefined) {
+      update.campus = body.campus || null;
     }
 
     if (Object.keys(update).length === 0) {
@@ -62,7 +78,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
     return NextResponse.json({ student: data });
   } catch (error) {
-    return NextResponse.json({ error: (error as Error).message }, { status: 500 });
+    return apiError(error);
   }
 }
 
@@ -75,14 +91,19 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 // entirely.
 export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const staff = await requireSchoolSession(request, ['admin']);
+    const staff = await requireSchoolSession(request, ['admin', 'primary_admin', 'secondary_admin']);
     if (!staff) return NextResponse.json({ error: 'Not authenticated.' }, { status: 401 });
-    const { school } = staff;
+    const { school, session } = staff;
 
     const supabase = getSupabaseClient();
     const { id } = await params;
 
     const { data: before } = await supabase.from('students').select('*').eq('id', id).eq('school_id', school.id).maybeSingle();
+
+    const sectionClasses = getSectionClasses(session.role);
+    if (sectionClasses && (!before || !sectionClasses.includes(before.class))) {
+      return NextResponse.json({ error: 'Student not found.' }, { status: 404 });
+    }
 
     const { error } = await supabase.from('students').delete().eq('id', id).eq('school_id', school.id);
     if (error) throw error;
@@ -99,6 +120,6 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    return NextResponse.json({ error: (error as Error).message }, { status: 500 });
+    return apiError(error);
   }
 }

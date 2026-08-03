@@ -3,6 +3,8 @@ import { getSupabaseClient } from '@/lib/supabase';
 import { gradeFromScore, resolveScore } from '@/lib/grade';
 import { requireSchoolSession } from '@/lib/auth';
 import { logAudit } from '@/lib/auditLog';
+import { getSectionStudentIds, isStudentInSection } from '@/lib/sectionScope';
+import { apiError } from '@/lib/apiError';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,9 +16,9 @@ export const dynamic = 'force-dynamic';
 // through /api/portal/check instead (gated by a scratch-card PIN), so this
 // route is staff-only across the board.
 export async function GET(request: NextRequest) {
-  const staff = await requireSchoolSession(request, ['admin', 'teacher']);
+  const staff = await requireSchoolSession(request, ['admin', 'primary_admin', 'secondary_admin', 'teacher']);
   if (!staff) return NextResponse.json({ error: 'Not authenticated.' }, { status: 401 });
-  const { school } = staff;
+  const { school, session: staffSession } = staff;
 
   try {
     const supabase = getSupabaseClient();
@@ -32,20 +34,23 @@ export async function GET(request: NextRequest) {
     if (session) query = query.eq('session', session);
     if (term) query = query.eq('term', term);
 
+    const sectionStudentIds = await getSectionStudentIds(supabase, school.id, staffSession.role, staffSession.userId);
+    if (sectionStudentIds) query = query.in('student_id', sectionStudentIds.length > 0 ? sectionStudentIds : ['__none__']);
+
     const { data, error } = await query;
     if (error) throw error;
 
     return NextResponse.json({ results: data });
   } catch (error) {
-    return NextResponse.json({ error: (error as Error).message }, { status: 500 });
+    return apiError(error);
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
-    const staff = await requireSchoolSession(request, ['admin', 'teacher']);
+    const staff = await requireSchoolSession(request, ['admin', 'primary_admin', 'secondary_admin', 'teacher']);
     if (!staff) return NextResponse.json({ error: 'Not authenticated.' }, { status: 401 });
-    const { school } = staff;
+    const { school, session: staffSession } = staff;
 
     const supabase = getSupabaseClient();
     const body = await request.json();
@@ -56,6 +61,10 @@ export async function POST(request: NextRequest) {
         { error: 'studentId, subject, session, and term are required.' },
         { status: 400 }
       );
+    }
+
+    if (!(await isStudentInSection(supabase, school.id, staffSession.role, staffSession.userId, studentId))) {
+      return NextResponse.json({ error: 'You do not have access to upload results for that student.' }, { status: 403 });
     }
 
     let resolved;
@@ -97,6 +106,6 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ result: data }, { status: 201 });
   } catch (error) {
-    return NextResponse.json({ error: (error as Error).message }, { status: 500 });
+    return apiError(error);
   }
 }

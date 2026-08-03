@@ -22,6 +22,7 @@ create table if not exists schools (
   principal_welcome_message text,
   principal_photo_url text,
   prospectus_url text,
+  campuses text,
   template text not null default 'classical',
   status text not null default 'Active' check (status in ('Active', 'Suspended')),
   plan text not null default 'Standard',
@@ -34,7 +35,7 @@ create table if not exists school_users (
   school_id uuid not null references schools(id) on delete cascade,
   email text not null,
   password_hash text not null,
-  role text not null check (role in ('admin', 'teacher')),
+  role text not null check (role in ('admin', 'primary_admin', 'secondary_admin', 'teacher')),
   full_name text not null,
   teacher_id uuid references teachers(id) on delete set null,
   status text not null default 'Active' check (status in ('Active', 'Inactive')),
@@ -75,6 +76,7 @@ create table if not exists report_cards (
   student_id text not null,
   session text not null,
   term text not null,
+  class text,
   days_school_opened int,
   days_present int,
   times_punctual int,
@@ -137,6 +139,7 @@ create table if not exists teachers (
   staff_id text not null,
   full_name text not null,
   role text not null default 'Teacher' check (role in ('Teacher', 'Head Teacher', 'Admin', 'Bursar', 'Non-Teaching Staff')),
+  campus text,
   subject text,
   email text,
   phone text,
@@ -158,6 +161,7 @@ create table if not exists students (
   full_name text not null,
   class text not null,
   department text,
+  campus text,
   gender text,
   date_of_birth date,
   parent_name text,
@@ -242,6 +246,20 @@ create table if not exists exam_timetables (
 
 create index if not exists exam_timetables_school_lookup_idx on exam_timetables (school_id, class, session, term);
 
+-- Each class studies a different set of subjects -- replaces a single fixed
+-- global subject list with a per-school, per-class configurable one.
+-- Classes with no rows here fall back to the app's built-in default list.
+create table if not exists class_subjects (
+  id uuid primary key default gen_random_uuid(),
+  school_id uuid not null references schools(id) on delete cascade,
+  class text not null,
+  subject text not null,
+  created_at timestamptz not null default now(),
+  unique (school_id, class, subject)
+);
+
+create index if not exists class_subjects_school_class_idx on class_subjects (school_id, class);
+
 -- Fee records: tracked and reminded about manually (a WhatsApp deep link, not
 -- an automated send) -- no online payment collection here, matching the
 -- earlier decision to leave real payments out of scope for now.
@@ -260,6 +278,23 @@ create table if not exists fees (
 );
 
 create index if not exists fees_school_student_idx on fees (school_id, student_id);
+
+-- A simple, single-entry expense ledger -- not a full double-entry
+-- accounting system. Paired with fees (income) for a session/term Income &
+-- Expense summary; see app/admin's Accounting tab.
+create table if not exists expenses (
+  id uuid primary key default gen_random_uuid(),
+  school_id uuid not null references schools(id) on delete cascade,
+  session text not null,
+  term text not null,
+  category text not null default 'General',
+  description text,
+  amount numeric not null check (amount >= 0),
+  expense_date date not null default current_date,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists expenses_school_session_term_idx on expenses (school_id, session, term);
 
 -- Student/Staff of the Month style homepage spotlight.
 create table if not exists spotlights (
@@ -388,5 +423,7 @@ alter table spotlights enable row level security;
 alter table academic_calendar enable row level security;
 alter table testimonials enable row level security;
 alter table attendance enable row level security;
+alter table expenses enable row level security;
+alter table class_subjects enable row level security;
 alter table rate_limit_hits enable row level security;
 alter table audit_log enable row level security;

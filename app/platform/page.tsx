@@ -22,6 +22,7 @@ type School = {
   principal_welcome_message: string | null;
   principal_photo_url: string | null;
   prospectus_url: string | null;
+  campuses: string | null;
   status: 'Active' | 'Suspended';
   created_at: string;
 };
@@ -84,6 +85,7 @@ export default function PlatformDashboard() {
     principalWelcomeMessage: '',
     principalPhotoUrl: '',
     prospectusUrl: '',
+    campuses: '',
     status: 'Active' as 'Active' | 'Suspended',
   });
   const [editSubmitting, setEditSubmitting] = useState(false);
@@ -199,6 +201,7 @@ export default function PlatformDashboard() {
       principalWelcomeMessage: school.principal_welcome_message ?? '',
       principalPhotoUrl: school.principal_photo_url ?? '',
       prospectusUrl: school.prospectus_url ?? '',
+      campuses: school.campuses ?? '',
       status: school.status,
     });
   };
@@ -708,6 +711,13 @@ export default function PlatformDashboard() {
                             placeholder="Prospectus PDF URL (optional, shown as a download on Admissions)"
                             value={editForm.prospectusUrl}
                             onChange={(e) => setEditForm({ ...editForm, prospectusUrl: e.target.value })}
+                            className="w-full rounded-xl border p-3 md:col-span-2"
+                          />
+                          <input
+                            type="text"
+                            placeholder="Campuses (comma-separated, e.g. Main Campus, Annex Campus — leave blank for a single-site school)"
+                            value={editForm.campuses}
+                            onChange={(e) => setEditForm({ ...editForm, campuses: e.target.value })}
                             className="w-full rounded-xl border p-3 md:col-span-2"
                           />
                           <select

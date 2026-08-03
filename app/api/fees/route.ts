@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseClient } from '@/lib/supabase';
 import { requireSchoolSession } from '@/lib/auth';
+import { getEffectiveClassScope, isStudentInSection } from '@/lib/sectionScope';
+import { apiError } from '@/lib/apiError';
 
 export const dynamic = 'force-dynamic';
 
@@ -9,9 +11,9 @@ export const dynamic = 'force-dynamic';
 // than a foreign key) with each student's name and parent phone so the
 // admin can generate a WhatsApp reminder link without a second request.
 export async function GET(request: NextRequest) {
-  const staff = await requireSchoolSession(request, ['admin', 'teacher']);
+  const staff = await requireSchoolSession(request, ['admin', 'primary_admin', 'secondary_admin', 'teacher']);
   if (!staff) return NextResponse.json({ error: 'Not authenticated.' }, { status: 401 });
-  const { school } = staff;
+  const { school, session: staffSession } = staff;
 
   try {
     const className = request.nextUrl.searchParams.get('class');
@@ -22,6 +24,9 @@ export async function GET(request: NextRequest) {
     const supabase = getSupabaseClient();
 
     if (studentId) {
+      if (!(await isStudentInSection(supabase, school.id, staffSession.role, staffSession.userId, studentId))) {
+        return NextResponse.json({ error: 'Student not found.' }, { status: 404 });
+      }
       const { data, error } = await supabase
         .from('fees')
         .select('*')
@@ -34,6 +39,11 @@ export async function GET(request: NextRequest) {
 
     if (!className || !session || !term) {
       return NextResponse.json({ error: 'Provide either studentId, or class + session + term.' }, { status: 400 });
+    }
+
+    const allowedClasses = await getEffectiveClassScope(staffSession.role, staffSession.userId);
+    if (allowedClasses && !allowedClasses.includes(className)) {
+      return NextResponse.json({ error: 'You do not have access to that class.' }, { status: 403 });
     }
 
     const { data: roster, error: rosterError } = await supabase
@@ -59,14 +69,14 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ fees: enriched, roster });
   } catch (error) {
-    return NextResponse.json({ error: (error as Error).message }, { status: 500 });
+    return apiError(error);
   }
 }
 
 export async function POST(request: NextRequest) {
-  const staff = await requireSchoolSession(request, ['admin']);
+  const staff = await requireSchoolSession(request, ['admin', 'primary_admin', 'secondary_admin']);
   if (!staff) return NextResponse.json({ error: 'Not authenticated.' }, { status: 401 });
-  const { school } = staff;
+  const { school, session: staffSession } = staff;
 
   try {
     const { studentId, session, term, description, amount, dueDate } = await request.json();
@@ -79,6 +89,10 @@ export async function POST(request: NextRequest) {
     }
 
     const supabase = getSupabaseClient();
+
+    if (!(await isStudentInSection(supabase, school.id, staffSession.role, staffSession.userId, studentId))) {
+      return NextResponse.json({ error: 'You do not have access to create fee records for that student.' }, { status: 403 });
+    }
     const { data, error } = await supabase
       .from('fees')
       .insert({
@@ -96,6 +110,6 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ fee: data }, { status: 201 });
   } catch (error) {
-    return NextResponse.json({ error: (error as Error).message }, { status: 500 });
+    return apiError(error);
   }
 }

@@ -3,6 +3,8 @@ import { getSupabaseClient } from '@/lib/supabase';
 import { gradeFromScore, resolveScore } from '@/lib/grade';
 import { Database } from '@/lib/database.types';
 import { requireSchoolSession } from '@/lib/auth';
+import { getSectionStudentIds } from '@/lib/sectionScope';
+import { apiError } from '@/lib/apiError';
 
 export const dynamic = 'force-dynamic';
 
@@ -10,9 +12,9 @@ type ResultInsert = Database['public']['Tables']['results']['Insert'];
 
 export async function POST(request: NextRequest) {
   try {
-    const staff = await requireSchoolSession(request, ['admin', 'teacher']);
+    const staff = await requireSchoolSession(request, ['admin', 'primary_admin', 'secondary_admin', 'teacher']);
     if (!staff) return NextResponse.json({ error: 'Not authenticated.' }, { status: 401 });
-    const { school } = staff;
+    const { school, session: staffSession } = staff;
 
     const supabase = getSupabaseClient();
     const { subject, session, term, uploadedBy, entries } = await request.json();
@@ -24,6 +26,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const sectionStudentIds = await getSectionStudentIds(supabase, school.id, staffSession.role, staffSession.userId);
+    const sectionSet = sectionStudentIds ? new Set(sectionStudentIds) : null;
+
     const rows: ResultInsert[] = [];
     const errors: { studentId: string; reason: string }[] = [];
 
@@ -32,6 +37,11 @@ export async function POST(request: NextRequest) {
 
       if (!studentId) {
         errors.push({ studentId: String(studentId ?? ''), reason: 'Missing student ID.' });
+        continue;
+      }
+
+      if (sectionSet && !sectionSet.has(studentId)) {
+        errors.push({ studentId, reason: 'You do not have access to upload results for this student.' });
         continue;
       }
 
@@ -67,6 +77,6 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ created: data.length, skipped: errors.length, errors }, { status: 201 });
   } catch (error) {
-    return NextResponse.json({ error: (error as Error).message }, { status: 500 });
+    return apiError(error);
   }
 }
