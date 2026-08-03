@@ -612,6 +612,105 @@ function StudentsSection() {
     }
   };
 
+  const viewHistory = async (student: StudentRow) => {
+    try {
+      const res = await fetch(`/api/students/${student.id}/history`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to load academic history.');
+
+      const reportCards: {
+        session: string;
+        term: string;
+        days_school_opened: number | null;
+        days_present: number | null;
+        times_punctual: number | null;
+        conduct_rating: string | null;
+        teacher_comment: string | null;
+        principal_comment: string | null;
+      }[] = data.reportCards ?? [];
+      const results: {
+        subject: string;
+        score: number;
+        ca_score: number | null;
+        exam_score: number | null;
+        grade: string;
+        session: string;
+        term: string;
+      }[] = data.results ?? [];
+
+      const sorted = [...reportCards].sort((a, b) => {
+        if (a.session !== b.session) return a.session.localeCompare(b.session);
+        return TERMS.indexOf(a.term as (typeof TERMS)[number]) - TERMS.indexOf(b.term as (typeof TERMS)[number]);
+      });
+
+      const win = window.open('', '_blank');
+      if (!win) return;
+
+      const sections = sorted
+        .map((rc) => {
+          const termResults = results.filter((r) => r.session === rc.session && r.term === rc.term);
+          const rows = termResults
+            .map(
+              (r) => `
+              <tr>
+                <td>${r.subject}</td>
+                <td class="c">${r.ca_score ?? '—'}</td>
+                <td class="c">${r.exam_score ?? '—'}</td>
+                <td class="c"><strong>${r.score}</strong></td>
+                <td class="c">${r.grade}</td>
+              </tr>`
+            )
+            .join('');
+          const attendanceLine = `${rc.days_present ?? '—'} / ${rc.days_school_opened ?? '—'} days present &middot; Punctual ${rc.times_punctual ?? '—'} time(s)`;
+
+          return `
+            <div class="term">
+              <h2>${rc.term}, ${rc.session} Session</h2>
+              <p class="muted">Attendance: ${attendanceLine} &middot; Conduct: ${rc.conduct_rating ?? 'Not recorded'}</p>
+              <table>
+                <thead>
+                  <tr><th>Subject</th><th class="c">CA</th><th class="c">Exam</th><th class="c">Total</th><th class="c">Grade</th></tr>
+                </thead>
+                <tbody>${rows || '<tr><td colspan="5" class="c">No approved results for this term.</td></tr>'}</tbody>
+              </table>
+              <p class="muted"><strong>Class Teacher&apos;s Comment:</strong> ${rc.teacher_comment ?? 'Not recorded'}</p>
+              <p class="muted"><strong>Principal&apos;s Comment:</strong> ${rc.principal_comment ?? 'Not recorded'}</p>
+            </div>`;
+        })
+        .join('');
+
+      win.document.write(`
+        <html>
+          <head>
+            <title>${student.full_name} - Full Academic History</title>
+            <style>
+              * { box-sizing: border-box; }
+              body { font-family: Arial, sans-serif; padding: 24px; color: #111; }
+              h1 { font-size: 20px; margin: 0 0 4px; }
+              .muted { color: #666; font-size: 13px; }
+              table { width: 100%; border-collapse: collapse; margin: 10px 0; }
+              th, td { border: 1px solid #ccc; padding: 6px 8px; font-size: 12.5px; }
+              th { background: #f3f3f3; text-align: left; }
+              .c { text-align: center; }
+              .term { margin-top: 22px; padding-top: 18px; border-top: 2px solid #ddd; page-break-inside: avoid; }
+              .term:first-of-type { border-top: none; padding-top: 0; }
+            </style>
+          </head>
+          <body>
+            <h1>Full Academic History</h1>
+            <p class="muted">${student.full_name} &middot; ${student.student_id}</p>
+            ${sections || '<p class="muted">No published terms yet.</p>'}
+          </body>
+        </html>
+      `);
+      win.document.close();
+      win.focus();
+      win.print();
+    } catch (err) {
+      setError((err as Error).message);
+    }
+  };
+
   const handlePromote = async (e: React.FormEvent) => {
     e.preventDefault();
     setPromoteSubmitting(true);
@@ -948,6 +1047,9 @@ function StudentsSection() {
                     </select>
                   </td>
                   <td className="p-4 text-center">
+                    <button onClick={() => viewHistory(s)} className="mr-3 text-xs text-[var(--brand-color)] hover:underline">
+                      History
+                    </button>
                     <button
                       onClick={() => handleDelete(s)}
                       disabled={updatingId === s.id}

@@ -201,6 +201,87 @@ export default function StudentPortal() {
     win.print();
   };
 
+  // Every published term the school has ever released for this student,
+  // oldest first -- from their first published term through to their most
+  // recent (or, once they leave, their final one). Chronological order is by
+  // session string (sorts correctly since sessions are "YYYY/YYYY") then by
+  // TERMS position within a session.
+  const historyTerms = useMemo(
+    () =>
+      [...reportCards].sort((a, b) => {
+        if (a.session !== b.session) return a.session.localeCompare(b.session);
+        return TERMS.indexOf(a.term as (typeof TERMS)[number]) - TERMS.indexOf(b.term as (typeof TERMS)[number]);
+      }),
+    [reportCards]
+  );
+
+  const handleDownloadHistory = () => {
+    const win = window.open('', '_blank');
+    if (!win) return;
+
+    const sections = historyTerms
+      .map((rc) => {
+        const termResults = results.filter((r) => r.session === rc.session && r.term === rc.term);
+        const rows = termResults
+          .map(
+            (r) => `
+            <tr>
+              <td>${r.subject}</td>
+              <td class="c">${r.ca_score ?? '—'}</td>
+              <td class="c">${r.exam_score ?? '—'}</td>
+              <td class="c"><strong>${r.score}</strong></td>
+              <td class="c">${r.grade}</td>
+            </tr>`
+          )
+          .join('');
+        const attendanceLine = `${rc.days_present ?? '—'} / ${rc.days_school_opened ?? '—'} days present &middot; Punctual ${rc.times_punctual ?? '—'} time(s)`;
+
+        return `
+          <div class="term">
+            <h2>${rc.term}, ${rc.session} Session</h2>
+            <p class="muted">Attendance: ${attendanceLine} &middot; Conduct: ${rc.conduct_rating ?? 'Not recorded'}</p>
+            <table>
+              <thead>
+                <tr><th>Subject</th><th class="c">CA</th><th class="c">Exam</th><th class="c">Total</th><th class="c">Grade</th></tr>
+              </thead>
+              <tbody>${rows || '<tr><td colspan="5" class="c">No approved results for this term.</td></tr>'}</tbody>
+            </table>
+            <p class="muted"><strong>Class Teacher&apos;s Comment:</strong> ${rc.teacher_comment ?? 'Not recorded'}</p>
+            <p class="muted"><strong>Principal&apos;s Comment:</strong> ${rc.principal_comment ?? 'Not recorded'}</p>
+          </div>`;
+      })
+      .join('');
+
+    win.document.write(`
+      <html>
+        <head>
+          <title>${studentName ?? 'Student'} - Full Academic History</title>
+          <style>
+            * { box-sizing: border-box; }
+            body { font-family: Arial, sans-serif; padding: 24px; color: #111; }
+            h1 { font-size: 20px; margin: 0 0 4px; }
+            .muted { color: #666; font-size: 13px; }
+            table { width: 100%; border-collapse: collapse; margin: 10px 0; }
+            th, td { border: 1px solid #ccc; padding: 6px 8px; font-size: 12.5px; }
+            th { background: #f3f3f3; text-align: left; }
+            .c { text-align: center; }
+            .term { margin-top: 22px; padding-top: 18px; border-top: 2px solid #ddd; page-break-inside: avoid; }
+            .term:first-of-type { border-top: none; padding-top: 0; }
+          </style>
+        </head>
+        <body>
+          <h1>${schoolName || 'School'}</h1>
+          <p class="muted">Full Academic History</p>
+          <p class="muted">${studentName ?? ''} &middot; ${studentId}${studentClass ? ` &middot; ${studentClass}` : ''}${studentDepartment ? ` (${studentDepartment})` : ''}</p>
+          ${sections || '<p class="muted">No published terms yet.</p>'}
+        </body>
+      </html>
+    `);
+    win.document.close();
+    win.focus();
+    win.print();
+  };
+
   if (loggedIn) {
     return (
       <main className="wrap py-12" style={{ maxWidth: 900 }}>
@@ -221,9 +302,12 @@ export default function StudentPortal() {
               </p>
             )}
           </div>
-          <div className="flex gap-3">
+          <div className="flex flex-wrap gap-3">
             <button onClick={handlePrint} className="btn btn-outline !px-4 !py-2 !text-sm">
               Print Report Card
+            </button>
+            <button onClick={handleDownloadHistory} className="btn btn-outline !px-4 !py-2 !text-sm">
+              Download Full Academic History
             </button>
             <button
               onClick={() => {
