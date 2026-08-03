@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const sectionStudentIds = await getSectionStudentIds(supabase, school.id, staffSession.role);
+    const sectionStudentIds = await getSectionStudentIds(supabase, school.id, staffSession.role, staffSession.userId);
     const sectionSet = sectionStudentIds ? new Set(sectionStudentIds) : null;
 
     const rows: ResultInsert[] = [];

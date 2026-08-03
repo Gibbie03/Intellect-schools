@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
     const supabase = getSupabaseClient();
     const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
 
-    const sectionStudentIds = await getSectionStudentIds(supabase, school.id, session.role);
+    const sectionStudentIds = await getSectionStudentIds(supabase, school.id, session.role, session.userId);
     const scopeIds = sectionStudentIds && sectionStudentIds.length > 0 ? sectionStudentIds : sectionStudentIds ? ['__none__'] : null;
 
     let recentQuery = supabase.from('results').select('id', { count: 'exact', head: true }).eq('school_id', school.id).gte('created_at', since);

@@ -18,7 +18,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     const supabase = getSupabaseClient();
 
     const { data: existing } = await supabase.from('fees').select('student_id').eq('id', id).eq('school_id', school.id).maybeSingle();
-    if (!existing || !(await isStudentInSection(supabase, school.id, session.role, existing.student_id))) {
+    if (!existing || !(await isStudentInSection(supabase, school.id, session.role, session.userId, existing.student_id))) {
       return NextResponse.json({ error: 'Fee record not found.' }, { status: 404 });
     }
 
@@ -64,7 +64,7 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
     const supabase = getSupabaseClient();
 
     const { data: existing } = await supabase.from('fees').select('student_id').eq('id', id).eq('school_id', school.id).maybeSingle();
-    if (!existing || !(await isStudentInSection(supabase, school.id, session.role, existing.student_id))) {
+    if (!existing || !(await isStudentInSection(supabase, school.id, session.role, session.userId, existing.student_id))) {
       return NextResponse.json({ error: 'Fee record not found.' }, { status: 404 });
     }
 

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseClient } from '@/lib/supabase';
 import { requireSchoolSession } from '@/lib/auth';
-import { getSectionClasses } from '@/lib/constants';
+import { getEffectiveClassScope } from '@/lib/sectionScope';
 
 export const dynamic = 'force-dynamic';
 
@@ -28,7 +28,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     if (studentError) throw studentError;
     if (!student) return NextResponse.json({ error: 'Student not found.' }, { status: 404 });
 
-    const sectionClasses = getSectionClasses(session.role);
+    const sectionClasses = await getEffectiveClassScope(session.role, session.userId);
     if (sectionClasses && !sectionClasses.includes(student.class)) {
       return NextResponse.json({ error: 'Student not found.' }, { status: 404 });
     }

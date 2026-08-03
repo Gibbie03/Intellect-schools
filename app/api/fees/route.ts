@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseClient } from '@/lib/supabase';
 import { requireSchoolSession } from '@/lib/auth';
-import { getSectionClasses } from '@/lib/constants';
-import { isStudentInSection } from '@/lib/sectionScope';
+import { getEffectiveClassScope, isStudentInSection } from '@/lib/sectionScope';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,7 +23,7 @@ export async function GET(request: NextRequest) {
     const supabase = getSupabaseClient();
 
     if (studentId) {
-      if (!(await isStudentInSection(supabase, school.id, staffSession.role, studentId))) {
+      if (!(await isStudentInSection(supabase, school.id, staffSession.role, staffSession.userId, studentId))) {
         return NextResponse.json({ error: 'Student not found.' }, { status: 404 });
       }
       const { data, error } = await supabase
@@ -41,8 +40,8 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Provide either studentId, or class + session + term.' }, { status: 400 });
     }
 
-    const sectionClasses = getSectionClasses(staffSession.role);
-    if (sectionClasses && !sectionClasses.includes(className)) {
+    const allowedClasses = await getEffectiveClassScope(staffSession.role, staffSession.userId);
+    if (allowedClasses && !allowedClasses.includes(className)) {
       return NextResponse.json({ error: 'You do not have access to that class.' }, { status: 403 });
     }
 
@@ -90,7 +89,7 @@ export async function POST(request: NextRequest) {
 
     const supabase = getSupabaseClient();
 
-    if (!(await isStudentInSection(supabase, school.id, staffSession.role, studentId))) {
+    if (!(await isStudentInSection(supabase, school.id, staffSession.role, staffSession.userId, studentId))) {
       return NextResponse.json({ error: 'You do not have access to create fee records for that student.' }, { status: 403 });
     }
     const { data, error } = await supabase

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseClient } from '@/lib/supabase';
 import { requireSchoolSession } from '@/lib/auth';
 import { extractMarkSheet } from '@/lib/markSheetOcr';
-import { getSectionClasses } from '@/lib/constants';
+import { getEffectiveClassScope } from '@/lib/sectionScope';
 
 export const dynamic = 'force-dynamic';
 
@@ -43,8 +43,8 @@ export async function POST(request: NextRequest) {
       .eq('status', 'Active');
     if (typeof className === 'string' && className) rosterQuery = rosterQuery.eq('class', className);
 
-    const sectionClasses = getSectionClasses(session.role);
-    if (sectionClasses) rosterQuery = rosterQuery.in('class', sectionClasses);
+    const sectionClasses = await getEffectiveClassScope(session.role, session.userId);
+    if (sectionClasses) rosterQuery = rosterQuery.in('class', sectionClasses.length > 0 ? sectionClasses : ['__none__']);
 
     const { data: roster, error: rosterError } = await rosterQuery;
     if (rosterError) throw rosterError;

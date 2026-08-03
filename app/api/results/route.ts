@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
     if (session) query = query.eq('session', session);
     if (term) query = query.eq('term', term);
 
-    const sectionStudentIds = await getSectionStudentIds(supabase, school.id, staffSession.role);
+    const sectionStudentIds = await getSectionStudentIds(supabase, school.id, staffSession.role, staffSession.userId);
     if (sectionStudentIds) query = query.in('student_id', sectionStudentIds.length > 0 ? sectionStudentIds : ['__none__']);
 
     const { data, error } = await query;
@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!(await isStudentInSection(supabase, school.id, staffSession.role, studentId))) {
+    if (!(await isStudentInSection(supabase, school.id, staffSession.role, staffSession.userId, studentId))) {
       return NextResponse.json({ error: 'You do not have access to upload results for that student.' }, { status: 403 });
     }
 

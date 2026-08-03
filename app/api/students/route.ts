@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseClient } from '@/lib/supabase';
 import { requireSchoolSession } from '@/lib/auth';
 import { CLASSES, isSeniorSecondaryClass, isValidDepartment, getSectionClasses } from '@/lib/constants';
+import { getEffectiveClassScope } from '@/lib/sectionScope';
 
 export const dynamic = 'force-dynamic';
 
@@ -23,7 +24,7 @@ export async function GET(request: NextRequest) {
     const status = request.nextUrl.searchParams.get('status') as 'Active' | 'Inactive' | null;
     const studentId = request.nextUrl.searchParams.get('studentId');
     const campus = request.nextUrl.searchParams.get('campus');
-    const sectionClasses = getSectionClasses(session.role);
+    const sectionClasses = await getEffectiveClassScope(session.role, session.userId);
 
     let query = supabase.from('students').select('*').eq('school_id', school.id).order('full_name', { ascending: true });
     if (className) query = query.eq('class', className);

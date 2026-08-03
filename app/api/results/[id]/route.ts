@@ -22,7 +22,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
     const { data: before } = await supabase.from('results').select('*').eq('id', id).eq('school_id', school.id).maybeSingle();
 
-    if (!before || !(await isStudentInSection(supabase, school.id, session.role, before.student_id))) {
+    if (!before || !(await isStudentInSection(supabase, school.id, session.role, session.userId, before.student_id))) {
       return NextResponse.json({ error: 'Result not found.' }, { status: 404 });
     }
 
