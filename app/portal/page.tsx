@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { TERMS } from '@/lib/grade';
 import { getClassSection } from '@/lib/constants';
+import { escapeHtml } from '@/lib/escapeHtml';
 
 type Result = {
   id: string;
@@ -137,11 +138,11 @@ export default function StudentPortal() {
       .map(
         (r) => `
         <tr>
-          <td>${r.subject}</td>
+          <td>${escapeHtml(r.subject)}</td>
           <td class="c">${r.ca_score ?? '—'}</td>
           <td class="c">${r.exam_score ?? '—'}</td>
           <td class="c"><strong>${r.score}</strong></td>
-          <td class="c">${r.grade}</td>
+          <td class="c">${escapeHtml(r.grade)}</td>
         </tr>`
       )
       .join('');
@@ -154,7 +155,7 @@ export default function StudentPortal() {
     win.document.write(`
       <html>
         <head>
-          <title>${studentName ?? 'Student'} - ${activeTerm} ${activeSession} Report Card</title>
+          <title>${escapeHtml(studentName ?? 'Student')} - ${escapeHtml(activeTerm)} ${escapeHtml(activeSession)} Report Card</title>
           <style>
             * { box-sizing: border-box; }
             body { font-family: Arial, sans-serif; padding: 24px; color: #111; }
@@ -172,9 +173,9 @@ export default function StudentPortal() {
           </style>
         </head>
         <body>
-          <h1>${schoolName || 'School'}</h1>
-          <p class="muted">Report Card &mdash; ${activeTerm}, ${activeSession} Session</p>
-          <p class="muted">${studentName ?? ''} &middot; ${studentId} ${studentClass ? `&middot; ${studentClass}` : ''}${studentDepartment ? ` (${studentDepartment})` : ''}</p>
+          <h1>${escapeHtml(schoolName || 'School')}</h1>
+          <p class="muted">Report Card &mdash; ${escapeHtml(activeTerm)}, ${escapeHtml(activeSession)} Session</p>
+          <p class="muted">${escapeHtml(studentName ?? '')} &middot; ${escapeHtml(studentId)} ${studentClass ? `&middot; ${escapeHtml(studentClass)}` : ''}${studentDepartment ? ` (${escapeHtml(studentDepartment)})` : ''}</p>
           <p class="muted">Attendance: ${attendanceLine}</p>
 
           <table>
@@ -186,20 +187,20 @@ export default function StudentPortal() {
 
           <div class="section">
             <h2>Conduct</h2>
-            <div class="box">${rc?.conduct_rating ?? 'Not recorded'}</div>
+            <div class="box">${escapeHtml(rc?.conduct_rating ?? 'Not recorded')}</div>
           </div>
           <div class="section">
             <h2>Class Teacher's Comment</h2>
-            <div class="box">${rc?.teacher_comment ?? 'Not recorded'}</div>
+            <div class="box">${escapeHtml(rc?.teacher_comment ?? 'Not recorded')}</div>
           </div>
           <div class="section">
-            <h2>${headCommentLabel} Comment</h2>
-            <div class="box">${rc?.principal_comment ?? 'Not recorded'}</div>
+            <h2>${escapeHtml(headCommentLabel)} Comment</h2>
+            <div class="box">${escapeHtml(rc?.principal_comment ?? 'Not recorded')}</div>
           </div>
 
           <div class="sign">
             <div>Class Teacher&apos;s Signature</div>
-            <div>${headCommentLabel} Signature</div>
+            <div>${escapeHtml(headCommentLabel)} Signature</div>
           </div>
         </body>
       </html>
@@ -234,11 +235,11 @@ export default function StudentPortal() {
           .map(
             (r) => `
             <tr>
-              <td>${r.subject}</td>
+              <td>${escapeHtml(r.subject)}</td>
               <td class="c">${r.ca_score ?? '—'}</td>
               <td class="c">${r.exam_score ?? '—'}</td>
               <td class="c"><strong>${r.score}</strong></td>
-              <td class="c">${r.grade}</td>
+              <td class="c">${escapeHtml(r.grade)}</td>
             </tr>`
           )
           .join('');
@@ -246,16 +247,16 @@ export default function StudentPortal() {
 
         return `
           <div class="term">
-            <h2>${rc.term}, ${rc.session} Session</h2>
-            <p class="muted">Attendance: ${attendanceLine} &middot; Conduct: ${rc.conduct_rating ?? 'Not recorded'}</p>
+            <h2>${escapeHtml(rc.term)}, ${escapeHtml(rc.session)} Session</h2>
+            <p class="muted">Attendance: ${attendanceLine} &middot; Conduct: ${escapeHtml(rc.conduct_rating ?? 'Not recorded')}</p>
             <table>
               <thead>
                 <tr><th>Subject</th><th class="c">CA</th><th class="c">Exam</th><th class="c">Total</th><th class="c">Grade</th></tr>
               </thead>
               <tbody>${rows || '<tr><td colspan="5" class="c">No approved results for this term.</td></tr>'}</tbody>
             </table>
-            <p class="muted"><strong>Class Teacher&apos;s Comment:</strong> ${rc.teacher_comment ?? 'Not recorded'}</p>
-            <p class="muted"><strong>${headCommentLabelFor(rc)} Comment:</strong> ${rc.principal_comment ?? 'Not recorded'}</p>
+            <p class="muted"><strong>Class Teacher&apos;s Comment:</strong> ${escapeHtml(rc.teacher_comment ?? 'Not recorded')}</p>
+            <p class="muted"><strong>${escapeHtml(headCommentLabelFor(rc))} Comment:</strong> ${escapeHtml(rc.principal_comment ?? 'Not recorded')}</p>
           </div>`;
       })
       .join('');
@@ -263,7 +264,7 @@ export default function StudentPortal() {
     win.document.write(`
       <html>
         <head>
-          <title>${studentName ?? 'Student'} - Full Academic History</title>
+          <title>${escapeHtml(studentName ?? 'Student')} - Full Academic History</title>
           <style>
             * { box-sizing: border-box; }
             body { font-family: Arial, sans-serif; padding: 24px; color: #111; }
@@ -278,9 +279,9 @@ export default function StudentPortal() {
           </style>
         </head>
         <body>
-          <h1>${schoolName || 'School'}</h1>
+          <h1>${escapeHtml(schoolName || 'School')}</h1>
           <p class="muted">Full Academic History</p>
-          <p class="muted">${studentName ?? ''} &middot; ${studentId}${studentClass ? ` &middot; ${studentClass}` : ''}${studentDepartment ? ` (${studentDepartment})` : ''}</p>
+          <p class="muted">${escapeHtml(studentName ?? '')} &middot; ${escapeHtml(studentId)}${studentClass ? ` &middot; ${escapeHtml(studentClass)}` : ''}${studentDepartment ? ` (${escapeHtml(studentDepartment)})` : ''}</p>
           ${sections || '<p class="muted">No published terms yet.</p>'}
         </body>
       </html>

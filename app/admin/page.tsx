@@ -14,6 +14,7 @@ import {
 } from '@/lib/constants';
 import { SESSIONS, TERMS, CURRENT_SESSION, SUBJECTS } from '@/lib/grade';
 import { buildWhatsAppLink } from '@/lib/whatsapp';
+import { escapeHtml } from '@/lib/escapeHtml';
 import DashboardShell from '@/components/DashboardShell';
 
 type Tab =
@@ -692,11 +693,11 @@ function StudentsSection() {
             .map(
               (r) => `
               <tr>
-                <td>${r.subject}</td>
+                <td>${escapeHtml(r.subject)}</td>
                 <td class="c">${r.ca_score ?? '—'}</td>
                 <td class="c">${r.exam_score ?? '—'}</td>
                 <td class="c"><strong>${r.score}</strong></td>
-                <td class="c">${r.grade}</td>
+                <td class="c">${escapeHtml(r.grade)}</td>
               </tr>`
             )
             .join('');
@@ -704,16 +705,16 @@ function StudentsSection() {
 
           return `
             <div class="term">
-              <h2>${rc.term}, ${rc.session} Session</h2>
-              <p class="muted">Attendance: ${attendanceLine} &middot; Conduct: ${rc.conduct_rating ?? 'Not recorded'}</p>
+              <h2>${escapeHtml(rc.term)}, ${escapeHtml(rc.session)} Session</h2>
+              <p class="muted">Attendance: ${attendanceLine} &middot; Conduct: ${escapeHtml(rc.conduct_rating ?? 'Not recorded')}</p>
               <table>
                 <thead>
                   <tr><th>Subject</th><th class="c">CA</th><th class="c">Exam</th><th class="c">Total</th><th class="c">Grade</th></tr>
                 </thead>
                 <tbody>${rows || '<tr><td colspan="5" class="c">No approved results for this term.</td></tr>'}</tbody>
               </table>
-              <p class="muted"><strong>Class Teacher&apos;s Comment:</strong> ${rc.teacher_comment ?? 'Not recorded'}</p>
-              <p class="muted"><strong>${headCommentLabel} Comment:</strong> ${rc.principal_comment ?? 'Not recorded'}</p>
+              <p class="muted"><strong>Class Teacher&apos;s Comment:</strong> ${escapeHtml(rc.teacher_comment ?? 'Not recorded')}</p>
+              <p class="muted"><strong>${escapeHtml(headCommentLabel)} Comment:</strong> ${escapeHtml(rc.principal_comment ?? 'Not recorded')}</p>
             </div>`;
         })
         .join('');
@@ -721,7 +722,7 @@ function StudentsSection() {
       win.document.write(`
         <html>
           <head>
-            <title>${student.full_name} - Full Academic History</title>
+            <title>${escapeHtml(student.full_name)} - Full Academic History</title>
             <style>
               * { box-sizing: border-box; }
               body { font-family: Arial, sans-serif; padding: 24px; color: #111; }
@@ -737,7 +738,7 @@ function StudentsSection() {
           </head>
           <body>
             <h1>Full Academic History</h1>
-            <p class="muted">${student.full_name} &middot; ${student.student_id}</p>
+            <p class="muted">${escapeHtml(student.full_name)} &middot; ${escapeHtml(student.student_id)}</p>
             ${sections || '<p class="muted">No published terms yet.</p>'}
           </body>
         </html>
@@ -2229,10 +2230,10 @@ function ResultPinsSection() {
       .map(
         (c) => `
         <div class="card">
-          <div class="card-school">${schoolName || 'Result Checker'}</div>
+          <div class="card-school">${escapeHtml(schoolName || 'Result Checker')}</div>
           <div class="card-label">Result Checker Card</div>
-          <div class="card-row"><span>Serial</span><strong>${c.serial}</strong></div>
-          <div class="card-row"><span>PIN</span><strong>${c.pin}</strong></div>
+          <div class="card-row"><span>Serial</span><strong>${escapeHtml(c.serial)}</strong></div>
+          <div class="card-row"><span>PIN</span><strong>${escapeHtml(c.pin)}</strong></div>
           <div class="card-note">Enter your Student ID + this Serial + PIN on the school portal to check your result.</div>
         </div>`
       )
@@ -2241,7 +2242,7 @@ function ResultPinsSection() {
     win.document.write(`
       <html>
         <head>
-          <title>${generated.batchLabel} - Result Checker Cards</title>
+          <title>${escapeHtml(generated.batchLabel)} - Result Checker Cards</title>
           <style>
             * { box-sizing: border-box; }
             body { font-family: Arial, sans-serif; margin: 0; padding: 16px; }
