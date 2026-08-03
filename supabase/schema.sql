@@ -12,6 +12,7 @@ create table if not exists schools (
   logo_url text,
   hero_image_url text,
   tagline text,
+  motto text,
   primary_color text,
   secondary_color text,
   contact_email text,

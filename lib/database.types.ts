@@ -11,6 +11,7 @@ export type Database = {
           logo_url: string | null;
           hero_image_url: string | null;
           tagline: string | null;
+          motto: string | null;
           primary_color: string | null;
           secondary_color: string | null;
           contact_email: string | null;
@@ -35,6 +36,7 @@ export type Database = {
           logo_url?: string | null;
           hero_image_url?: string | null;
           tagline?: string | null;
+          motto?: string | null;
           primary_color?: string | null;
           secondary_color?: string | null;
           contact_email?: string | null;
@@ -59,6 +61,7 @@ export type Database = {
           logo_url?: string | null;
           hero_image_url?: string | null;
           tagline?: string | null;
+          motto?: string | null;
           primary_color?: string | null;
           secondary_color?: string | null;
           contact_email?: string | null;

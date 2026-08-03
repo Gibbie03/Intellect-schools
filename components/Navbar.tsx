@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 const schoolLinks = [
   { href: '/', label: 'Home' },
@@ -27,14 +27,35 @@ const landingLinks = [
 export default function Navbar({
   schoolName,
   logoUrl,
+  motto,
   isLanding,
 }: {
   schoolName: string;
   logoUrl?: string | null;
+  motto?: string | null;
   isLanding?: boolean;
 }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+
+  // Hides the sticky header on scroll-down and brings it back on scroll-up,
+  // so it doesn't sit fixed over content the whole way down a long page.
+  // Ignored near the very top (so it doesn't twitch away on a tiny scroll)
+  // and while the mobile menu is open (so links don't vanish mid-tap).
+  const [hideHeader, setHideHeader] = useState(false);
+  const lastScrollY = useRef(0);
+
+  useEffect(() => {
+    lastScrollY.current = window.scrollY;
+    const handleScroll = () => {
+      const currentY = window.scrollY;
+      const goingDown = currentY > lastScrollY.current;
+      setHideHeader(goingDown && currentY > 120);
+      lastScrollY.current = currentY;
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   if (pathname?.startsWith('/admin') || pathname?.startsWith('/teacher-dashboard')) {
     return null;
@@ -124,23 +145,25 @@ export default function Navbar({
         : 'border-transparent text-[var(--muted)] hover:text-[var(--ink)]'
     }`;
 
+  const shouldHide = hideHeader && !open;
+
   return (
     <div
-      className="sticky top-0 z-50 bg-[var(--paper)]/95 backdrop-blur"
-      style={{ borderBottom: '3px solid var(--gold)' }}
+      className="sticky top-0 z-50 bg-[var(--paper)]/95 backdrop-blur transition-transform duration-300 ease-in-out"
+      style={{ borderBottom: '3px solid var(--gold)', transform: shouldHide ? 'translateY(-100%)' : 'translateY(0)' }}
     >
-      <nav className="wrap flex flex-wrap items-center justify-between gap-y-2 py-3">
+      <nav className="wrap flex flex-wrap items-center justify-between gap-x-4 gap-y-[14px] py-[29px]">
         <Link href="/" className="flex shrink-0 items-center gap-3">
           {logoUrl && (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={logoUrl} alt={schoolName} className="h-[38px] w-auto shrink-0 object-contain" />
+            <img src={logoUrl} alt={schoolName} className="h-12 w-auto shrink-0 object-contain" />
           )}
           <span className="flex flex-col leading-tight">
             <span className="font-display whitespace-nowrap text-lg font-extrabold text-[var(--ink)]">
               {schoolName}
             </span>
             <span className="whitespace-nowrap text-[10px] font-bold uppercase tracking-[0.15em] text-[var(--muted)]">
-              School Portal
+              {motto || 'School Portal'}
             </span>
           </span>
         </Link>
@@ -148,7 +171,7 @@ export default function Navbar({
         <button
           type="button"
           onClick={() => setOpen(!open)}
-          className="rounded-lg border border-[var(--line)] px-3 py-2 text-sm font-medium text-[var(--ink)] md:hidden"
+          className="ml-auto rounded-lg border border-[var(--line)] px-4 py-2.5 text-sm font-medium text-[var(--ink)] md:hidden"
           aria-label="Toggle navigation"
         >
           Menu

@@ -39,6 +39,7 @@ export async function POST(request: NextRequest) {
       idPrefix,
       primaryColor,
       tagline,
+      motto,
       heroImageUrl,
       adminEmail,
       adminPassword,
@@ -61,6 +62,7 @@ export async function POST(request: NextRequest) {
         id_prefix: idPrefix,
         primary_color: primaryColor || null,
         tagline: tagline || null,
+        motto: motto || null,
         hero_image_url: heroImageUrl || null,
       })
       .select()
