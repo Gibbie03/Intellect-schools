@@ -3262,6 +3262,7 @@ function FeesSection() {
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState({ studentId: '', description: 'School Fees', amount: '', dueDate: '' });
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
 
   const load = () => {
     setLoading(true);
@@ -3312,7 +3313,9 @@ function FeesSection() {
   };
 
   const toggleStatus = async (fee: FeeRow) => {
+    if (updatingId) return;
     const nextStatus = fee.status === 'Paid' ? 'Unpaid' : 'Paid';
+    setUpdatingId(fee.id);
     try {
       const res = await fetch(`/api/fees/${fee.id}`, {
         method: 'PATCH',
@@ -3324,10 +3327,13 @@ function FeesSection() {
       setFees((prev) => prev.map((f) => (f.id === fee.id ? { ...f, status: nextStatus } : f)));
     } catch (err) {
       setError((err as Error).message);
+    } finally {
+      setUpdatingId(null);
     }
   };
 
   const remind = async (fee: FeeRow) => {
+    if (updatingId) return;
     if (!fee.student?.parent_phone) {
       setError(`No parent phone number on file for ${fee.student?.full_name ?? fee.student_id}.`);
       return;
@@ -3337,6 +3343,7 @@ function FeesSection() {
     const message = `Hello ${fee.student.parent_name || ''}, this is a reminder that ${fee.description} (${amountStr})${dueStr} for ${fee.student.full_name} is still outstanding. Kindly make payment at your earliest convenience. Thank you.`;
     window.open(buildWhatsAppLink(fee.student.parent_phone, message), '_blank');
 
+    setUpdatingId(fee.id);
     try {
       await fetch(`/api/fees/${fee.id}`, {
         method: 'PATCH',
@@ -3346,6 +3353,8 @@ function FeesSection() {
       setFees((prev) => prev.map((f) => (f.id === fee.id ? { ...f, last_reminded_at: new Date().toISOString() } : f)));
     } catch {
       // Non-critical -- the WhatsApp link already opened either way.
+    } finally {
+      setUpdatingId(null);
     }
   };
 
@@ -3475,7 +3484,8 @@ function FeesSection() {
                   <td className="p-3 text-center">
                     <button
                       onClick={() => toggleStatus(f)}
-                      className={`rounded-full px-3 py-1 text-xs font-medium ${
+                      disabled={updatingId === f.id}
+                      className={`rounded-full px-3 py-1 text-xs font-medium disabled:opacity-50 ${
                         f.status === 'Paid' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'
                       }`}
                     >
@@ -3486,7 +3496,8 @@ function FeesSection() {
                     {f.status === 'Unpaid' && (
                       <button
                         onClick={() => remind(f)}
-                        className="text-sm text-green-700 hover:underline whitespace-nowrap"
+                        disabled={updatingId === f.id}
+                        className="text-sm text-green-700 hover:underline whitespace-nowrap disabled:opacity-50"
                       >
                         WhatsApp
                       </button>
