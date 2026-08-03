@@ -48,8 +48,8 @@ export async function POST(request: NextRequest) {
     if (!email || !password || !fullName || !role) {
       return NextResponse.json({ error: 'email, password, fullName, and role are required.' }, { status: 400 });
     }
-    if (!['admin', 'teacher'].includes(role)) {
-      return NextResponse.json({ error: 'role must be admin or teacher.' }, { status: 400 });
+    if (!['admin', 'primary_admin', 'secondary_admin', 'teacher'].includes(role)) {
+      return NextResponse.json({ error: 'Invalid role.' }, { status: 400 });
     }
     if (password.length < 8) {
       return NextResponse.json({ error: 'password must be at least 8 characters.' }, { status: 400 });

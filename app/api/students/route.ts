@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseClient } from '@/lib/supabase';
 import { requireSchoolSession } from '@/lib/auth';
-import { CLASSES, isSeniorSecondaryClass, isValidDepartment } from '@/lib/constants';
+import { CLASSES, isSeniorSecondaryClass, isValidDepartment, getSectionClasses } from '@/lib/constants';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,9 +12,9 @@ export const dynamic = 'force-dynamic';
 // goes through /api/portal/check instead (gated by a scratch-card PIN), so
 // this route is staff-only across the board.
 export async function GET(request: NextRequest) {
-  const staff = await requireSchoolSession(request, ['admin', 'teacher']);
+  const staff = await requireSchoolSession(request, ['admin', 'primary_admin', 'secondary_admin', 'teacher']);
   if (!staff) return NextResponse.json({ error: 'Not authenticated.' }, { status: 401 });
-  const { school } = staff;
+  const { school, session } = staff;
 
   try {
     const supabase = getSupabaseClient();
@@ -23,12 +23,14 @@ export async function GET(request: NextRequest) {
     const status = request.nextUrl.searchParams.get('status') as 'Active' | 'Inactive' | null;
     const studentId = request.nextUrl.searchParams.get('studentId');
     const campus = request.nextUrl.searchParams.get('campus');
+    const sectionClasses = getSectionClasses(session.role);
 
     let query = supabase.from('students').select('*').eq('school_id', school.id).order('full_name', { ascending: true });
     if (className) query = query.eq('class', className);
     if (status) query = query.eq('status', status);
     if (studentId) query = query.eq('student_id', studentId);
     if (campus) query = query.eq('campus', campus);
+    if (sectionClasses) query = query.in('class', sectionClasses);
 
     const { data, error } = await query;
     if (error) throw error;
@@ -41,9 +43,9 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const staff = await requireSchoolSession(request, ['admin']);
+    const staff = await requireSchoolSession(request, ['admin', 'primary_admin', 'secondary_admin']);
     if (!staff) return NextResponse.json({ error: 'Not authenticated.' }, { status: 401 });
-    const { school } = staff;
+    const { school, session } = staff;
 
     const supabase = getSupabaseClient();
     const { studentId, fullName, className, department, campus, gender, dateOfBirth, parentName, parentEmail, parentPhone, address } =
@@ -54,6 +56,10 @@ export async function POST(request: NextRequest) {
     }
     if (!CLASSES.includes(className)) {
       return NextResponse.json({ error: 'Invalid class.' }, { status: 400 });
+    }
+    const sectionClasses = getSectionClasses(session.role);
+    if (sectionClasses && !sectionClasses.includes(className)) {
+      return NextResponse.json({ error: 'You do not have access to create students in that class.' }, { status: 403 });
     }
     if (department && !isValidDepartment(department)) {
       return NextResponse.json({ error: 'Invalid department.' }, { status: 400 });

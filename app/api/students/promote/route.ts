@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseClient } from '@/lib/supabase';
 import { requireSchoolSession } from '@/lib/auth';
-import { CLASSES } from '@/lib/constants';
+import { CLASSES, getSectionClasses } from '@/lib/constants';
 
 export const dynamic = 'force-dynamic';
 
@@ -9,15 +9,19 @@ export const dynamic = 'force-dynamic';
 // rollover), or marks the whole class as graduated (Inactive) instead of
 // moving them -- e.g. promoting the final class out of the school.
 export async function POST(request: NextRequest) {
-  const staff = await requireSchoolSession(request, ['admin']);
+  const staff = await requireSchoolSession(request, ['admin', 'primary_admin', 'secondary_admin']);
   if (!staff) return NextResponse.json({ error: 'Not authenticated.' }, { status: 401 });
-  const { school } = staff;
+  const { school, session } = staff;
 
   try {
     const { fromClass, toClass, graduate } = await request.json();
+    const sectionClasses = getSectionClasses(session.role);
 
     if (!fromClass || !CLASSES.includes(fromClass)) {
       return NextResponse.json({ error: 'A valid fromClass is required.' }, { status: 400 });
+    }
+    if (sectionClasses && !sectionClasses.includes(fromClass)) {
+      return NextResponse.json({ error: 'You do not have access to promote that class.' }, { status: 403 });
     }
     if (!graduate) {
       if (!toClass || !CLASSES.includes(toClass)) {
@@ -25,6 +29,9 @@ export async function POST(request: NextRequest) {
       }
       if (toClass === fromClass) {
         return NextResponse.json({ error: 'toClass must be different from fromClass.' }, { status: 400 });
+      }
+      if (sectionClasses && !sectionClasses.includes(toClass)) {
+        return NextResponse.json({ error: 'You do not have access to promote students into that class.' }, { status: 403 });
       }
     }
 

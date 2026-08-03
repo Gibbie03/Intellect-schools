@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseClient } from '@/lib/supabase';
 import { getSchoolFromHost } from '@/lib/tenant';
 import { requireSchoolSession } from '@/lib/auth';
+import { getSectionClasses } from '@/lib/constants';
 
 export const dynamic = 'force-dynamic';
 
@@ -37,14 +38,18 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const staff = await requireSchoolSession(request, ['admin']);
+  const staff = await requireSchoolSession(request, ['admin', 'primary_admin', 'secondary_admin']);
   if (!staff) return NextResponse.json({ error: 'Not authenticated.' }, { status: 401 });
-  const { school } = staff;
+  const { school, session: staffSession } = staff;
 
   try {
     const { class: className, session, term, subject, examDate, startTime, endTime, venue } = await request.json();
     if (!className || !session || !term || !subject || !examDate) {
       return NextResponse.json({ error: 'class, session, term, subject, and examDate are required.' }, { status: 400 });
+    }
+    const sectionClasses = getSectionClasses(staffSession.role);
+    if (sectionClasses && !sectionClasses.includes(className)) {
+      return NextResponse.json({ error: 'You do not have access to that class.' }, { status: 403 });
     }
 
     const supabase = getSupabaseClient();

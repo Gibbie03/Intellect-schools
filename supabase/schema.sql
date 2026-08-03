@@ -35,7 +35,7 @@ create table if not exists school_users (
   school_id uuid not null references schools(id) on delete cascade,
   email text not null,
   password_hash text not null,
-  role text not null check (role in ('admin', 'teacher')),
+  role text not null check (role in ('admin', 'primary_admin', 'secondary_admin', 'teacher')),
   full_name text not null,
   teacher_id uuid references teachers(id) on delete set null,
   status text not null default 'Active' check (status in ('Active', 'Inactive')),

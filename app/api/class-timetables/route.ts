@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseClient } from '@/lib/supabase';
 import { getSchoolFromHost } from '@/lib/tenant';
 import { requireSchoolSession } from '@/lib/auth';
+import { getSectionClasses } from '@/lib/constants';
 
 export const dynamic = 'force-dynamic';
 
@@ -36,14 +37,18 @@ export async function GET(request: NextRequest) {
 // admin edits a full weekly grid, and saving swaps in the new set rather
 // than requiring a per-cell upsert dance.
 export async function POST(request: NextRequest) {
-  const staff = await requireSchoolSession(request, ['admin']);
+  const staff = await requireSchoolSession(request, ['admin', 'primary_admin', 'secondary_admin']);
   if (!staff) return NextResponse.json({ error: 'Not authenticated.' }, { status: 401 });
-  const { school } = staff;
+  const { school, session } = staff;
 
   try {
     const { class: className, entries } = await request.json();
     if (!className || !Array.isArray(entries)) {
       return NextResponse.json({ error: 'class and an entries array are required.' }, { status: 400 });
+    }
+    const sectionClasses = getSectionClasses(session.role);
+    if (sectionClasses && !sectionClasses.includes(className)) {
+      return NextResponse.json({ error: 'You do not have access to that class.' }, { status: 403 });
     }
 
     const rows = entries

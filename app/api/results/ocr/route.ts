@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseClient } from '@/lib/supabase';
 import { requireSchoolSession } from '@/lib/auth';
 import { extractMarkSheet } from '@/lib/markSheetOcr';
+import { getSectionClasses } from '@/lib/constants';
 
 export const dynamic = 'force-dynamic';
 
@@ -11,9 +12,9 @@ export const dynamic = 'force-dynamic';
 // the scores before anything is saved. Nothing here writes to `results` --
 // the reviewed table is submitted separately via POST /api/results/batch.
 export async function POST(request: NextRequest) {
-  const staff = await requireSchoolSession(request, ['admin', 'teacher']);
+  const staff = await requireSchoolSession(request, ['admin', 'primary_admin', 'secondary_admin', 'teacher']);
   if (!staff) return NextResponse.json({ error: 'Not authenticated.' }, { status: 401 });
-  const { school } = staff;
+  const { school, session } = staff;
 
   try {
     const formData = await request.formData();
@@ -41,6 +42,9 @@ export async function POST(request: NextRequest) {
       .eq('school_id', school.id)
       .eq('status', 'Active');
     if (typeof className === 'string' && className) rosterQuery = rosterQuery.eq('class', className);
+
+    const sectionClasses = getSectionClasses(session.role);
+    if (sectionClasses) rosterQuery = rosterQuery.in('class', sectionClasses);
 
     const { data: roster, error: rosterError } = await rosterQuery;
     if (rosterError) throw rosterError;

@@ -3,7 +3,7 @@ import * as XLSX from 'xlsx';
 import { getSupabaseClient } from '@/lib/supabase';
 import { Database } from '@/lib/database.types';
 import { requireSchoolSession } from '@/lib/auth';
-import { CLASSES, isSeniorSecondaryClass, isValidDepartment } from '@/lib/constants';
+import { CLASSES, isSeniorSecondaryClass, isValidDepartment, getSectionClasses } from '@/lib/constants';
 
 export const dynamic = 'force-dynamic';
 
@@ -33,9 +33,10 @@ const HEADER_MAP: Record<string, keyof StudentInsert> = {
 
 export async function POST(request: NextRequest) {
   try {
-    const staff = await requireSchoolSession(request, ['admin']);
+    const staff = await requireSchoolSession(request, ['admin', 'primary_admin', 'secondary_admin']);
     if (!staff) return NextResponse.json({ error: 'Not authenticated.' }, { status: 401 });
-    const { school } = staff;
+    const { school, session } = staff;
+    const sectionClasses = getSectionClasses(session.role);
 
     const supabase = getSupabaseClient();
     const formData = await request.formData();
@@ -87,6 +88,11 @@ export async function POST(request: NextRequest) {
 
       if (!CLASSES.includes(mapped.class)) {
         errors.push({ row: rowNumber, reason: `"${mapped.class}" is not a recognized class (e.g. "SSS 2", not "SS2").` });
+        return;
+      }
+
+      if (sectionClasses && !sectionClasses.includes(mapped.class)) {
+        errors.push({ row: rowNumber, reason: `You do not have access to create students in "${mapped.class}".` });
         return;
       }
 

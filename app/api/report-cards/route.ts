@@ -4,6 +4,7 @@ import { requireSchoolSession } from '@/lib/auth';
 import { getClassTeacherAssignment } from '@/lib/classTeacher';
 import { logAudit } from '@/lib/auditLog';
 import { Database } from '@/lib/database.types';
+import { getSectionClasses } from '@/lib/constants';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,17 +14,34 @@ const CONDUCT_RATINGS = ['Excellent', 'Very Good', 'Good', 'Fair', 'Poor'];
 
 /**
  * Report cards are restricted to the one teacher assigned as class teacher
- * for that student's class (admins have full access regardless). Returns
- * null if the caller may proceed, or an error message to reject with.
+ * for that student's class. The unscoped 'admin' role has full access
+ * regardless; 'primary_admin'/'secondary_admin' have full access within
+ * their own section (not tied to being that exact class's teacher), but not
+ * the other section. Returns null if the caller may proceed, or an error
+ * message to reject with.
  */
 async function checkClassTeacherAccess(
   supabase: ReturnType<typeof getSupabaseClient>,
   schoolId: string,
-  role: 'admin' | 'teacher',
+  role: 'admin' | 'primary_admin' | 'secondary_admin' | 'teacher',
   userId: string,
   studentId: string
 ): Promise<string | null> {
   if (role === 'admin') return null;
+
+  const sectionClasses = getSectionClasses(role);
+  if (sectionClasses) {
+    const { data: student } = await supabase
+      .from('students')
+      .select('class')
+      .eq('school_id', schoolId)
+      .eq('student_id', studentId)
+      .maybeSingle();
+    if (!student || !sectionClasses.includes(student.class)) {
+      return 'You do not have access to report cards for that student.';
+    }
+    return null;
+  }
 
   const classTeacherOf = await getClassTeacherAssignment(userId);
   if (!classTeacherOf) {
@@ -45,7 +63,7 @@ async function checkClassTeacherAccess(
 }
 
 export async function GET(request: NextRequest) {
-  const staff = await requireSchoolSession(request, ['admin', 'teacher']);
+  const staff = await requireSchoolSession(request, ['admin', 'primary_admin', 'secondary_admin', 'teacher']);
   if (!staff) return NextResponse.json({ error: 'Not authenticated.' }, { status: 401 });
   const { school, session: staffSession } = staff;
 
@@ -82,7 +100,7 @@ export async function GET(request: NextRequest) {
 // can set attendance/conduct/teacher's comment; principal's comment is
 // admin-only (enforced here, not just in the UI).
 export async function POST(request: NextRequest) {
-  const staff = await requireSchoolSession(request, ['admin', 'teacher']);
+  const staff = await requireSchoolSession(request, ['admin', 'primary_admin', 'secondary_admin', 'teacher']);
   if (!staff) return NextResponse.json({ error: 'Not authenticated.' }, { status: 401 });
   const { school, session: staffSession } = staff;
 
@@ -107,7 +125,7 @@ export async function POST(request: NextRequest) {
     if (conductRating && !CONDUCT_RATINGS.includes(conductRating)) {
       return NextResponse.json({ error: 'Invalid conduct rating.' }, { status: 400 });
     }
-    if (principalComment !== undefined && staffSession.role !== 'admin') {
+    if (principalComment !== undefined && staffSession.role === 'teacher') {
       return NextResponse.json({ error: "Only an admin can set the principal's comment." }, { status: 403 });
     }
 

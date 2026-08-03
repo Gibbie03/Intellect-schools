@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseClient } from '@/lib/supabase';
 import { requireSchoolSession } from '@/lib/auth';
 import { getClassTeacherAssignment } from '@/lib/classTeacher';
+import { getSectionClasses } from '@/lib/constants';
 
 export const dynamic = 'force-dynamic';
 
@@ -9,11 +10,22 @@ const STATUSES = ['Present', 'Absent', 'Late'];
 
 /**
  * Attendance is restricted to the one teacher assigned as class teacher for
- * that class (admins have full access regardless) -- same model as report
- * cards. Returns null if the caller may proceed, or an error message.
+ * that class -- same model as report cards. The unscoped 'admin' role has
+ * full access regardless; 'primary_admin'/'secondary_admin' have full
+ * access within their own section. Returns null if the caller may proceed,
+ * or an error message.
  */
-async function checkClassAccess(role: 'admin' | 'teacher', userId: string, className: string): Promise<string | null> {
+async function checkClassAccess(
+  role: 'admin' | 'primary_admin' | 'secondary_admin' | 'teacher',
+  userId: string,
+  className: string
+): Promise<string | null> {
   if (role === 'admin') return null;
+
+  const sectionClasses = getSectionClasses(role);
+  if (sectionClasses) {
+    return sectionClasses.includes(className) ? null : 'You do not have access to attendance for that class.';
+  }
 
   const classTeacherOf = await getClassTeacherAssignment(userId);
   if (!classTeacherOf) {
@@ -26,7 +38,7 @@ async function checkClassAccess(role: 'admin' | 'teacher', userId: string, class
 }
 
 export async function GET(request: NextRequest) {
-  const staff = await requireSchoolSession(request, ['admin', 'teacher']);
+  const staff = await requireSchoolSession(request, ['admin', 'primary_admin', 'secondary_admin', 'teacher']);
   if (!staff) return NextResponse.json({ error: 'Not authenticated.' }, { status: 401 });
   const { school, session: staffSession } = staff;
 
@@ -98,7 +110,7 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const staff = await requireSchoolSession(request, ['admin', 'teacher']);
+  const staff = await requireSchoolSession(request, ['admin', 'primary_admin', 'secondary_admin', 'teacher']);
   if (!staff) return NextResponse.json({ error: 'Not authenticated.' }, { status: 401 });
   const { school, session: staffSession } = staff;
 

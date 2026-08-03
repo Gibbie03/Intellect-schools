@@ -2,7 +2,15 @@
 
 import { Fragment, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { STAFF_ROLES, CLASSES, DAYS_OF_WEEK, DEPARTMENTS, isSeniorSecondaryClass } from '@/lib/constants';
+import {
+  STAFF_ROLES,
+  CLASSES,
+  DAYS_OF_WEEK,
+  DEPARTMENTS,
+  isSeniorSecondaryClass,
+  ADMIN_ROLE_LABELS,
+  getSectionClasses,
+} from '@/lib/constants';
 import { SESSIONS, TERMS, CURRENT_SESSION, SUBJECTS } from '@/lib/grade';
 import { buildWhatsAppLink } from '@/lib/whatsapp';
 import DashboardShell from '@/components/DashboardShell';
@@ -56,12 +64,14 @@ export default function AdminDashboard() {
   const router = useRouter();
   const [tab, setTab] = useState<Tab>('dashboard');
   const [adminName, setAdminName] = useState('');
+  const [adminRole, setAdminRole] = useState<'admin' | 'primary_admin' | 'secondary_admin' | 'teacher' | null>(null);
 
   useEffect(() => {
     fetch('/api/auth/me')
       .then((res) => res.json())
       .then((data) => {
         if (data.fullName) setAdminName(data.fullName);
+        if (data.role) setAdminRole(data.role);
       });
   }, []);
 
@@ -71,13 +81,21 @@ export default function AdminDashboard() {
     router.refresh();
   };
 
+  // A section-scoped admin doesn't get school-wide audit visibility (that
+  // log spans both sections, which is exactly what their account shouldn't
+  // see cross-section detail on).
+  const visibleTabs =
+    adminRole === 'primary_admin' || adminRole === 'secondary_admin' ? TABS.filter((t) => t.id !== 'audit-log') : TABS;
+
+  const userLabel = adminRole && adminRole !== 'admin' && adminRole !== 'teacher' ? `${adminName} (${ADMIN_ROLE_LABELS[adminRole]})` : adminName;
+
   return (
     <DashboardShell
       brandLabel="Admin Dashboard"
-      tabs={TABS}
+      tabs={visibleTabs}
       activeTab={tab}
       onTabChange={setTab}
-      userLabel={adminName}
+      userLabel={userLabel}
       onLogout={handleLogout}
     >
       {tab === 'dashboard' && <DashboardOverview />}
@@ -459,11 +477,22 @@ function StudentsSection() {
   const [form, setForm] = useState(emptyStudentForm);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [campuses, setCampuses] = useState<string[]>([]);
+  const [myClasses, setMyClasses] = useState<string[]>(CLASSES);
 
   useEffect(() => {
     fetch('/api/auth/me')
       .then((res) => res.json())
-      .then((data) => setCampuses(data.campuses ?? []))
+      .then((data) => {
+        setCampuses(data.campuses ?? []);
+        const allowed = getSectionClasses(data.role) ?? CLASSES;
+        setMyClasses(allowed);
+        setForm((prev) => (allowed.includes(prev.className) ? prev : { ...prev, className: allowed[0] }));
+        setPromoteForm((prev) => ({
+          ...prev,
+          fromClass: allowed.includes(prev.fromClass) ? prev.fromClass : allowed[0],
+          toClass: allowed.includes(prev.toClass) ? prev.toClass : (allowed[1] ?? allowed[0]),
+        }));
+      })
       .catch(() => {});
   }, []);
 
@@ -796,7 +825,7 @@ function StudentsSection() {
             }
             className="w-full rounded-xl border p-3"
           >
-            {CLASSES.map((c) => (
+            {myClasses.map((c) => (
               <option key={c}>{c}</option>
             ))}
           </select>
@@ -921,7 +950,7 @@ function StudentsSection() {
             onChange={(e) => setPromoteForm({ ...promoteForm, fromClass: e.target.value })}
             className="rounded-xl border p-3"
           >
-            {CLASSES.map((c) => (
+            {myClasses.map((c) => (
               <option key={c}>{c}</option>
             ))}
           </select>
@@ -934,7 +963,7 @@ function StudentsSection() {
             onChange={(e) => setPromoteForm({ ...promoteForm, toClass: e.target.value })}
             className="rounded-xl border p-3 disabled:opacity-50"
           >
-            {CLASSES.map((c) => (
+            {myClasses.map((c) => (
               <option key={c}>{c}</option>
             ))}
           </select>
@@ -992,7 +1021,7 @@ function StudentsSection() {
                           {s.class} (unrecognized)
                         </option>
                       )}
-                      {CLASSES.map((c) => (
+                      {myClasses.map((c) => (
                         <option key={c} value={c}>
                           {c}
                         </option>
@@ -1097,14 +1126,20 @@ const emptyStaffForm = {
 type AccountRow = {
   id: string;
   email: string;
-  role: 'admin' | 'teacher';
+  role: 'admin' | 'primary_admin' | 'secondary_admin' | 'teacher';
   full_name: string;
   teacher_id: string | null;
   status: 'Active' | 'Inactive';
   totp_enabled: boolean;
 };
 
-const emptyAccountForm = { email: '', password: '', fullName: '', role: 'teacher' as 'admin' | 'teacher', teacherId: '' };
+const emptyAccountForm = {
+  email: '',
+  password: '',
+  fullName: '',
+  role: 'teacher' as 'admin' | 'primary_admin' | 'secondary_admin' | 'teacher',
+  teacherId: '',
+};
 
 function StaffSection() {
   const [teachers, setTeachers] = useState<TeacherRow[]>([]);
@@ -1115,11 +1150,15 @@ function StaffSection() {
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [campuses, setCampuses] = useState<string[]>([]);
+  const [myRole, setMyRole] = useState<string | null>(null);
 
   useEffect(() => {
     fetch('/api/auth/me')
       .then((res) => res.json())
-      .then((data) => setCampuses(data.campuses ?? []))
+      .then((data) => {
+        setCampuses(data.campuses ?? []);
+        setMyRole(data.role ?? null);
+      })
       .catch(() => {});
   }, []);
 
@@ -1541,6 +1580,7 @@ function StaffSection() {
         )}
       </div>
 
+      {myRole === 'admin' && (
       <div className="bg-white rounded-2xl shadow p-8 mt-8">
         <h2 className="text-xl font-semibold mb-2">Staff Login Accounts</h2>
         <p className="text-sm text-gray-500 mb-6">
@@ -1578,11 +1618,18 @@ function StaffSection() {
           />
           <select
             value={accountForm.role}
-            onChange={(e) => setAccountForm({ ...accountForm, role: e.target.value as 'admin' | 'teacher' })}
+            onChange={(e) =>
+              setAccountForm({
+                ...accountForm,
+                role: e.target.value as 'admin' | 'primary_admin' | 'secondary_admin' | 'teacher',
+              })
+            }
             className="w-full rounded-xl border p-3"
           >
             <option value="teacher">Teacher</option>
-            <option value="admin">Admin</option>
+            <option value="admin">Admin (Full School)</option>
+            <option value="primary_admin">Primary Admin</option>
+            <option value="secondary_admin">Secondary Admin</option>
           </select>
           <select
             value={accountForm.teacherId}
@@ -1626,7 +1673,7 @@ function StaffSection() {
                 <tr key={a.id} className="border-b">
                   <td className="p-4">{a.full_name}</td>
                   <td className="p-4">{a.email}</td>
-                  <td className="p-4 text-center capitalize">{a.role}</td>
+                  <td className="p-4 text-center">{a.role === 'teacher' ? 'Teacher' : ADMIN_ROLE_LABELS[a.role]}</td>
                   <td className="p-4 text-center">{a.status}</td>
                   <td className="p-4 text-center">
                     <button
@@ -1673,6 +1720,7 @@ function StaffSection() {
           </table>
         )}
       </div>
+      )}
     </div>
   );
 }

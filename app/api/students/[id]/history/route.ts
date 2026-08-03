@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseClient } from '@/lib/supabase';
 import { requireSchoolSession } from '@/lib/auth';
+import { getSectionClasses } from '@/lib/constants';
 
 export const dynamic = 'force-dynamic';
 
@@ -10,9 +11,9 @@ export const dynamic = 'force-dynamic';
 // terms only), but reachable by staff without needing a still-valid PIN
 // card. Useful once a student is close to or past graduation.
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const staff = await requireSchoolSession(request, ['admin', 'teacher']);
+  const staff = await requireSchoolSession(request, ['admin', 'primary_admin', 'secondary_admin', 'teacher']);
   if (!staff) return NextResponse.json({ error: 'Not authenticated.' }, { status: 401 });
-  const { school } = staff;
+  const { school, session } = staff;
 
   try {
     const { id } = await params;
@@ -26,6 +27,11 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       .maybeSingle();
     if (studentError) throw studentError;
     if (!student) return NextResponse.json({ error: 'Student not found.' }, { status: 404 });
+
+    const sectionClasses = getSectionClasses(session.role);
+    if (sectionClasses && !sectionClasses.includes(student.class)) {
+      return NextResponse.json({ error: 'Student not found.' }, { status: 404 });
+    }
 
     const { data: allResults, error: resultsError } = await supabase
       .from('results')

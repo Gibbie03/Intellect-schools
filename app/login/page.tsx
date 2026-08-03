@@ -20,7 +20,8 @@ export default function LoginPage() {
   // second click or a manual reload. A hard navigation always issues a
   // fresh top-level request, so middleware sees the new cookie immediately.
   const finishLogin = (role: string) => {
-    window.location.href = role === 'admin' ? '/admin' : '/teacher-dashboard';
+    const isAdminType = role === 'admin' || role === 'primary_admin' || role === 'secondary_admin';
+    window.location.href = isAdminType ? '/admin' : '/teacher-dashboard';
   };
 
   const handleSubmit = async (e: React.FormEvent) => {

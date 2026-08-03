@@ -2,14 +2,15 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseClient } from '@/lib/supabase';
 import { requireSchoolSession } from '@/lib/auth';
 import { logAudit } from '@/lib/auditLog';
+import { isStudentInSection } from '@/lib/sectionScope';
 
 export const dynamic = 'force-dynamic';
 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const staff = await requireSchoolSession(request, ['admin']);
+    const staff = await requireSchoolSession(request, ['admin', 'primary_admin', 'secondary_admin']);
     if (!staff) return NextResponse.json({ error: 'Not authenticated.' }, { status: 401 });
-    const { school } = staff;
+    const { school, session } = staff;
 
     const supabase = getSupabaseClient();
     const { id } = await params;
@@ -20,6 +21,10 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     }
 
     const { data: before } = await supabase.from('results').select('*').eq('id', id).eq('school_id', school.id).maybeSingle();
+
+    if (!before || !(await isStudentInSection(supabase, school.id, session.role, before.student_id))) {
+      return NextResponse.json({ error: 'Result not found.' }, { status: 404 });
+    }
 
     const { data, error } = await supabase
       .from('results')
