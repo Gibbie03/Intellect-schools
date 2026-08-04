@@ -393,7 +393,7 @@ export default function PlatformDashboard() {
         </p>
         <input
           type="text"
-          placeholder="Footer Bar Color (hex, optional — defaults to the standard dark green)"
+          placeholder="Footer & Dashboard Sidebar Color (hex, optional — defaults to the standard dark green)"
           value={form.footerColor}
           onChange={(e) => setForm({ ...form, footerColor: e.target.value })}
           className="w-full rounded-xl border p-3 md:col-span-2"
@@ -614,7 +614,7 @@ export default function PlatformDashboard() {
                           />
                           <input
                             type="text"
-                            placeholder="Footer Bar Color (hex, optional — defaults to the standard dark green)"
+                            placeholder="Footer & Dashboard Sidebar Color (hex, optional — defaults to the standard dark green)"
                             value={editForm.footerColor}
                             onChange={(e) => setEditForm({ ...editForm, footerColor: e.target.value })}
                             className="w-full rounded-xl border p-3 md:col-span-2"
