@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useState } from 'react';
 
 export default function DashboardShell<T extends string>({
@@ -39,6 +40,13 @@ export default function DashboardShell<T extends string>({
             </button>
           )}
         </div>
+        <Link
+          href="/"
+          className="side-link"
+          style={{ borderLeft: '3px solid transparent' }}
+        >
+          &larr; Back to website
+        </Link>
         <nav className="flex flex-col gap-0.5">
           {tabs.map((t) => (
             <button
@@ -62,7 +70,10 @@ export default function DashboardShell<T extends string>({
       </aside>
 
       <main className="p-5 sm:p-8" style={{ background: 'var(--cream)' }}>
-        <div className="mb-6 flex flex-wrap items-center gap-3.5">
+        <div
+          className="sticky top-0 z-30 mb-6 flex flex-wrap items-center gap-3.5 py-1"
+          style={{ background: 'var(--cream)' }}
+        >
           <button
             type="button"
             onClick={() => setOpen(true)}
@@ -71,6 +82,9 @@ export default function DashboardShell<T extends string>({
           >
             ☰
           </button>
+          <Link href="/" className="dash-icon-btn" aria-label="Back to website" title="Back to website">
+            ⌂
+          </Link>
           <span className="text-sm text-[var(--muted)]">Signed in as {userLabel || '…'}</span>
         </div>
         {children}

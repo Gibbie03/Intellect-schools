@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import PageHero from '@/components/PageHero';
 
 const CATEGORIES = ['General Enquiry', 'Suggestion', 'Complaint', 'Other'];
 
@@ -72,20 +73,12 @@ export default function ContactPage() {
 
   return (
     <main>
-      <section
-        className="py-12"
-        style={{ background: 'linear-gradient(135deg, var(--ink) 0%, color-mix(in srgb, var(--brand-color) 35%, black) 100%)' }}
-      >
-        <div className="wrap" style={{ maxWidth: 900 }}>
-          <span className="tag tag-light">Get in touch</span>
-          <h1 className="text-white" style={{ fontSize: 'clamp(28px, 4vw, 42px)' }}>
-            Contact us
-          </h1>
-          <p className="mt-3.5 text-[15.5px] text-white/80">
-            Have a question, suggestion or complaint? Send us a message and we&apos;ll get back to you.
-          </p>
-        </div>
-      </section>
+      <PageHero
+        eyebrow="Get in touch"
+        title="Contact us"
+        subtitle="Have a question, suggestion or complaint? Send us a message and we'll get back to you."
+        wrapStyle={{ maxWidth: 900 }}
+      />
 
       <section className="wrap py-14" style={{ maxWidth: 900 }}>
         <div className={`grid gap-8 ${hasContactCard ? 'md:grid-cols-[1.2fr_0.8fr]' : ''} items-start`}>

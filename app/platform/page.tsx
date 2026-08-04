@@ -12,6 +12,7 @@ type School = {
   logo_url: string | null;
   primary_color: string | null;
   secondary_color: string | null;
+  footer_color: string | null;
   tagline: string | null;
   motto: string | null;
   hero_image_url: string | null;
@@ -43,6 +44,7 @@ const emptyForm = {
   idPrefix: '',
   primaryColor: '',
   secondaryColor: '',
+  footerColor: '',
   tagline: '',
   motto: '',
   adminFullName: '',
@@ -75,6 +77,7 @@ export default function PlatformDashboard() {
     logoUrl: '',
     primaryColor: '',
     secondaryColor: '',
+    footerColor: '',
     tagline: '',
     motto: '',
     heroImageUrl: '',
@@ -191,6 +194,7 @@ export default function PlatformDashboard() {
       logoUrl: school.logo_url ?? '',
       primaryColor: school.primary_color ?? '',
       secondaryColor: school.secondary_color ?? '',
+      footerColor: school.footer_color ?? '',
       tagline: school.tagline ?? '',
       motto: school.motto ?? '',
       heroImageUrl: school.hero_image_url ?? '',
@@ -387,6 +391,13 @@ export default function PlatformDashboard() {
         <p className="md:col-span-2 -mt-2 text-xs text-gray-500">
           Avoid pure white or very pale colors here &mdash; both fields are used as backgrounds behind white text.
         </p>
+        <input
+          type="text"
+          placeholder="Footer Bar Color (hex, optional — defaults to the standard dark green)"
+          value={form.footerColor}
+          onChange={(e) => setForm({ ...form, footerColor: e.target.value })}
+          className="w-full rounded-xl border p-3 md:col-span-2"
+        />
         <input
           type="text"
           placeholder="School Motto (optional, shown in the site header, e.g. The Lord Leads)"
@@ -600,6 +611,13 @@ export default function PlatformDashboard() {
                             value={editForm.secondaryColor}
                             onChange={(e) => setEditForm({ ...editForm, secondaryColor: e.target.value })}
                             className="w-full rounded-xl border p-3"
+                          />
+                          <input
+                            type="text"
+                            placeholder="Footer Bar Color (hex, optional — defaults to the standard dark green)"
+                            value={editForm.footerColor}
+                            onChange={(e) => setEditForm({ ...editForm, footerColor: e.target.value })}
+                            className="w-full rounded-xl border p-3 md:col-span-2"
                           />
                           <div className="w-full rounded-xl border p-3 md:col-span-2">
                             <label className="mb-2 block text-sm font-medium text-gray-700">

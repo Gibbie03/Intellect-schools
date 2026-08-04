@@ -1,5 +1,6 @@
 import { headers } from 'next/headers';
 import { getSchoolFromHost } from '@/lib/tenant';
+import PageHero from '@/components/PageHero';
 
 export default async function PrivacyPage() {
   const headersList = await headers();
@@ -8,18 +9,12 @@ export default async function PrivacyPage() {
 
   return (
     <main>
-      <section
-        className="py-13"
-        style={{ background: 'linear-gradient(135deg, var(--ink) 0%, color-mix(in srgb, var(--brand-color) 35%, black) 100%)' }}
-      >
-        <div className="wrap">
-          <span className="tag tag-light">Data protection</span>
-          <h1 className="text-white" style={{ fontSize: 'clamp(28px, 4vw, 42px)' }}>
-            Privacy &amp; data protection
-          </h1>
-          <p className="mt-3.5 text-[15.5px] text-white/80">How {name} handles student, staff, and parent records.</p>
-        </div>
-      </section>
+      <PageHero
+        eyebrow="Data protection"
+        sectionClassName="py-13"
+        title="Privacy & data protection"
+        subtitle={<>How {name} handles student, staff, and parent records.</>}
+      />
 
       <section className="wrap py-16" style={{ maxWidth: 760 }}>
         <div className="space-y-8 text-[15px] leading-[1.7] text-[var(--muted)]">

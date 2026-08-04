@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { CLASSES } from '@/lib/constants';
+import PageHero from '@/components/PageHero';
 
 const emptyForm = {
   studentName: '',
@@ -111,21 +112,20 @@ export default function AdmissionsPage() {
 
   return (
     <main>
-      <section
-        className="py-14"
-        style={{ background: 'linear-gradient(135deg, var(--ink) 0%, color-mix(in srgb, var(--brand-color) 35%, black) 100%)' }}
-      >
-        <div className="wrap">
-          <span className="tag tag-light">Admissions</span>
-          <h1 className="max-w-[18ch] text-white" style={{ fontSize: 'clamp(30px, 4.5vw, 48px)', lineHeight: 1.12 }}>
-            We take as much care choosing you as you take choosing us.
-          </h1>
-          <p className="mt-5 max-w-[58ch] text-[16.5px] leading-[1.65] text-white/80">
+      <PageHero
+        eyebrow="Admissions"
+        sectionClassName="py-14"
+        title="We take as much care choosing you as you take choosing us."
+        titleClassName="max-w-[18ch]"
+        titleStyle={{ fontSize: 'clamp(30px, 4.5vw, 48px)', lineHeight: 1.12 }}
+        subtitle={
+          <>
             Apply for admission to {schoolName}. Our process is unhurried and personal — here&apos;s how a family
             moves from first inquiry to a first day of school.
-          </p>
-        </div>
-      </section>
+          </>
+        }
+        subtitleClassName="mt-5 max-w-[58ch] text-[16.5px] leading-[1.65] text-white/80"
+      />
 
       <section className="wrap pb-6 pt-14">
         <h2 className="mb-4 text-[28px]">The admission process</h2>

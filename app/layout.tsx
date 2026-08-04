@@ -36,12 +36,21 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
   // color, not a tint of the primary -- falling back to primary_color here
   // silently erases that accent for any school that hasn't set one.
   const brandColor2 = school?.secondary_color || '#b23324';
+  // Defaults to the platform's standard dark green (matching --ink) unless
+  // a school explicitly overrides it in the platform admin dashboard.
+  const footerColor = school?.footer_color || '#15201a';
 
   return (
     <html
       lang="en"
       className={`${manrope.variable} ${inter.variable}`}
-      style={{ '--brand-color': brandColor, '--brand-color-2': brandColor2 } as React.CSSProperties}
+      style={
+        {
+          '--brand-color': brandColor,
+          '--brand-color-2': brandColor2,
+          '--footer-color': footerColor,
+        } as React.CSSProperties
+      }
     >
       <body className="flex min-h-screen flex-col">
         <Navbar

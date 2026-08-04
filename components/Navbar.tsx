@@ -164,15 +164,16 @@ export default function Navbar({
       style={{ borderBottom: '3px solid var(--gold)', transform: shouldHide ? 'translateY(-100%)' : 'translateY(0)' }}
     >
       <nav className="wrap flex flex-wrap items-center justify-between gap-x-4 gap-y-[14px] py-[29px]">
-        <Link href="/" className="flex shrink-0 items-center gap-3">
+        <Link
+          href="/"
+          className="flex w-full flex-col items-center gap-3 text-center sm:w-auto sm:flex-row sm:items-center sm:text-left"
+        >
           {logoUrl && (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={logoUrl} alt={schoolName} className="h-12 w-auto shrink-0 object-contain" />
           )}
-          <span className="flex flex-col leading-tight">
-            <span className="font-display whitespace-nowrap text-lg font-extrabold text-[var(--ink)]">
-              {schoolName}
-            </span>
+          <span className="flex flex-col items-center leading-tight sm:items-start">
+            <span className="font-display text-lg font-extrabold text-[var(--ink)]">{schoolName}</span>
             <span className="whitespace-nowrap text-[10px] font-bold uppercase tracking-[0.15em] text-[var(--muted)]">
               {motto || 'School Portal'}
             </span>

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { SESSIONS, TERMS, CURRENT_SESSION } from '@/lib/grade';
+import PageHero from '@/components/PageHero';
 
 type CalendarEntry = {
   id: string;
@@ -56,20 +57,12 @@ export default function CalendarPage() {
 
   return (
     <main>
-      <section
-        className="py-12"
-        style={{ background: 'linear-gradient(135deg, var(--ink) 0%, color-mix(in srgb, var(--brand-color) 35%, black) 100%)' }}
-      >
-        <div className="wrap" style={{ maxWidth: 900 }}>
-          <span className="tag tag-light">Academics</span>
-          <h1 className="text-white" style={{ fontSize: 'clamp(28px, 4vw, 42px)' }}>
-            Academic Calendar
-          </h1>
-          <p className="mt-3.5 text-[15.5px] text-white/80">
-            Term dates, resumption/closing days, mid-term breaks, and holidays.
-          </p>
-        </div>
-      </section>
+      <PageHero
+        eyebrow="Academics"
+        title="Academic Calendar"
+        subtitle="Term dates, resumption/closing days, mid-term breaks, and holidays."
+        wrapStyle={{ maxWidth: 900 }}
+      />
 
       <div className="wrap py-10" style={{ maxWidth: 900 }}>
         <select

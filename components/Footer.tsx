@@ -50,7 +50,7 @@ export default function Footer({ schoolName, isLanding }: { schoolName: string; 
   }
 
   return (
-    <footer style={{ background: 'var(--ink)', color: 'rgba(255,255,255,.6)' }}>
+    <footer style={{ background: 'var(--footer-color, var(--ink))', color: 'rgba(255,255,255,.6)' }}>
       <div className="wrap flex flex-col items-center gap-4 py-8 text-sm sm:flex-row sm:justify-between">
         <p>
           &copy; {new Date().getFullYear()} {name}. All rights reserved.

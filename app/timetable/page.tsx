@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { CLASSES, DAYS_OF_WEEK } from '@/lib/constants';
 import { SESSIONS, TERMS, CURRENT_SESSION } from '@/lib/grade';
+import PageHero from '@/components/PageHero';
 
 type ClassTimetableEntry = {
   id: string;
@@ -78,18 +79,7 @@ export default function TimetablePage() {
 
   return (
     <main>
-      <section
-        className="py-12"
-        style={{ background: 'linear-gradient(135deg, var(--ink) 0%, color-mix(in srgb, var(--brand-color) 35%, black) 100%)' }}
-      >
-        <div className="wrap">
-          <span className="tag tag-light">Academics</span>
-          <h1 className="text-white" style={{ fontSize: 'clamp(28px, 4vw, 42px)' }}>
-            Timetables
-          </h1>
-          <p className="mt-3.5 text-[15.5px] text-white/80">Class and exam schedules by class.</p>
-        </div>
-      </section>
+      <PageHero eyebrow="Academics" title="Timetables" subtitle="Class and exam schedules by class." />
 
       <section className="wrap py-10">
         <div className="mb-4 flex flex-wrap items-center gap-4">

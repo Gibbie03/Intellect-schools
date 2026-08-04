@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import PageHero from '@/components/PageHero';
 
 type NewsItem = {
   id: string;
@@ -61,20 +62,13 @@ export default function NewsPage() {
 
   return (
     <main>
-      <section
-        className="py-12"
-        style={{ background: 'linear-gradient(135deg, var(--ink) 0%, color-mix(in srgb, var(--brand-color) 35%, black) 100%)' }}
-      >
-        <div className="wrap" style={{ maxWidth: 900 }}>
-          <span className="tag tag-light">News &amp; Events</span>
-          <h1 className="text-white" style={{ fontSize: 'clamp(28px, 4vw, 42px)' }}>
-            Stay up to date
-          </h1>
-          <p className="mt-3.5 max-w-[56ch] text-[15.5px] text-white/80">
-            Announcements and upcoming events at {schoolName}.
-          </p>
-        </div>
-      </section>
+      <PageHero
+        eyebrow="News & Events"
+        title="Stay up to date"
+        subtitle={<>Announcements and upcoming events at {schoolName}.</>}
+        subtitleClassName="mt-3.5 max-w-[56ch] text-[15.5px] text-white/80"
+        wrapStyle={{ maxWidth: 900 }}
+      />
 
       <div className="wrap" style={{ maxWidth: 900 }}>
         {loading && (

@@ -15,6 +15,7 @@ create table if not exists schools (
   motto text,
   primary_color text,
   secondary_color text,
+  footer_color text,
   contact_email text,
   contact_phone text,
   address text,

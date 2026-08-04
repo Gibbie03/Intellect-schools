@@ -40,6 +40,7 @@ export async function POST(request: NextRequest) {
       idPrefix,
       primaryColor,
       secondaryColor,
+      footerColor,
       tagline,
       motto,
       adminEmail,
@@ -63,6 +64,7 @@ export async function POST(request: NextRequest) {
         id_prefix: idPrefix,
         primary_color: primaryColor || null,
         secondary_color: secondaryColor || null,
+        footer_color: footerColor || null,
         tagline: tagline || null,
         motto: motto || null,
       })
