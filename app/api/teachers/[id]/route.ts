@@ -57,6 +57,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       update.class_teacher_of = body.classTeacherOf || null;
     }
 
+    if (body.subject !== undefined) update.subject = body.subject || null;
     if (body.campus !== undefined) update.campus = body.campus || null;
     if (body.photoUrl !== undefined) update.photo_url = body.photoUrl || null;
     if (body.bio !== undefined) update.bio = body.bio || null;

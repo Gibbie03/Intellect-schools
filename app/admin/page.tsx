@@ -1371,6 +1371,24 @@ function StaffSection() {
     }
   };
 
+  const updateSubject = async (id: string, subject: string) => {
+    setUpdatingId(id);
+    try {
+      const res = await fetch(`/api/teachers/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ subject }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to update staff subject.');
+      setTeachers((prev) => prev.map((t) => (t.id === id ? { ...t, subject: subject || null } : t)));
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setUpdatingId(null);
+    }
+  };
+
   const updateClassTeacherOf = async (id: string, classTeacherOf: string) => {
     setUpdatingId(id);
     try {
@@ -1437,11 +1455,15 @@ function StaffSection() {
         )}
         <input
           type="text"
-          placeholder="Subject (if Teacher)"
+          placeholder="Subject(s) (if Teacher, e.g. Mathematics, Further Mathematics)"
           value={form.subject}
           onChange={(e) => setForm({ ...form, subject: e.target.value })}
           className="w-full rounded-xl border p-3"
         />
+        <p className="md:col-span-2 -mt-2 text-xs text-gray-500">
+          If set, this teacher&apos;s dashboard can only enter results for these subjects. Leave blank for a class
+          teacher who handles every subject for their class.
+        </p>
         <input
           type="email"
           placeholder="Email"
@@ -1518,7 +1540,19 @@ function StaffSection() {
                 <tr key={t.id} className="border-b">
                   <td className="p-4 font-mono">{t.staff_id}</td>
                   <td className="p-4">{t.full_name}</td>
-                  <td className="p-4">{t.subject || '—'}</td>
+                  <td className="p-4">
+                    <input
+                      type="text"
+                      disabled={updatingId === t.id}
+                      value={t.subject ?? ''}
+                      placeholder="All subjects"
+                      onChange={(e) =>
+                        setTeachers((prev) => prev.map((p) => (p.id === t.id ? { ...p, subject: e.target.value } : p)))
+                      }
+                      onBlur={(e) => updateSubject(t.id, e.target.value)}
+                      className="w-36 rounded-lg border p-2 text-sm"
+                    />
+                  </td>
                   {campuses.length > 0 && (
                     <td className="p-4">
                       <select

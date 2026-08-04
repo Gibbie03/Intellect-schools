@@ -135,6 +135,20 @@ export default function TeacherDashboard() {
   // remark for one student's term. Restricted to the teacher's own assigned
   // class (set by an admin); principal's comment is admin-only.
   const [classTeacherOf, setClassTeacherOf] = useState<string | null>(null);
+  // Subjects this teacher's account is permitted to enter results for (from
+  // their staff profile's Subject field, set by an admin) -- null means
+  // unrestricted (every subject configured for the class), which is the
+  // default for class teachers whose profile has no Subject set.
+  const [allowedSubjects, setAllowedSubjects] = useState<string[] | null>(null);
+  // Narrows a subject option list down to what this teacher is actually
+  // permitted to submit (server-enforced regardless of what's shown here) --
+  // falls back to the raw allowed list if none of it matches the canonical
+  // options, so there's always something selectable that the server accepts.
+  const filterToAllowedSubjects = (list: string[]): string[] => {
+    if (!allowedSubjects) return list;
+    const filtered = list.filter((s) => allowedSubjects.some((a) => a.toLowerCase() === s.toLowerCase()));
+    return filtered.length > 0 ? filtered : allowedSubjects;
+  };
   const [rcRoster, setRcRoster] = useState<RosterStudent[]>([]);
   const [rcLookup, setRcLookup] = useState({ studentId: '', session: CURRENT_SESSION, term: TERMS[0] });
   const [rcStatus, setRcStatus] = useState<'Draft' | 'Published' | null>(null);
@@ -192,9 +206,18 @@ export default function TeacherDashboard() {
       .then((data) => {
         if (data.fullName) setTeacherName(data.fullName);
         setClassTeacherOf(data.classTeacherOf ?? null);
+        setAllowedSubjects(data.allowedSubjects ?? null);
         setTotpEnabled(Boolean(data.totpEnabled));
       });
   }, []);
+
+  useEffect(() => {
+    if (!allowedSubjects) return;
+    setNewResult((prev) => (filterToAllowedSubjects(SUBJECTS).includes(prev.subject) ? prev : { ...prev, subject: filterToAllowedSubjects(SUBJECTS)[0] }));
+    setBatchSetup((prev) => (filterToAllowedSubjects(batchSubjects).includes(prev.subject) ? prev : { ...prev, subject: filterToAllowedSubjects(batchSubjects)[0] }));
+    setOcrSetup((prev) => (filterToAllowedSubjects(ocrSubjects).includes(prev.subject) ? prev : { ...prev, subject: filterToAllowedSubjects(ocrSubjects)[0] }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allowedSubjects]);
 
   useEffect(() => {
     if (!classTeacherOf) return;
@@ -622,7 +645,7 @@ export default function TeacherDashboard() {
                 onChange={(e) => setNewResult({ ...newResult, subject: e.target.value })}
                 className="w-full border p-3 rounded-xl"
               >
-                {SUBJECTS.map((s) => (
+                {filterToAllowedSubjects(SUBJECTS).map((s) => (
                   <option key={s}>{s}</option>
                 ))}
               </select>
@@ -722,7 +745,7 @@ export default function TeacherDashboard() {
                 onChange={(e) => setBatchSetup({ ...batchSetup, subject: e.target.value })}
                 className="w-full border p-3 rounded-xl"
               >
-                {batchSubjects.map((s) => (
+                {filterToAllowedSubjects(batchSubjects).map((s) => (
                   <option key={s}>{s}</option>
                 ))}
               </select>
@@ -884,7 +907,7 @@ export default function TeacherDashboard() {
                   onChange={(e) => setOcrSetup({ ...ocrSetup, subject: e.target.value })}
                   className="w-full border p-3 rounded-xl"
                 >
-                  {ocrSubjects.map((s) => (
+                  {filterToAllowedSubjects(ocrSubjects).map((s) => (
                     <option key={s}>{s}</option>
                   ))}
                 </select>

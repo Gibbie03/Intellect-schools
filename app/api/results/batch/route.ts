@@ -3,7 +3,7 @@ import { getSupabaseClient } from '@/lib/supabase';
 import { gradeFromScore, resolveScore } from '@/lib/grade';
 import { Database } from '@/lib/database.types';
 import { requireSchoolSession } from '@/lib/auth';
-import { getSectionStudentIds } from '@/lib/sectionScope';
+import { getSectionStudentIds, isSubjectAllowedForTeacher } from '@/lib/sectionScope';
 import { apiError } from '@/lib/apiError';
 
 export const dynamic = 'force-dynamic';
@@ -24,6 +24,10 @@ export async function POST(request: NextRequest) {
         { error: 'subject, session, term, and a non-empty entries array are required.' },
         { status: 400 }
       );
+    }
+
+    if (!(await isSubjectAllowedForTeacher(staffSession.role, staffSession.userId, subject))) {
+      return NextResponse.json({ error: 'You are not permitted to enter results for that subject.' }, { status: 403 });
     }
 
     const sectionStudentIds = await getSectionStudentIds(supabase, school.id, staffSession.role, staffSession.userId);

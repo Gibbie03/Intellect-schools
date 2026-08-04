@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSchoolFromHost } from '@/lib/tenant';
 import { verifySession, SESSION_COOKIE } from '@/lib/auth';
-import { getClassTeacherAssignment } from '@/lib/classTeacher';
+import { getClassTeacherAssignment, getTeacherSubjects } from '@/lib/classTeacher';
 import { getSupabaseClient } from '@/lib/supabase';
 
 export const dynamic = 'force-dynamic';
@@ -19,6 +19,7 @@ export async function GET(request: NextRequest) {
   }
 
   const classTeacherOf = session.role === 'teacher' ? await getClassTeacherAssignment(session.userId) : null;
+  const allowedSubjects = session.role === 'teacher' ? await getTeacherSubjects(session.userId) : null;
 
   const supabase = getSupabaseClient();
   const { data: user } = await supabase
@@ -37,6 +38,7 @@ export async function GET(request: NextRequest) {
     role: session.role,
     fullName: session.fullName,
     classTeacherOf,
+    allowedSubjects,
     totpEnabled: user?.totp_enabled ?? false,
     campuses,
   });

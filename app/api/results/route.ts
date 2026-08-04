@@ -3,7 +3,7 @@ import { getSupabaseClient } from '@/lib/supabase';
 import { gradeFromScore, resolveScore } from '@/lib/grade';
 import { requireSchoolSession } from '@/lib/auth';
 import { logAudit } from '@/lib/auditLog';
-import { getSectionStudentIds, isStudentInSection } from '@/lib/sectionScope';
+import { getSectionStudentIds, isStudentInSection, isSubjectAllowedForTeacher } from '@/lib/sectionScope';
 import { apiError } from '@/lib/apiError';
 
 export const dynamic = 'force-dynamic';
@@ -65,6 +65,10 @@ export async function POST(request: NextRequest) {
 
     if (!(await isStudentInSection(supabase, school.id, staffSession.role, staffSession.userId, studentId))) {
       return NextResponse.json({ error: 'You do not have access to upload results for that student.' }, { status: 403 });
+    }
+
+    if (!(await isSubjectAllowedForTeacher(staffSession.role, staffSession.userId, subject))) {
+      return NextResponse.json({ error: 'You are not permitted to enter results for that subject.' }, { status: 403 });
     }
 
     let resolved;
