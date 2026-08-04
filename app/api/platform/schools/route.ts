@@ -39,9 +39,9 @@ export async function POST(request: NextRequest) {
       customDomain,
       idPrefix,
       primaryColor,
+      secondaryColor,
       tagline,
       motto,
-      heroImageUrl,
       adminEmail,
       adminPassword,
       adminFullName,
@@ -62,9 +62,9 @@ export async function POST(request: NextRequest) {
         custom_domain: customDomain || null,
         id_prefix: idPrefix,
         primary_color: primaryColor || null,
+        secondary_color: secondaryColor || null,
         tagline: tagline || null,
         motto: motto || null,
-        hero_image_url: heroImageUrl || null,
       })
       .select()
       .single();

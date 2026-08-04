@@ -74,7 +74,7 @@ export default function ContactPage() {
     <main>
       <section
         className="py-12"
-        style={{ background: 'linear-gradient(135deg, var(--ink) 0%, color-mix(in srgb, var(--brand-color) 70%, black) 100%)' }}
+        style={{ background: 'linear-gradient(135deg, var(--ink) 0%, color-mix(in srgb, var(--brand-color) 35%, black) 100%)' }}
       >
         <div className="wrap" style={{ maxWidth: 900 }}>
           <span className="tag tag-light">Get in touch</span>

@@ -31,7 +31,7 @@ export default function StaffDirectoryPage() {
     <main>
       <section
         className="py-13"
-        style={{ background: 'linear-gradient(135deg, var(--ink) 0%, color-mix(in srgb, var(--brand-color) 70%, black) 100%)' }}
+        style={{ background: 'linear-gradient(135deg, var(--ink) 0%, color-mix(in srgb, var(--brand-color) 35%, black) 100%)' }}
       >
         <div className="wrap">
           <span className="tag tag-light">Our people</span>

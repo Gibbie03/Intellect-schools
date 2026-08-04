@@ -59,7 +59,7 @@ export default async function Home() {
             className="absolute inset-0"
             style={{
               background:
-                'linear-gradient(115deg, color-mix(in srgb, var(--brand-color) 85%, black) 0%, color-mix(in srgb, var(--brand-color-2) 85%, black) 100%)',
+                'linear-gradient(115deg, color-mix(in srgb, var(--brand-color) 35%, black) 0%, color-mix(in srgb, var(--brand-color-2) 35%, black) 100%)',
             }}
           />
         )}
