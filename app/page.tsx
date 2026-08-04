@@ -57,7 +57,10 @@ export default async function Home() {
         ) : (
           <div
             className="absolute inset-0"
-            style={{ background: 'linear-gradient(115deg, var(--brand-color) 0%, var(--brand-color-2) 100%)' }}
+            style={{
+              background:
+                'linear-gradient(115deg, color-mix(in srgb, var(--brand-color) 85%, black) 0%, color-mix(in srgb, var(--brand-color-2) 85%, black) 100%)',
+            }}
           />
         )}
         <div className="wrap relative z-10 max-w-2xl">
