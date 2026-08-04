@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import PageHero from '@/components/PageHero';
 
 type StaffMember = {
   id: string;
@@ -29,18 +30,12 @@ export default function StaffDirectoryPage() {
 
   return (
     <main>
-      <section
-        className="py-13"
-        style={{ background: 'linear-gradient(135deg, var(--ink) 0%, color-mix(in srgb, var(--brand-color) 70%, black) 100%)' }}
-      >
-        <div className="wrap">
-          <span className="tag tag-light">Our people</span>
-          <h1 className="text-white" style={{ fontSize: 'clamp(28px, 4vw, 42px)' }}>
-            Meet the teachers
-          </h1>
-          <p className="mt-3.5 text-[15.5px] text-white/80">The people behind the classroom.</p>
-        </div>
-      </section>
+      <PageHero
+        eyebrow="Our people"
+        sectionClassName="py-13"
+        title="Meet the teachers"
+        subtitle="The people behind the classroom."
+      />
 
       <section className="wrap py-16">
         {loading && <p className="text-[var(--muted)]">Loading…</p>}

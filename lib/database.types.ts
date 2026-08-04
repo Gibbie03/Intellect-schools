@@ -14,6 +14,7 @@ export type Database = {
           motto: string | null;
           primary_color: string | null;
           secondary_color: string | null;
+          footer_color: string | null;
           contact_email: string | null;
           contact_phone: string | null;
           address: string | null;
@@ -40,6 +41,7 @@ export type Database = {
           motto?: string | null;
           primary_color?: string | null;
           secondary_color?: string | null;
+          footer_color?: string | null;
           contact_email?: string | null;
           contact_phone?: string | null;
           address?: string | null;
@@ -66,6 +68,7 @@ export type Database = {
           motto?: string | null;
           primary_color?: string | null;
           secondary_color?: string | null;
+          footer_color?: string | null;
           contact_email?: string | null;
           contact_phone?: string | null;
           address?: string | null;

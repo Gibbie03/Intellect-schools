@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import PageHero from '@/components/PageHero';
 
 type GalleryImage = {
   id: string;
@@ -27,20 +28,14 @@ export default function GalleryPage() {
 
   return (
     <main>
-      <section
-        className="py-13"
-        style={{ background: 'linear-gradient(135deg, var(--ink) 0%, color-mix(in srgb, var(--brand-color) 70%, black) 100%)' }}
-      >
-        <div className="wrap">
-          <span className="tag tag-light">Campus life</span>
-          <h1 className="text-white" style={{ fontSize: 'clamp(30px, 4.5vw, 46px)', lineHeight: 1.1 }}>
-            A term, in pictures
-          </h1>
-          <p className="mt-4 max-w-[60ch] text-base leading-[1.6] text-white/80">
-            Academics, athletics, performances and the everyday life of the school.
-          </p>
-        </div>
-      </section>
+      <PageHero
+        eyebrow="Campus life"
+        sectionClassName="py-13"
+        title="A term, in pictures"
+        titleStyle={{ fontSize: 'clamp(30px, 4.5vw, 46px)', lineHeight: 1.1 }}
+        subtitle="Academics, athletics, performances and the everyday life of the school."
+        subtitleClassName="mt-4 max-w-[60ch] text-base leading-[1.6] text-white/80"
+      />
 
       <section className="wrap py-16">
         {loading && <p className="text-[var(--muted)]">Loading…</p>}

@@ -12,6 +12,7 @@ type School = {
   logo_url: string | null;
   primary_color: string | null;
   secondary_color: string | null;
+  footer_color: string | null;
   tagline: string | null;
   motto: string | null;
   hero_image_url: string | null;
@@ -42,9 +43,10 @@ const emptyForm = {
   customDomain: '',
   idPrefix: '',
   primaryColor: '',
+  secondaryColor: '',
+  footerColor: '',
   tagline: '',
   motto: '',
-  heroImageUrl: '',
   adminFullName: '',
   adminEmail: '',
   adminPassword: '',
@@ -75,6 +77,7 @@ export default function PlatformDashboard() {
     logoUrl: '',
     primaryColor: '',
     secondaryColor: '',
+    footerColor: '',
     tagline: '',
     motto: '',
     heroImageUrl: '',
@@ -191,6 +194,7 @@ export default function PlatformDashboard() {
       logoUrl: school.logo_url ?? '',
       primaryColor: school.primary_color ?? '',
       secondaryColor: school.secondary_color ?? '',
+      footerColor: school.footer_color ?? '',
       tagline: school.tagline ?? '',
       motto: school.motto ?? '',
       heroImageUrl: school.hero_image_url ?? '',
@@ -372,9 +376,26 @@ export default function PlatformDashboard() {
         />
         <input
           type="text"
-          placeholder="Brand Color (hex, optional, e.g. #15803d)"
+          placeholder="Primary Brand Color (hex, optional, e.g. #722F37)"
           value={form.primaryColor}
           onChange={(e) => setForm({ ...form, primaryColor: e.target.value })}
+          className="w-full rounded-xl border p-3"
+        />
+        <input
+          type="text"
+          placeholder="Secondary Brand Color (hex, optional, e.g. #4A0E1C)"
+          value={form.secondaryColor}
+          onChange={(e) => setForm({ ...form, secondaryColor: e.target.value })}
+          className="w-full rounded-xl border p-3"
+        />
+        <p className="md:col-span-2 -mt-2 text-xs text-gray-500">
+          Avoid pure white or very pale colors here &mdash; both fields are used as backgrounds behind white text.
+        </p>
+        <input
+          type="text"
+          placeholder="Footer & Dashboard Sidebar Color (hex, optional — defaults to the standard dark green)"
+          value={form.footerColor}
+          onChange={(e) => setForm({ ...form, footerColor: e.target.value })}
           className="w-full rounded-xl border p-3 md:col-span-2"
         />
         <input
@@ -391,13 +412,10 @@ export default function PlatformDashboard() {
           onChange={(e) => setForm({ ...form, tagline: e.target.value })}
           className="w-full rounded-xl border p-3 md:col-span-2"
         />
-        <input
-          type="text"
-          placeholder="Hero Image URL (optional, e.g. https://...)"
-          value={form.heroImageUrl}
-          onChange={(e) => setForm({ ...form, heroImageUrl: e.target.value })}
-          className="w-full rounded-xl border p-3 md:col-span-2"
-        />
+        <p className="md:col-span-2 -mt-2 text-xs text-gray-500">
+          Logo and hero image are uploaded from your device after the school is created &mdash; edit the school below
+          once it&rsquo;s set up.
+        </p>
 
         <div className="md:col-span-2 border-t border-gray-100 pt-4 mt-2">
           <p className="text-sm font-medium text-gray-700 mb-4">First Admin Account</p>
@@ -593,6 +611,13 @@ export default function PlatformDashboard() {
                             value={editForm.secondaryColor}
                             onChange={(e) => setEditForm({ ...editForm, secondaryColor: e.target.value })}
                             className="w-full rounded-xl border p-3"
+                          />
+                          <input
+                            type="text"
+                            placeholder="Footer & Dashboard Sidebar Color (hex, optional — defaults to the standard dark green)"
+                            value={editForm.footerColor}
+                            onChange={(e) => setEditForm({ ...editForm, footerColor: e.target.value })}
+                            className="w-full rounded-xl border p-3 md:col-span-2"
                           />
                           <div className="w-full rounded-xl border p-3 md:col-span-2">
                             <label className="mb-2 block text-sm font-medium text-gray-700">
