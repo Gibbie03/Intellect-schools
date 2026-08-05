@@ -61,7 +61,7 @@ const tiers = [
     term: '₦100,000',
     features: [
       'Everything in Standard',
-      'Online fee payment via Paystack',
+      'Online fee payment via Paystack (coming soon)',
       'Multi-campus support',
       'Priority support',
     ],
