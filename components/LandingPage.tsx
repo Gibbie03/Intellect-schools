@@ -46,20 +46,24 @@ const features = [
 const tiers = [
   {
     name: 'Standard',
-    setup: '₦200,000–250,000',
+    setup: '₦150,000',
     term: '₦60,000',
-    features: ['Your own custom domain', 'Custom brand colors, tagline & hero photo', 'Up to 25 staff accounts'],
+    features: [
+      'Your own custom domain',
+      'Full website, admissions, results & report cards',
+      'Staff logins with roles, 2FA & audit log',
+    ],
     highlight: true,
   },
   {
     name: 'Premium',
-    setup: '₦400,000+',
+    setup: '₦250,000',
     term: '₦100,000',
     features: [
       'Everything in Standard',
-      'Unlimited staff accounts',
-      'Priority support & 24-hour setup',
-      'Up to 3 custom features built on request',
+      'Online fee payment via Paystack',
+      'Multi-campus support',
+      'Priority support',
     ],
     highlight: false,
   },
@@ -131,7 +135,8 @@ export default function LandingPage() {
           </span>
           <h2 className="mb-3 text-[32px] text-white">Simple, transparent pricing</h2>
           <p className="mx-auto mb-10 max-w-[52ch] text-[15px] text-white/70">
-            A one-time setup fee, then a low termly subscription. No hidden charges.
+            A one-time setup fee, then a low termly subscription &mdash; and your first term is free, no card
+            required. No hidden charges.
           </p>
           <div className="mx-auto grid max-w-[680px] grid-cols-1 gap-6 text-left md:grid-cols-2">
             {tiers.map((t) => (
@@ -163,6 +168,12 @@ export default function LandingPage() {
                 <p className="mt-0.5 text-[11.5px]" style={{ color: t.highlight ? 'rgba(255,255,255,.6)' : MUTED }}>
                   hosting, maintenance &amp; support
                 </p>
+                <span
+                  className="mt-3 inline-flex items-center gap-1.5 text-[12px] font-semibold"
+                  style={{ color: t.highlight ? '#7ee787' : '#1a7f37' }}
+                >
+                  🟢 First term free &mdash; no card required
+                </span>
                 <ul className="mt-5 grid list-none gap-2.5 p-0 text-[13.5px]">
                   {t.features.map((f) => (
                     <li key={f} style={{ color: t.highlight ? 'rgba(255,255,255,.85)' : MUTED }}>
