@@ -54,6 +54,12 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
           '--brand-color': brandColor,
           '--brand-color-2': brandColor2,
           '--footer-color': footerColor,
+          '--ink': inkColor,
+          '--muted': mutedColor,
+          '--paper': paperColor,
+          '--cream': creamColor,
+          '--line': lineColor,
+          '--gold': goldColor,
         } as React.CSSProperties
       }
     >
