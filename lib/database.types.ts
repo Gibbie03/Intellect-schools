@@ -15,6 +15,12 @@ export type Database = {
           primary_color: string | null;
           secondary_color: string | null;
           footer_color: string | null;
+          ink_color: string | null;
+          muted_color: string | null;
+          paper_color: string | null;
+          cream_color: string | null;
+          line_color: string | null;
+          gold_color: string | null;
           contact_email: string | null;
           contact_phone: string | null;
           address: string | null;
