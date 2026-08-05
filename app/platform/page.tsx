@@ -13,6 +13,12 @@ type School = {
   primary_color: string | null;
   secondary_color: string | null;
   footer_color: string | null;
+  ink_color: string | null;
+  muted_color: string | null;
+  paper_color: string | null;
+  cream_color: string | null;
+  line_color: string | null;
+  gold_color: string | null;
   tagline: string | null;
   motto: string | null;
   hero_image_url: string | null;
@@ -78,6 +84,12 @@ export default function PlatformDashboard() {
     primaryColor: '',
     secondaryColor: '',
     footerColor: '',
+    inkColor: '',
+    mutedColor: '',
+    paperColor: '',
+    creamColor: '',
+    lineColor: '',
+    goldColor: '',
     tagline: '',
     motto: '',
     heroImageUrl: '',
@@ -195,6 +207,12 @@ export default function PlatformDashboard() {
       primaryColor: school.primary_color ?? '',
       secondaryColor: school.secondary_color ?? '',
       footerColor: school.footer_color ?? '',
+      inkColor: school.ink_color ?? '',
+      mutedColor: school.muted_color ?? '',
+      paperColor: school.paper_color ?? '',
+      creamColor: school.cream_color ?? '',
+      lineColor: school.line_color ?? '',
+      goldColor: school.gold_color ?? '',
       tagline: school.tagline ?? '',
       motto: school.motto ?? '',
       heroImageUrl: school.hero_image_url ?? '',
