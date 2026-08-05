@@ -418,6 +418,48 @@ export default function PlatformDashboard() {
         />
         <input
           type="text"
+          placeholder="Ink / body text color (hex, optional — default #15201a)"
+          value={editForm.inkColor}
+          onChange={(e) => setEditForm({ ...editForm, inkColor: e.target.value })}
+          className="w-full rounded-xl border p-3"
+        />
+        <input
+          type="text"
+          placeholder="Muted text color (hex, optional — default #6d7568)"
+          value={editForm.mutedColor}
+          onChange={(e) => setEditForm({ ...editForm, mutedColor: e.target.value })}
+          className="w-full rounded-xl border p-3"
+        />
+        <input
+          type="text"
+          placeholder="Paper / card background (hex, optional — default #ffffff)"
+          value={editForm.paperColor}
+          onChange={(e) => setEditForm({ ...editForm, paperColor: e.target.value })}
+          className="w-full rounded-xl border p-3"
+        />
+        <input
+          type="text"
+          placeholder="Cream / page background (hex, optional — default #faf6ee)"
+          value={editForm.creamColor}
+          onChange={(e) => setEditForm({ ...editForm, creamColor: e.target.value })}
+          className="w-full rounded-xl border p-3"
+        />
+        <input
+          type="text"
+          placeholder="Line / border color (hex, optional — default #e4ddd0)"
+          value={editForm.lineColor}
+          onChange={(e) => setEditForm({ ...editForm, lineColor: e.target.value })}
+          className="w-full rounded-xl border p-3"
+        />
+        <input
+          type="text"
+          placeholder="Gold / accent color (hex, optional — default #c9a35a)"
+          value={editForm.goldColor}
+          onChange={(e) => setEditForm({ ...editForm, goldColor: e.target.value })}
+          className="w-full rounded-xl border p-3"
+        />
+        <input
+          type="text"
           placeholder="School Motto (optional, shown in the site header, e.g. The Lord Leads)"
           value={form.motto}
           onChange={(e) => setForm({ ...form, motto: e.target.value })}
