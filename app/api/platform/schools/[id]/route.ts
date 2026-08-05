@@ -45,6 +45,12 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     if (body.principalPhotoUrl !== undefined) update.principal_photo_url = body.principalPhotoUrl || null;
     if (body.prospectusUrl !== undefined) update.prospectus_url = body.prospectusUrl || null;
     if (body.campuses !== undefined) update.campuses = body.campuses || null;
+    if (body.inkColor !== undefined) update.ink_color = body.inkColor || null;
+    if (body.mutedColor !== undefined) update.muted_color = body.mutedColor || null;
+    if (body.paperColor !== undefined) update.paper_color = body.paperColor || null;
+    if (body.creamColor !== undefined) update.cream_color = body.creamColor || null;
+    if (body.lineColor !== undefined) update.line_color = body.lineColor || null;
+    if (body.goldColor !== undefined) update.gold_color = body.goldColor || null;
     if (body.status !== undefined) {
       if (!['Active', 'Suspended'].includes(body.status)) {
         return NextResponse.json({ error: 'status must be Active or Suspended.' }, { status: 400 });
