@@ -36,10 +36,15 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
   // color, not a tint of the primary -- falling back to primary_color here
   // silently erases that accent for any school that hasn't set one.
   const brandColor2 = school?.secondary_color || '#b23324';
-  // Defaults to the platform's standard dark green (matching --ink) unless
-  // a school explicitly overrides it in the platform admin dashboard.
+   // Defaults to the platform's standard dark green (matching --ink) unless
+  // a school explicitly overrides it in the platform admin dashboard
   const footerColor = school?.footer_color || '#15201a';
-
+  const inkColor = school?.ink_color || '#15201a';
+  const mutedColor = school?.muted_color || '#6d7568';
+  const paperColor = school?.paper_color || '#ffffff';
+  const creamColor = school?.cream_color || '#faf6ee';
+  const lineColor = school?.line_color || '#e4ddd0';
+  const goldColor = school?.gold_color || '#c9a35a';
   return (
     <html
       lang="en"
