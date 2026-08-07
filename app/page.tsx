@@ -49,17 +49,29 @@ export default async function Home() {
             <div
               className="absolute inset-0"
               style={{
-                background:
-                  'linear-gradient(115deg, color-mix(in srgb, var(--brand-color) 75%, black) 0%, color-mix(in srgb, var(--brand-color) 55%, transparent) 50%, color-mix(in srgb, var(--brand-color) 70%, black) 100%)',
-              }}
-            />
+                background: `
+                  'linear-gradient(
+                     to right,
+                     color-mix(in srgb, var(--brand-color) 88%, black) 0%, 
+                     color-mix(in srgb, var(--brand-color) 60%, black) 40%, 
+                     color-mix(in srgb, var(--brand-color) 30%, transparent) 100%
+                   )
+                 `,  
+               }}
+             />
           </>
         ) : (
           <div
             className="absolute inset-0"
             style={{
-              background:
-                'linear-gradient(115deg, color-mix(in srgb, var(--brand-color) 35%, black) 0%, color-mix(in srgb, var(--brand-color-2) 35%, black) 100%)',
+              background: `
+                'linear-gradient(
+                   to right, 
+                   color-mix(in srgb, var(--brand-color) 88%, black) 0%,
+                   color-mix(in srgb, var(--brand-color) 60%, black) 40%, 
+                   color-mix(in srgb, var(--brand-color-2) 30%, transparent) 100%
+                )
+              `,
             }}
           />
         )}
