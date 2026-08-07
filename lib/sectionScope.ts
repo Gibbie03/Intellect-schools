@@ -1,6 +1,6 @@
 import { getSupabaseClient } from './supabase';
 import { getSectionClasses } from './constants';
-import { getClassTeacherAssignment } from './classTeacher';
+import { getClassTeacherAssignment, getTeacherSubjects } from './classTeacher';
 
 type SupabaseClient = ReturnType<typeof getSupabaseClient>;
 
@@ -71,6 +71,23 @@ export async function isStudentInSection(
     .eq('student_id', studentId)
     .maybeSingle();
   return !!data && classes.includes(data.class);
+}
+
+// Whether a teacher's login account is permitted to enter results for the
+// given subject. Unrestricted (true) for every role except 'teacher' --
+// subject-level restriction is specific to individual teacher accounts, not
+// the section-head roles. For 'teacher', permitted subjects come from their
+// linked staff profile's Subject field (see getTeacherSubjects); a blank
+// Subject field means unrestricted, preserving the original behavior for
+// class teachers who legitimately handle every subject for their class.
+export async function isSubjectAllowedForTeacher(role: string, userId: string, subject: string): Promise<boolean> {
+  if (role !== 'teacher') return true;
+
+  const allowedSubjects = await getTeacherSubjects(userId);
+  if (!allowedSubjects) return true;
+
+  const normalized = subject.trim().toLowerCase();
+  return allowedSubjects.some((s) => s.toLowerCase() === normalized);
 }
 
 // Whether this school has an active headmaster/principal account for the

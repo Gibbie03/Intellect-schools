@@ -51,5 +51,14 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/login', request.url));
   }
 
+  // FIX NOTE: this route had no role check at all, so any authenticated
+  // session -- including admin, primary_admin, secondary_admin -- could
+  // browse straight into /teacher-dashboard, asymmetric with /admin's
+  // restriction above. Teacher-dashboard is the 'teacher' role's own space;
+  // admin-type roles have their equivalent tools in /admin already.
+  if (path.startsWith('/teacher-dashboard') && session.role !== 'teacher') {
+    return NextResponse.redirect(new URL('/login', request.url));
+  }
+
   return NextResponse.next();
 }
