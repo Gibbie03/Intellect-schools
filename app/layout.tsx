@@ -4,7 +4,7 @@ import { headers } from 'next/headers';
 import './globals.css';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
-import { heroOverlayColor } from "@/lib/colors";
+import { generateBrandPalette } from "@/lib/colors";
 import WhatsAppButton from '@/components/WhatsAppButton';
 import { getSchoolFromHost } from '@/lib/tenant';
 
@@ -36,7 +36,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
   // underline, testimonial band) are designed against a distinct accent
   // color, not a tint of the primary -- falling back to primary_color here
   // silently erases that accent for any school that hasn't set one.
-  const heroOverlay = heroOverlayColor(brandColor);
+  const pallette = generateBrandPalette(brandColor);
   const brandColor2 = school?.secondary_color || '#b23324';
    // Defaults to the platform's standard dark green (matching --ink) unless
   // a school explicitly overrides it in the platform admin dashboard
@@ -53,9 +53,13 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
       className={`${manrope.variable} ${inter.variable}`}
       style={
         {
-          '--brand-color': brandColor,
+          '--brand-color': palette[500],
+          '--brand-100': palette[100],
+          '--brand-300': palette[300],
+          '--brand-500': palette[500],
+          '--brand-700': palette[700],
+          '--brand-900': palette[900],
           '--brand-color-2': brandColor2,
-          '--hero-overlay': heroOverlay,
           '--footer-color': footerColor,
           '--ink': inkColor,
           '--muted': mutedColor,
