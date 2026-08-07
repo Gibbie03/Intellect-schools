@@ -38,6 +38,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
   const brandColor2 = school?.secondary_color || '#b23324';
    // Defaults to the platform's standard dark green (matching --ink) unless
   // a school explicitly overrides it in the platform admin dashboard
+  const heroOverlay = school?.hero_overlay_color || '#0F1E3A';
   const footerColor = school?.footer_color || '#15201a';
   const inkColor = school?.ink_color || '#15201a';
   const mutedColor = school?.muted_color || '#6d7568';
@@ -53,6 +54,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
         {
           '--brand-color': brandColor,
           '--brand-color-2': brandColor2,
+          '--hero-overlay': heroOverlay,
           '--footer-color': footerColor,
           '--ink': inkColor,
           '--muted': mutedColor,
