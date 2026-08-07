@@ -4,6 +4,7 @@ import { headers } from 'next/headers';
 import './globals.css';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import { heroOverlayColor } from "@/lib/colors";
 import WhatsAppButton from '@/components/WhatsAppButton';
 import { getSchoolFromHost } from '@/lib/tenant';
 
@@ -35,10 +36,10 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
   // underline, testimonial band) are designed against a distinct accent
   // color, not a tint of the primary -- falling back to primary_color here
   // silently erases that accent for any school that hasn't set one.
+  const heroOverlay = heroOverlayColor(brandColor);
   const brandColor2 = school?.secondary_color || '#b23324';
    // Defaults to the platform's standard dark green (matching --ink) unless
   // a school explicitly overrides it in the platform admin dashboard
-  const heroOverlay = school?.hero_overlay_color || '#0F1E3A';
   const footerColor = school?.footer_color || '#15201a';
   const inkColor = school?.ink_color || '#15201a';
   const mutedColor = school?.muted_color || '#6d7568';
