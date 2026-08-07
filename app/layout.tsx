@@ -36,7 +36,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
   // underline, testimonial band) are designed against a distinct accent
   // color, not a tint of the primary -- falling back to primary_color here
   // silently erases that accent for any school that hasn't set one.
-  const pallette = generateBrandPalette(brandColor);
+  const palette = generateBrandPalette(brandColor);
   const brandColor2 = school?.secondary_color || '#b23324';
    // Defaults to the platform's standard dark green (matching --ink) unless
   // a school explicitly overrides it in the platform admin dashboard
