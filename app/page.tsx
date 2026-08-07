@@ -52,9 +52,9 @@ export default async function Home() {
                 background: `
                    linear-gradient(
                      to right,
-                     color-mix(in srgb, var(--hero-overlay) 92%, black) 0%, 
-                     color-mix(in srgb, var(--hero-overlay) 75%, black) 45%, 
-                     color-mix(in srgb, var(--hero-overlay) 40%, transparent) 100%
+                     color-mix(in srgb, var(--color-hero) 92%, black) 0%, 
+                     color-mix(in srgb, var(--color-hero) 75%, black) 45%, 
+                     color-mix(in srgb, var(--color-hero) 40%, transparent) 100%
                    )
                  `,  
                }}
@@ -67,9 +67,9 @@ export default async function Home() {
               background: `
                  linear-gradient(
                    to right, 
-                   color-mix(in srgb, var(--hero-overlay) 88%, black) 0%,
-                   color-mix(in srgb, var(--hero-overlay) 60%, black) 40%, 
-                   color-mix(in srgb, var(--hero-overlay-2) 30%, transparent) 100%
+                   color-mix(in srgb, var(--color-hero) 88%, black) 0%,
+                   color-mix(in srgb, var(--color-hero) 60%, black) 40%, 
+                   color-mix(in srgb, var(--color-hero) 30%, transparent) 100%
                 )
               `,
             }}
