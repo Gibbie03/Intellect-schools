@@ -50,7 +50,7 @@ export default async function Home() {
               className="absolute inset-0"
               style={{
                 background:
-                  'linear-gradient(115deg, color-mix(in srgb, var(--brand-color) 92%, black) 0%, color-mix(in srgb, var(--brand-color) 82%, transparent) 55%, color-mix(in srgb, var(--brand-color) 90%, black) 100%)',
+                  'linear-gradient(115deg, color-mix(in srgb, var(--brand-color) 75%, black) 0%, color-mix(in srgb, var(--brand-color) 55%, transparent) 50%, color-mix(in srgb, var(--brand-color) 70%, black) 100%)',
               }}
             />
           </>
