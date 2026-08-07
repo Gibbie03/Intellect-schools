@@ -45,16 +45,16 @@ export default async function Home() {
         {heroImageUrl ? (
           <>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={heroImageUrl} alt={`${name} campus`} className="absolute inset-0 h-full w-full object-cover" />
+            <img src={heroImageUrl} alt={`${name} campus`} className="absolute inset-0 h-full w-full object-cover brightness-[0.75] contrast-110 saturate-110" />
             <div
               className="absolute inset-0"
               style={{
                 background: `
                   'linear-gradient(
                      to right,
-                     color-mix(in srgb, var(--brand-color) 88%, black) 0%, 
-                     color-mix(in srgb, var(--brand-color) 60%, black) 40%, 
-                     color-mix(in srgb, var(--brand-color) 30%, transparent) 100%
+                     color-mix(in srgb, var(--brand-color) 92%, black) 0%, 
+                     color-mix(in srgb, var(--brand-color) 75%, black) 45%, 
+                     color-mix(in srgb, var(--brand-color) 40%, transparent) 100%
                    )
                  `,  
                }}
