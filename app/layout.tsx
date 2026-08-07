@@ -59,6 +59,19 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
           '--brand-500': palette[500],
           '--brand-700': palette[700],
           '--brand-900': palette[900],
+
+          '--color-primary': 'var(--brand-500)',
+          '--color-primary-hover': 'var(--brand-700)',
+
+          '--color-navbar': 'var(--brand-700)',
+          '--color-footer': 'var(--brand-900)',
+          '--color-hero': 'var(--brand-900)',
+
+          '--color-card': 'var(--brand-100)',
+          '--color-tag': 'var(--brand-300)',
+
+          '--color-link': 'var(--brand-500)',
+          
           '--brand-color-2': brandColor2,
           '--footer-color': footerColor,
           '--ink': inkColor,
