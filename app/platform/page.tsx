@@ -419,43 +419,43 @@ export default function PlatformDashboard() {
         <input
           type="text"
           placeholder="Ink / body text color (hex, optional — default #15201a)"
-          value={editForm.inkColor}
-          onChange={(e) => setForm({ ...editForm, inkColor: e.target.value })}
+          value={form.inkColor}
+          onChange={(e) => setForm({ ...form, inkColor: e.target.value })}
           className="w-full rounded-xl border p-3"
         />
         <input
           type="text"
           placeholder="Muted text color (hex, optional — default #6d7568)"
-          value={editForm.mutedColor}
-          onChange={(e) => setForm({ ...editForm, mutedColor: e.target.value })}
+          value={form.mutedColor}
+          onChange={(e) => setForm({ ...form, mutedColor: e.target.value })}
           className="w-full rounded-xl border p-3"
         />
         <input
           type="text"
           placeholder="Paper / card background (hex, optional — default #ffffff)"
-          value={editForm.paperColor}
-          onChange={(e) => setForm({ ...editForm, paperColor: e.target.value })}
+          value={form.paperColor}
+          onChange={(e) => setForm({ ...form, paperColor: e.target.value })}
           className="w-full rounded-xl border p-3"
         />
         <input
           type="text"
           placeholder="Cream / page background (hex, optional — default #faf6ee)"
-          value={editForm.creamColor}
-          onChange={(e) => setForm({ ...editForm, creamColor: e.target.value })}
+          value={form.creamColor}
+          onChange={(e) => setForm({ ...form, creamColor: e.target.value })}
           className="w-full rounded-xl border p-3"
         />
         <input
           type="text"
           placeholder="Line / border color (hex, optional — default #e4ddd0)"
-          value={editForm.lineColor}
-          onChange={(e) => setForm({ ...editForm, lineColor: e.target.value })}
+          value={form.lineColor}
+          onChange={(e) => setForm({ ...form, lineColor: e.target.value })}
           className="w-full rounded-xl border p-3"
         />
         <input
           type="text"
           placeholder="Gold / accent color (hex, optional — default #c9a35a)"
-          value={editForm.goldColor}
-          onChange={(e) => setForm({ ...editForm, goldColor: e.target.value })}
+          value={form.goldColor}
+          onChange={(e) => setForm({ ...form, goldColor: e.target.value })}
           className="w-full rounded-xl border p-3"
         />
         <input
