@@ -24,70 +24,145 @@ export default function DashboardShell<T extends string>({
 
   return (
     <div className="dash-shell">
-      <div className={`dash-overlay ${open ? 'open' : ''}`} onClick={() => setOpen(false)} />
+      {/* Mobile overlay */}
+      <div
+        className={`dash-overlay ${open ? 'open' : ''}`}
+        onClick={() => setOpen(false)}
+        aria-hidden="true"
+      />
+
+      {/* Sidebar */}
       <aside className={`dash-sidebar ${open ? 'open' : ''}`}>
-        <div className="flex items-center gap-2 px-5">
-          <span className="font-display text-sm font-extrabold leading-tight text-white">{brandLabel}</span>
+        {/* Brand */}
+        <div className="dash-brand">
+          <div className="dash-brand-mark">S</div>
+
+          <div className="min-w-0">
+            <div className="dash-brand-name">SchoolOS</div>
+            <div className="dash-brand-label">{brandLabel}</div>
+          </div>
+
           {open && (
             <button
               type="button"
               onClick={() => setOpen(false)}
               aria-label="Close menu"
-              className="dash-icon-btn ml-auto"
-              style={{ background: 'rgba(255,255,255,0.08)', borderColor: 'transparent', color: '#fff' }}
+              className="dash-icon-btn dash-close"
             >
               ✕
             </button>
           )}
         </div>
+
+        {/* Website link */}
         <Link
           href="/"
-          className="side-link"
-          style={{ borderLeft: '3px solid transparent' }}
+          className="dash-back-link"
+          onClick={() => setOpen(false)}
         >
-          &larr; Back to website
+          <span>←</span>
+          <span>Back to website</span>
         </Link>
-        <nav className="flex flex-col gap-0.5">
-          {tabs.map((t) => (
-            <button
-              key={t.id}
-              type="button"
-              onClick={() => {
-                onTabChange(t.id);
-                setOpen(false);
-              }}
-              className={`side-link ${activeTab === t.id ? 'active' : ''}`}
-            >
-              {t.label}
-            </button>
-          ))}
+
+        {/* Navigation */}
+        <div className="dash-nav-label">School management</div>
+
+        <nav className="dash-nav">
+          {tabs.map((tab) => {
+            const active = activeTab === tab.id;
+
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => {
+                  onTabChange(tab.id);
+                  setOpen(false);
+                }}
+                className={`dash-nav-item ${active ? 'active' : ''}`}
+              >
+                <span className="dash-nav-indicator" />
+                <span>{tab.label}</span>
+              </button>
+            );
+          })}
         </nav>
-        <div className="mt-auto px-1.5">
-          <button type="button" onClick={onLogout} className="side-link">
-            Log out
+
+        {/* Bottom */}
+        <div className="dash-sidebar-bottom">
+          <div className="dash-user-mini">
+            <div className="dash-avatar">
+              {(userLabel || 'A').charAt(0).toUpperCase()}
+            </div>
+
+            <div className="min-w-0">
+              <div className="dash-user-name">
+                {userLabel || 'Administrator'}
+              </div>
+              <div className="dash-user-role">School administrator</div>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={onLogout}
+            className="dash-logout"
+          >
+            <span>↪</span>
+            <span>Log out</span>
           </button>
         </div>
       </aside>
 
-      <main className="p-5 sm:p-8" style={{ background: 'var(--cream)' }}>
-        <div
-          className="sticky top-0 z-30 mb-6 flex flex-wrap items-center gap-3.5 py-1"
-          style={{ background: 'var(--cream)' }}
-        >
-          <button
-            type="button"
-            onClick={() => setOpen(true)}
-            aria-label="Open menu"
-            className="dash-icon-btn dash-mobile-toggle"
-          >
-            ☰
-          </button>
-          <Link href="/" className="dash-icon-btn" aria-label="Back to website" title="Back to website">
-            ⌂
-          </Link>
-          <span className="text-sm text-[var(--muted)]">Signed in as {userLabel || '…'}</span>
-        </div>
-        {children}
+      {/* Main application */}
+      <main className="dash-main">
+        {/* Top bar */}
+        <header className="dash-topbar">
+          <div className="dash-topbar-left">
+            <button
+              type="button"
+              onClick={() => setOpen(true)}
+              aria-label="Open menu"
+              className="dash-icon-btn dash-mobile-toggle"
+            >
+              ☰
+            </button>
+
+            <div className="dash-mobile-brand">
+              <span className="dash-mobile-brand-name">SchoolOS</span>
+              <span className="dash-mobile-brand-label">
+                {brandLabel}
+              </span>
+            </div>
+          </div>
+
+          <div className="dash-topbar-right">
+            <Link
+              href="/"
+              className="dash-topbar-link"
+              title="Back to website"
+            >
+              <span>⌂</span>
+              <span className="hidden sm:inline">Website</span>
+            </Link>
+
+            <div className="dash-divider" />
+
+            <div className="dash-signed-in">
+              <span className="dash-signed-label">Signed in as</span>
+              <span className="dash-signed-user">
+                {userLabel || 'Administrator'}
+              </span>
+            </div>
+
+            <div className="dash-avatar dash-avatar-top">
+              {(userLabel || 'A').charAt(0).toUpperCase()}
+            </div>
+          </div>
+        </header>
+
+        {/* Page content */}
+        <div className="dash-content">{children}</div>
       </main>
     </div>
   );
