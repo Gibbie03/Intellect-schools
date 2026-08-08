@@ -30,6 +30,7 @@ export type Database = {
           prospectus_url: string | null;
           campuses: string | null;
           template: string;
+          navbar_style: 'default' | 'modern' | 'branded';
           status: 'Active' | 'Suspended';
           plan: string;
           features: Record<string, boolean>;
@@ -63,6 +64,7 @@ export type Database = {
           prospectus_url?: string | null;
           campuses?: string | null;
           template?: string;
+          navbar_style?: 'default' | 'modern' | 'branded';
           status?: 'Active' | 'Suspended';
           plan?: string;
           features?: Record<string, boolean>;
@@ -96,6 +98,7 @@ export type Database = {
           prospectus_url?: string | null;
           campuses?: string | null;
           template?: string;
+          navbar_style?: 'default' | 'modern' | 'branded';
           status?: 'Active' | 'Suspended';
           plan?: string;
           features?: Record<string, boolean>;
