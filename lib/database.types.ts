@@ -10,6 +10,7 @@ export type Database = {
           id_prefix: string;
           logo_url: string | null;
           hero_image_url: string | null;
+          hero_description: string | null;
           tagline: string | null;
           motto: string | null;
           primary_color: string | null;
@@ -44,6 +45,7 @@ export type Database = {
           id_prefix: string;
           logo_url?: string | null;
           hero_image_url?: string | null;
+          hero_description: string | null;
           tagline?: string | null;
           motto?: string | null;
           primary_color?: string | null;
@@ -78,6 +80,7 @@ export type Database = {
           id_prefix?: string;
           logo_url?: string | null;
           hero_image_url?: string | null;
+          hero_description: string | null;
           tagline?: string | null;
           motto?: string | null;
           primary_color?: string | null;
