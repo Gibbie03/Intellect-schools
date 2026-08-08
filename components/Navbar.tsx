@@ -46,17 +46,12 @@ export default function Navbar({
           MOBILE HEADER
           ========================================================= */}
       <div className="md:hidden">
-        <div
-          className="
-            flex
-            min-h-[92px]
-            w-full
-            items-center
-            gap-3
-            px-4
-            py-3
-          "
-        >
+
+        {/* ---------------------------------------------------------
+            SCHOOL IDENTITY ROW
+            --------------------------------------------------------- */}
+        <div className="flex w-full items-center gap-3 px-4 py-4">
+
           {/* Logo */}
           {logoUrl ? (
             <Link
@@ -64,8 +59,8 @@ export default function Navbar({
               onClick={() => setMenuOpen(false)}
               className="
                 flex
-                h-[52px]
-                w-[52px]
+                h-[56px]
+                w-[56px]
                 shrink-0
                 items-center
                 justify-center
@@ -79,7 +74,7 @@ export default function Navbar({
               />
             </Link>
           ) : (
-            <div className="h-[52px] w-[52px] shrink-0" />
+            <div className="h-[56px] w-[56px] shrink-0" />
           )}
 
           {/* School name + motto */}
@@ -87,13 +82,12 @@ export default function Navbar({
             <Link
               href="/"
               onClick={() => setMenuOpen(false)}
-              className="block min-w-0 no-underline"
+              className="block"
             >
               <div
                 className="
-                  truncate
                   font-[var(--font-manrope)]
-                  text-[clamp(15px,4.5vw,20px)]
+                  text-[18px]
                   font-extrabold
                   leading-[1.1]
                   tracking-[-0.03em]
@@ -103,18 +97,19 @@ export default function Navbar({
                 {schoolName}
               </div>
 
+              {/* Motto intentionally wraps.
+                  Long school mottos are NOT truncated. */}
               {motto && (
                 <div
                   className="
-                    mt-1
+                    mt-1.5
                     max-w-full
-                    truncate
                     font-[var(--font-inter)]
                     text-[9px]
                     font-medium
                     uppercase
-                    leading-[1.2]
-                    tracking-[0.16em]
+                    leading-[1.45]
+                    tracking-[0.12em]
                     text-[var(--muted)]
                   "
                 >
@@ -123,41 +118,69 @@ export default function Navbar({
               )}
             </Link>
           </div>
+        </div>
 
-          {/* Compact mobile menu button */}
+        {/* ---------------------------------------------------------
+            MOBILE NAVIGATION ROW
+            --------------------------------------------------------- */}
+        <div
+          className="
+            flex
+            min-h-[48px]
+            items-center
+            justify-between
+            border-t
+            border-[var(--line)]
+            bg-[var(--paper)]
+            px-4
+          "
+        >
+          <div
+            className="
+              font-[var(--font-inter)]
+              text-[10px]
+              font-semibold
+              uppercase
+              tracking-[0.12em]
+              text-[var(--muted)]
+            "
+          >
+            Navigation
+          </div>
+
+          {/* Menu button */}
           <button
             type="button"
             aria-label={menuOpen ? 'Close menu' : 'Open menu'}
             aria-expanded={menuOpen}
             onClick={() => setMenuOpen((value) => !value)}
             className="
-              flex
-              h-[42px]
-              w-[68px]
-              shrink-0
+              inline-flex
+              h-[34px]
               items-center
               justify-center
-              rounded-[10px]
-              border
-              border-[var(--line)]
-              bg-transparent
-              px-3
-              font-[var(--font-manrope)]
-              text-[13px]
+              rounded-[8px]
+              bg-[var(--brand-color)]
+              px-5
+              font-[var(--font-inter)]
+              text-[11px]
               font-bold
-              text-[var(--ink)]
-              transition-colors
-              hover:bg-black/[0.03]
+              text-white
+              transition-opacity
+              hover:opacity-90
             "
           >
             {menuOpen ? 'Close' : 'Menu'}
           </button>
         </div>
 
-        {/* Mobile menu */}
+        {/* ---------------------------------------------------------
+            MOBILE MENU
+            --------------------------------------------------------- */}
         {menuOpen && (
           <div className="border-t border-[var(--line)] bg-[var(--cream)] px-4 pb-5">
             <nav className="flex flex-col">
+
               {navItems.map((item) => (
                 <Link
                   key={item.href}
@@ -177,7 +200,9 @@ export default function Navbar({
                 </Link>
               ))}
 
+              {/* Extra actions */}
               <div className="mt-4 flex gap-2">
+
                 <Link
                   href="/teachers"
                   onClick={() => setMenuOpen(false)}
@@ -230,6 +255,7 @@ export default function Navbar({
                 >
                   Apply
                 </Link>
+
               </div>
             </nav>
           </div>
@@ -240,6 +266,7 @@ export default function Navbar({
           DESKTOP HEADER
           ========================================================= */}
       <div className="hidden md:block">
+
         {/* ---------------------------------------------------------
             BRAND ROW
             --------------------------------------------------------- */}
@@ -256,6 +283,7 @@ export default function Navbar({
             xl:px-12
           "
         >
+
           {/* Logo */}
           {logoUrl ? (
             <Link
@@ -281,6 +309,7 @@ export default function Navbar({
           {/* School name + motto */}
           <div className="min-w-0 flex-1">
             <Link href="/" className="block min-w-0">
+
               <div
                 className="
                   truncate
@@ -312,11 +341,13 @@ export default function Navbar({
                   {motto}
                 </div>
               )}
+
             </Link>
           </div>
 
           {/* Desktop utility actions */}
           <div className="ml-5 flex shrink-0 items-center gap-4">
+
             <Link
               href="/teachers"
               className="
@@ -365,11 +396,12 @@ export default function Navbar({
             >
               Apply
             </Link>
+
           </div>
         </div>
 
         {/* ---------------------------------------------------------
-            NAVIGATION ROW
+            DESKTOP NAVIGATION ROW
             --------------------------------------------------------- */}
         <div
           className="
@@ -392,6 +424,7 @@ export default function Navbar({
             "
           >
             <nav className="flex min-w-0 flex-1 items-center gap-0">
+
               {navItems.map((item, index) => (
                 <Link
                   key={item.href}
@@ -414,6 +447,7 @@ export default function Navbar({
                 >
                   {item.label}
 
+                  {/* Active Home indicator */}
                   {index === 0 && (
                     <span
                       className="
@@ -428,6 +462,7 @@ export default function Navbar({
                   )}
                 </Link>
               ))}
+
             </nav>
           </div>
         </div>
@@ -445,4 +480,4 @@ export default function Navbar({
       />
     </header>
   );
-                               }
+}
