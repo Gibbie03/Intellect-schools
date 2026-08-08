@@ -84,7 +84,7 @@ export default async function Home() {
             {tagline}
           </h1>
           <p className="mt-5 max-w-[52ch] text-[17px] leading-[1.65] text-white/85">
-            {hero description}
+            {heroDescription}
           </p>
           <div className="mt-8 flex flex-wrap gap-3.5">
             <Link href="/admissions" className="btn btn-primary">
