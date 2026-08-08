@@ -34,16 +34,6 @@ export default function Navbar({
 
   const isDefault = navbarStyle === 'default';
 
-  /*
-   * Default SchoolOS template:
-   * - Cream header
-   * - Dark ink text
-   * - Gold separator
-   *
-   * Branded schools:
-   * - Keep their existing branded appearance
-   * - Colour comes from the CSS variables set in layout.tsx
-   */
   const headerClass = isDefault
     ? 'bg-[var(--cream)] text-[var(--ink)]'
     : 'bg-[var(--cream)] text-[var(--ink)]';
@@ -58,42 +48,56 @@ export default function Navbar({
       <div className="md:hidden">
         <div
           className="
-            flex min-h-[150px] w-full items-start
-            px-5 pt-7 pb-6
+            flex
+            min-h-[92px]
+            w-full
+            items-center
+            gap-3
+            px-4
+            py-3
           "
         >
           {/* Logo */}
           {logoUrl ? (
-            <div className="flex h-[76px] w-[76px] shrink-0 items-center justify-center overflow-hidden">
+            <Link
+              href="/"
+              onClick={() => setMenuOpen(false)}
+              className="
+                flex
+                h-[52px]
+                w-[52px]
+                shrink-0
+                items-center
+                justify-center
+                overflow-hidden
+              "
+            >
               <img
                 src={logoUrl}
                 alt={`${schoolName} logo`}
                 className="max-h-full max-w-full object-contain"
               />
-            </div>
+            </Link>
           ) : (
-            <div className="w-[76px] shrink-0" />
+            <div className="h-[52px] w-[52px] shrink-0" />
           )}
 
-          {/* School identity */}
-          <div
-            className="
-              min-w-0 flex-1
-              pl-4 pr-3
-            "
-          >
+          {/* School name + motto */}
+          <div className="min-w-0 flex-1">
             <Link
               href="/"
-              className="block no-underline"
               onClick={() => setMenuOpen(false)}
+              className="block min-w-0 no-underline"
             >
               <div
                 className="
+                  truncate
                   font-[var(--font-manrope)]
+                  text-[clamp(15px,4.5vw,20px)]
                   font-extrabold
-                  leading-[1.05]
-                  tracking-[-0.035em]
-                  text-[clamp(17px,4.8vw,23px)]
+                  leading-[1.1]
+                  tracking-[-0.03em]
+                  text-[var(--ink)]
                 "
               >
                 {schoolName}
@@ -102,16 +106,15 @@ export default function Navbar({
               {motto && (
                 <div
                   className="
-                    mt-2
+                    mt-1
                     max-w-full
-                    overflow-hidden
-                    text-ellipsis
-                    whitespace-nowrap
+                    truncate
                     font-[var(--font-inter)]
-                    text-[11px]
+                    text-[9px]
                     font-medium
                     uppercase
-                    tracking-[0.22em]
+                    leading-[1.2]
+                    tracking-[0.16em]
                     text-[var(--muted)]
                   "
                 >
@@ -121,23 +124,26 @@ export default function Navbar({
             </Link>
           </div>
 
-          {/* Mobile menu button */}
+          {/* Compact mobile menu button */}
           <button
             type="button"
             aria-label={menuOpen ? 'Close menu' : 'Open menu'}
             aria-expanded={menuOpen}
             onClick={() => setMenuOpen((value) => !value)}
             className="
-              mt-0
-              flex h-[86px] w-[138px]
+              flex
+              h-[42px]
+              w-[68px]
               shrink-0
-              items-center justify-center
-              rounded-[16px]
-              border border-[var(--line)]
+              items-center
+              justify-center
+              rounded-[10px]
+              border
+              border-[var(--line)]
               bg-transparent
-              px-6
+              px-3
               font-[var(--font-manrope)]
-              text-[22px]
+              text-[13px]
               font-bold
               text-[var(--ink)]
               transition-colors
@@ -150,7 +156,7 @@ export default function Navbar({
 
         {/* Mobile menu */}
         {menuOpen && (
-          <div className="border-t border-[var(--line)] bg-[var(--cream)] px-5 pb-6">
+          <div className="border-t border-[var(--line)] bg-[var(--cream)] px-4 pb-5">
             <nav className="flex flex-col">
               {navItems.map((item) => (
                 <Link
@@ -158,10 +164,11 @@ export default function Navbar({
                   href={item.href}
                   onClick={() => setMenuOpen(false)}
                   className="
-                    border-b border-[var(--line)]
-                    py-4
+                    border-b
+                    border-[var(--line)]
+                    py-3.5
                     font-[var(--font-inter)]
-                    text-[15px]
+                    text-[14px]
                     font-medium
                     text-[var(--ink)]
                   "
@@ -170,16 +177,18 @@ export default function Navbar({
                 </Link>
               ))}
 
-              <div className="mt-4 flex gap-3">
+              <div className="mt-4 flex gap-2">
                 <Link
                   href="/teachers"
                   onClick={() => setMenuOpen(false)}
                   className="
                     flex-1
-                    border border-[var(--line)]
-                    px-4 py-3
+                    border
+                    border-[var(--line)]
+                    px-3
+                    py-2.5
                     text-center
-                    text-sm
+                    text-xs
                     font-semibold
                     text-[var(--ink)]
                   "
@@ -192,10 +201,12 @@ export default function Navbar({
                   onClick={() => setMenuOpen(false)}
                   className="
                     flex-1
-                    border border-[var(--line)]
-                    px-4 py-3
+                    border
+                    border-[var(--line)]
+                    px-3
+                    py-2.5
                     text-center
-                    text-sm
+                    text-xs
                     font-semibold
                     text-[var(--ink)]
                   "
@@ -207,10 +218,12 @@ export default function Navbar({
                   href="/admissions/apply"
                   onClick={() => setMenuOpen(false)}
                   className="
+                    flex-1
                     bg-[var(--brand-color)]
-                    px-5 py-3
+                    px-3
+                    py-2.5
                     text-center
-                    text-sm
+                    text-xs
                     font-bold
                     text-white
                   "
@@ -234,7 +247,7 @@ export default function Navbar({
           className="
             mx-auto
             flex
-            min-h-[76px]
+            min-h-[68px]
             w-full
             max-w-[1440px]
             items-center
@@ -248,10 +261,10 @@ export default function Navbar({
             <Link
               href="/"
               className="
-                mr-4
+                mr-3
                 flex
-                h-[54px]
-                w-[54px]
+                h-[46px]
+                w-[46px]
                 shrink-0
                 items-center
                 justify-center
@@ -267,11 +280,12 @@ export default function Navbar({
 
           {/* School name + motto */}
           <div className="min-w-0 flex-1">
-            <Link href="/" className="block">
+            <Link href="/" className="block min-w-0">
               <div
                 className="
+                  truncate
                   font-[var(--font-manrope)]
-                  text-[18px]
+                  text-[17px]
                   font-extrabold
                   leading-[1.05]
                   tracking-[-0.025em]
@@ -285,11 +299,13 @@ export default function Navbar({
                 <div
                   className="
                     mt-1
+                    truncate
                     font-[var(--font-inter)]
-                    text-[9px]
+                    text-[8px]
                     font-medium
                     uppercase
-                    tracking-[0.2em]
+                    leading-[1.2]
+                    tracking-[0.18em]
                     text-[var(--muted)]
                   "
                 >
@@ -300,12 +316,12 @@ export default function Navbar({
           </div>
 
           {/* Desktop utility actions */}
-          <div className="ml-6 flex shrink-0 items-center gap-5">
+          <div className="ml-5 flex shrink-0 items-center gap-4">
             <Link
               href="/teachers"
               className="
                 font-[var(--font-inter)]
-                text-[11px]
+                text-[10px]
                 font-medium
                 text-[var(--muted)]
                 transition-colors
@@ -319,7 +335,7 @@ export default function Navbar({
               href="/admin"
               className="
                 font-[var(--font-inter)]
-                text-[11px]
+                text-[10px]
                 font-medium
                 text-[var(--muted)]
                 transition-colors
@@ -334,13 +350,13 @@ export default function Navbar({
               className="
                 relative
                 inline-flex
-                h-[32px]
+                h-[30px]
                 items-center
                 justify-center
                 bg-[var(--brand-color)]
-                px-5
+                px-4
                 font-[var(--font-inter)]
-                text-[11px]
+                text-[10px]
                 font-bold
                 text-white
                 transition-opacity
@@ -357,7 +373,8 @@ export default function Navbar({
             --------------------------------------------------------- */}
         <div
           className="
-            border-t border-[var(--line)]
+            border-t
+            border-[var(--line)]
             bg-[var(--cream)]
           "
         >
@@ -365,7 +382,7 @@ export default function Navbar({
             className="
               mx-auto
               flex
-              min-h-[44px]
+              min-h-[40px]
               w-full
               max-w-[1440px]
               items-center
@@ -382,12 +399,12 @@ export default function Navbar({
                   className={`
                     relative
                     flex
-                    h-[44px]
+                    h-[40px]
                     shrink-0
                     items-center
-                    px-3
+                    px-2.5
                     font-[var(--font-inter)]
-                    text-[11px]
+                    text-[10px]
                     font-medium
                     text-[var(--muted)]
                     transition-colors
@@ -402,8 +419,8 @@ export default function Navbar({
                       className="
                         absolute
                         bottom-0
-                        left-3
-                        right-3
+                        left-2.5
+                        right-2.5
                         h-[2px]
                         bg-[var(--brand-color)]
                       "
@@ -421,11 +438,11 @@ export default function Navbar({
           ========================================================= */}
       <div
         className="
-          h-[4px]
+          h-[3px]
           w-full
           bg-[var(--gold)]
         "
       />
     </header>
   );
-        }
+                               }
