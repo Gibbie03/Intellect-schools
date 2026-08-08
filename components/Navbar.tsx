@@ -44,11 +44,11 @@ export default function Navbar({
 
   const isModern = navbarStyle === 'modern';
   const isBranded = navbarStyle === 'branded';
-  const isDefault = navbarStyle === 'default';
+  const defaultNavbar = navbarStyle === 'default';
 
-  const [hideHeader, setHideHeader] = useState(false);
-  const lastScrollY = useRef(0);
-
+  /*
+   * Prevent the page from scrolling while the mobile menu is open.
+   */
   useEffect(() => {
     document.body.style.overflow = open ? 'hidden' : '';
 
@@ -56,6 +56,12 @@ export default function Navbar({
       document.body.style.overflow = '';
     };
   }, [open]);
+
+  /*
+   * Hide navbar when scrolling down.
+   */
+  const [hideHeader, setHideHeader] = useState(false);
+  const lastScrollY = useRef(0);
 
   useEffect(() => {
     lastScrollY.current = window.scrollY;
@@ -70,11 +76,14 @@ export default function Navbar({
 
     window.addEventListener('scroll', handleScroll, { passive: true });
 
-    return () => window.removeEventListener('scroll', handleScroll);
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+    };
   }, []);
 
   /*
    * ADMIN / TEACHER DASHBOARDS
+   * These pages have their own navigation.
    */
   if (
     pathname?.startsWith('/admin') ||
@@ -103,7 +112,7 @@ export default function Navbar({
   }
 
   /*
-   * SCHOOL OS LANDING PAGE
+   * SCHOOLOS LANDING PAGE
    */
   if (isLanding) {
     return (
@@ -185,12 +194,20 @@ export default function Navbar({
     );
   }
 
+  const links = schoolLinks;
+
+  const shouldHide = hideHeader && !open;
+
   /*
-   * NAVBAR COLORS
+   * NAVBAR BACKGROUND
    *
    * IMPORTANT:
-   * The default style uses the same paper/cream background on both
-   * desktop and mobile.
+   * Default = cream/paper
+   * Modern = paper
+   * Branded = school's brand colour
+   *
+   * This keeps the default template independent of the school's
+   * primary colour.
    */
   const navbarBackground = isBranded
     ? 'var(--brand-700)'
@@ -198,12 +215,18 @@ export default function Navbar({
       ? 'var(--paper)'
       : 'color-mix(in srgb, var(--paper) 95%, transparent)';
 
+  /*
+   * NAVBAR BORDER
+   */
   const navbarBorder = isBranded
     ? '2px solid var(--brand-500)'
-    : isDefault
+    : defaultNavbar
       ? '3px solid var(--gold)'
       : '1px solid var(--line)';
 
+  /*
+   * TEXT COLOURS
+   */
   const schoolNameClass = isBranded
     ? 'text-white'
     : 'text-[var(--ink)]';
@@ -212,6 +235,9 @@ export default function Navbar({
     ? 'text-white/70'
     : 'text-[var(--muted)]';
 
+  /*
+   * DESKTOP NAV LINK STYLE
+   */
   const linkClass = (href: string) => {
     const active = pathname === href;
 
@@ -238,11 +264,8 @@ export default function Navbar({
     }`;
   };
 
-  const links = schoolLinks;
-  const shouldHide = hideHeader && !open;
-
   return (
-    <header
+    <div
       className={`sticky top-0 z-50 backdrop-blur transition-transform duration-300 ease-in-out ${
         isBranded ? 'text-white' : 'text-[var(--ink)]'
       }`}
@@ -255,17 +278,12 @@ export default function Navbar({
       }}
     >
       <nav
-        className={`wrap ${
-          /*
-           * MOBILE:
-           * Brand and Menu remain on one controlled row.
-           *
-           * DESKTOP:
-           * Brand sits left and navigation sits right.
-           */
-          isDefault
-            ? 'flex flex-col gap-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:gap-6 sm:py-5'
-            : 'flex flex-col gap-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:gap-6 sm:py-5'
+        className={`wrap flex flex-wrap items-center justify-between ${
+          isModern
+            ? 'gap-x-4 gap-y-3 py-4'
+            : defaultNavbar
+              ? 'gap-x-4 gap-y-3 py-4 sm:py-5'
+              : 'gap-x-4 gap-y-3 py-5'
         }`}
       >
         {/* =========================================================
@@ -274,77 +292,33 @@ export default function Navbar({
 
         <Link
           href="/"
-          className="
-            flex min-w-0
-            items-center
-            justify-center
-            gap-3
-            sm:justify-start
-          "
+          className="flex min-w-0 w-[calc(100%-92px)] items-center gap-2.5 sm:w-auto"
         >
+          {/* SCHOOL LOGO */}
+
           {logoUrl && (
             // eslint-disable-next-line @next/next/no-img-element
             <img
               src={logoUrl}
               alt={schoolName}
-              className="
-                h-12
-                w-auto
-                max-w-[72px]
-                shrink-0
-                object-contain
-                sm:h-14
-                sm:max-w-[88px]
-              "
+              className="h-9 w-auto max-w-[52px] shrink-0 object-contain sm:h-10 sm:max-w-none"
             />
           )}
 
-          <span
-            className="
-              min-w-0
-              max-w-[calc(100vw-150px)]
-              flex
-              flex-col
-              items-start
-              leading-tight
-            "
-          >
-            {/*
-             * Responsive school name.
-             *
-             * clamp() means:
-             * - never gets too small
-             * - grows naturally on larger screens
-             * - long school names automatically become smaller
-             * - text is allowed to wrap cleanly rather than overflow
-             */}
+          {/* SCHOOL NAME + MOTTO */}
+
+          <span className="min-w-0 leading-tight">
             <span
-              className={`
-                font-display
-                font-extrabold
-                tracking-[-0.02em]
-                ${schoolNameClass}
-                text-[clamp(1rem,4.2vw,1.45rem)]
-              `}
+              className={`block font-display font-extrabold leading-[1.05] ${schoolNameClass}`}
               style={{
-                overflowWrap: 'break-word',
-                wordBreak: 'normal',
+                fontSize: 'clamp(15px, 4.2vw, 19px)',
               }}
             >
               {schoolName}
             </span>
 
             <span
-              className={`
-                mt-1
-                max-w-full
-                text-[9px]
-                font-bold
-                uppercase
-                tracking-[0.16em]
-                sm:text-[10px]
-                ${mottoClass}
-              `}
+              className={`mt-1 block whitespace-nowrap text-[9px] font-bold uppercase tracking-[0.16em] sm:text-[10px] ${mottoClass}`}
             >
               {motto || 'School Portal'}
             </span>
@@ -358,31 +332,15 @@ export default function Navbar({
         <button
           type="button"
           onClick={() => setOpen(!open)}
-          className={`
-            absolute
-            right-4
-            top-1/2
-            -translate-y-1/2
-            rounded-xl
-            px-5
-            py-3
-            text-sm
-            font-semibold
-            transition-colors
-            sm:static
-            sm:ml-auto
-            sm:translate-y-0
-            md:hidden
-            ${
-              isBranded
-                ? 'border border-white/30 text-white hover:bg-white/10'
-                : 'border border-[var(--line)] text-[var(--ink)] hover:bg-[var(--cream)]'
-            }
-          `}
+          className={`ml-auto h-[48px] shrink-0 rounded-xl px-6 text-sm font-semibold md:hidden ${
+            isBranded
+              ? 'border border-white/30 text-white'
+              : 'border border-[var(--line)] text-[var(--ink)]'
+          }`}
           aria-label="Toggle navigation"
           aria-expanded={open}
         >
-          {open ? 'Close' : 'Menu'}
+          Menu
         </button>
 
         {/* =========================================================
@@ -415,69 +373,44 @@ export default function Navbar({
 
       {open && (
         <div
-          className={`
-            border-t
-            px-5
-            py-4
-            md:hidden
-            ${
-              isBranded
-                ? 'border-white/15'
-                : 'border-[var(--line)]'
-            }
-          `}
+          className={`flex flex-col gap-1 border-t px-6 py-4 md:hidden ${
+            isBranded
+              ? 'border-white/15'
+              : 'border-[var(--line)]'
+          }`}
         >
-          <div className="flex flex-col gap-1">
-            {links.map((link) => {
-              const active = pathname === link.href;
+          {links.map((link) => {
+            const active = pathname === link.href;
 
-              return (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  onClick={() => setOpen(false)}
-                  className={`
-                    rounded-lg
-                    px-3
-                    py-2.5
-                    text-sm
-                    font-medium
-                    ${
-                      isBranded
-                        ? active
-                          ? 'bg-[var(--brand-500)] text-white'
-                          : 'text-white/85 hover:bg-white/10 hover:text-white'
-                        : active
-                          ? 'bg-[var(--brand-color)] text-white'
-                          : 'text-[var(--muted)] hover:bg-[var(--cream)]'
-                    }
-                  `}
-                >
-                  {link.label}
-                </Link>
-              );
-            })}
+            return (
+              <Link
+                key={link.href}
+                href={link.href}
+                onClick={() => setOpen(false)}
+                className={`rounded-lg px-3 py-2 text-sm font-medium ${
+                  isBranded
+                    ? active
+                      ? 'bg-[var(--brand-500)] text-white'
+                      : 'text-white/85 hover:bg-white/10 hover:text-white'
+                    : active
+                      ? 'bg-[var(--brand-color)] text-white'
+                      : 'text-[var(--muted)] hover:bg-[var(--cream)]'
+                }`}
+              >
+                {link.label}
+              </Link>
+            );
+          })}
 
-            <Link
-              href="/admissions"
-              onClick={() => setOpen(false)}
-              className="
-                mt-2
-                rounded-lg
-                bg-[var(--brand-500)]
-                px-3
-                py-2.5
-                text-center
-                text-sm
-                font-semibold
-                text-white
-              "
-            >
-              Apply
-            </Link>
-          </div>
+          <Link
+            href="/admissions"
+            onClick={() => setOpen(false)}
+            className="mt-2 rounded-lg bg-[var(--brand-500)] px-3 py-2 text-center text-sm font-semibold text-white"
+          >
+            Apply
+          </Link>
         </div>
       )}
-    </header>
+    </div>
   );
-  }
+}
