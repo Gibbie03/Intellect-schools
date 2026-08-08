@@ -17,6 +17,9 @@ export default async function Home() {
   const heroImageUrl = school.hero_image_url;
   const welcomeMessage = school.principal_welcome_message;
   const principalPhotoUrl = school.principal_photo_url;
+  const heroDescription =
+  school.hero_description ||
+  `${name} combines academic excellence, digital learning, and transparent result management for students, parents, teachers, and administrators.`;
 
   const supabase = getSupabaseClient();
 
@@ -81,8 +84,7 @@ export default async function Home() {
             {tagline}
           </h1>
           <p className="mt-5 max-w-[52ch] text-[17px] leading-[1.65] text-white/85">
-            {name} combines academic excellence, digital learning, and transparent result management for students,
-            parents, teachers, and administrators.
+            {hero description}
           </p>
           <div className="mt-8 flex flex-wrap gap-3.5">
             <Link href="/admissions" className="btn btn-primary">
