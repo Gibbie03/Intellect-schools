@@ -1,512 +1,431 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { useEffect, useRef, useState } from 'react';
 
-const schoolLinks = [
-  { href: '/', label: 'Home' },
-  { href: '/admissions', label: 'Admissions' },
-  { href: '/news', label: 'News & Events' },
-  { href: '/timetable', label: 'Timetable' },
-  { href: '/calendar', label: 'Calendar' },
-  { href: '/staff', label: 'Staff' },
-  { href: '/gallery', label: 'Gallery' },
-  { href: '/contact', label: 'Contact' },
-  { href: '/portal', label: 'Student Portal' },
-  { href: '/teacher-dashboard', label: 'Teachers' },
-  { href: '/admin', label: 'Admin' },
+type NavbarProps = {
+  schoolName: string;
+  logoUrl?: string | null;
+  motto?: string | null;
+  navbarStyle?: string;
+  isLanding?: boolean;
+};
+
+const navItems = [
+  { label: 'Home', href: '/' },
+  { label: 'Admissions', href: '/admissions' },
+  { label: 'News & Events', href: '/news' },
+  { label: 'Timetable', href: '/timetable' },
+  { label: 'Calendar', href: '/calendar' },
+  { label: 'Staff', href: '/staff' },
+  { label: 'Gallery', href: '/gallery' },
+  { label: 'Contact', href: '/contact' },
+  { label: 'Student Portal', href: '/student-portal' },
 ];
-
-const landingLinks = [
-  { href: '#features', label: 'Features' },
-  { href: '#pricing', label: 'Pricing' },
-  { href: '#contact', label: 'Contact' },
-];
-
-type NavbarStyle = 'default' | 'modern' | 'branded';
 
 export default function Navbar({
   schoolName,
   logoUrl,
   motto,
   navbarStyle = 'default',
-  isLanding,
-}: {
-  schoolName: string;
-  logoUrl?: string | null;
-  motto?: string | null;
-  navbarStyle?: NavbarStyle;
-  isLanding?: boolean;
-}) {
-  const pathname = usePathname();
-  const [open, setOpen] = useState(false);
+  isLanding = false,
+}: NavbarProps) {
+  const [menuOpen, setMenuOpen] = useState(false);
 
-  const [hideHeader, setHideHeader] = useState(false);
-  const lastScrollY = useRef(0);
-
-  const isModern = navbarStyle === 'modern';
-  const isBranded = navbarStyle === 'branded';
   const isDefault = navbarStyle === 'default';
 
   /*
-   * Prevent the page from scrolling behind the mobile menu.
-   */
-  useEffect(() => {
-    document.body.style.overflow = open ? 'hidden' : '';
-
-    return () => {
-      document.body.style.overflow = '';
-    };
-  }, [open]);
-
-  /*
-   * Hide navbar while scrolling down.
-   */
-  useEffect(() => {
-    lastScrollY.current = window.scrollY;
-
-    const handleScroll = () => {
-      const currentY = window.scrollY;
-      const goingDown = currentY > lastScrollY.current;
-
-      setHideHeader(goingDown && currentY > 120);
-      lastScrollY.current = currentY;
-    };
-
-    window.addEventListener('scroll', handleScroll, { passive: true });
-
-    return () => {
-      window.removeEventListener('scroll', handleScroll);
-    };
-  }, []);
-
-  /*
-   * Never show the main navbar on these dashboards.
-   */
-  if (
-    pathname?.startsWith('/admin') ||
-    pathname?.startsWith('/teacher-dashboard')
-  ) {
-    return null;
-  }
-
-  /*
-   * PLATFORM ADMIN
-   */
-  if (pathname?.startsWith('/platform')) {
-    return (
-      <header className="sticky top-0 z-50 border-b border-gray-100 bg-white/95 backdrop-blur">
-        <nav className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-          <span className="text-lg font-extrabold text-gray-900">
-            SchoolOS
-          </span>
-
-          <span className="text-sm text-gray-500">
-            Platform Admin
-          </span>
-        </nav>
-      </header>
-    );
-  }
-
-  /*
-   * SCHOOLOS LANDING PAGE
-   */
-  if (isLanding) {
-    return (
-      <header className="sticky top-0 z-50 bg-[#f7f5ef]/95 backdrop-blur">
-        <nav className="wrap flex min-h-[68px] items-center gap-4 py-3">
-          <Link
-            href="/"
-            className="font-display text-[19px] font-extrabold"
-            style={{ color: '#1c2444' }}
-          >
-            School
-            <span style={{ color: '#b7842b' }}>OS</span>
-          </Link>
-
-          <button
-            type="button"
-            onClick={() => setOpen(!open)}
-            className="ml-auto rounded-lg border border-black/10 px-3 py-2 text-sm font-medium md:hidden"
-            aria-label="Toggle navigation"
-          >
-            Menu
-          </button>
-
-          <div className="ml-auto hidden items-center gap-6 md:flex">
-            {landingLinks.map((link) => (
-              <a
-                key={link.href}
-                href={link.href}
-                className="text-sm font-semibold"
-                style={{ color: '#151a2c' }}
-              >
-                {link.label}
-              </a>
-            ))}
-
-            <a
-              href="#contact"
-              className="font-display inline-flex items-center px-5 py-2.5 text-[13px] font-bold"
-              style={{
-                background: '#d9a441',
-                color: '#12172f',
-                clipPath:
-                  'polygon(0 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%)',
-              }}
-            >
-              Book a Demo
-            </a>
-          </div>
-        </nav>
-
-        {open && (
-          <div className="flex flex-col gap-1 border-t border-black/10 px-6 py-4 md:hidden">
-            {landingLinks.map((link) => (
-              <a
-                key={link.href}
-                href={link.href}
-                onClick={() => setOpen(false)}
-                className="rounded-lg px-3 py-2 text-sm font-medium"
-                style={{ color: '#151a2c' }}
-              >
-                {link.label}
-              </a>
-            ))}
-
-            <a
-              href="#contact"
-              onClick={() => setOpen(false)}
-              className="mt-2 rounded-lg px-3 py-2 text-center text-sm font-semibold"
-              style={{
-                background: '#d9a441',
-                color: '#12172f',
-              }}
-            >
-              Book a Demo
-            </a>
-          </div>
-        )}
-      </header>
-    );
-  }
-
-  const shouldHide = hideHeader && !open;
-
-  /*
-   * NAVBAR COLORS
+   * Default SchoolOS template:
+   * - Cream header
+   * - Dark ink text
+   * - Gold separator
    *
-   * IMPORTANT:
-   * Default = cream/paper on ALL screen sizes.
-   *
-   * We do NOT switch the default navbar to burgundy or green
-   * on mobile.
+   * Branded schools:
+   * - Keep their existing branded appearance
+   * - Colour comes from the CSS variables set in layout.tsx
    */
-  const navbarBackground = isBranded
-    ? 'var(--brand-700)'
-    : isModern
-      ? 'var(--paper)'
-      : 'var(--cream)';
-
-  const navbarBorder = isBranded
-    ? '2px solid var(--brand-500)'
-    : isDefault
-      ? '3px solid var(--gold)'
-      : '1px solid var(--line)';
-
-  /*
-   * BRAND TEXT COLORS
-   */
-  const schoolNameClass = isBranded
-    ? 'text-white'
-    : 'text-[var(--ink)]';
-
-  const mottoClass = isBranded
-    ? 'text-white/70'
-    : 'text-[var(--muted)]';
-
-  /*
-   * DESKTOP NAV LINK STYLE
-   */
-  const linkClass = (href: string) => {
-    const active = pathname === href;
-
-    if (isBranded) {
-      return `border-b-2 px-1 py-1.5 text-[12px] font-semibold whitespace-nowrap transition-colors ${
-        active
-          ? 'border-[var(--brand-300)] text-white'
-          : 'border-transparent text-white/80 hover:border-[var(--brand-300)] hover:text-white'
-      }`;
-    }
-
-    if (isModern) {
-      return `border-b-2 px-1 py-1.5 text-[12px] font-semibold whitespace-nowrap transition-colors ${
-        active
-          ? 'border-[var(--brand-500)] text-[var(--brand-700)]'
-          : 'border-transparent text-[var(--muted)] hover:border-[var(--brand-300)] hover:text-[var(--brand-700)]'
-      }`;
-    }
-
-    return `border-b-2 px-1 py-1.5 text-[12px] font-semibold whitespace-nowrap transition-colors ${
-      active
-        ? 'border-[var(--brand-color-2)] text-[var(--ink)]'
-        : 'border-transparent text-[var(--muted)] hover:border-[var(--brand-color-2)] hover:text-[var(--ink)]'
-    }`;
-  };
+  const headerClass = isDefault
+    ? 'bg-[var(--cream)] text-[var(--ink)]'
+    : 'bg-[var(--cream)] text-[var(--ink)]';
 
   return (
     <header
-      className={`sticky top-0 z-50 backdrop-blur transition-transform duration-300 ease-in-out ${
-        isBranded ? 'text-white' : 'text-[var(--ink)]'
-      }`}
-      style={{
-        background: navbarBackground,
-        borderBottom: navbarBorder,
-        transform: shouldHide
-          ? 'translateY(-100%)'
-          : 'translateY(0)',
-      }}
+      className={`relative z-50 w-full border-b border-[var(--line)] ${headerClass}`}
     >
-      <nav
-        className={`
-          wrap
-          flex
-          items-center
-          justify-between
-          gap-4
-          px-4
-          sm:px-6
-          lg:px-0
-
-          ${
-            isDefault
-              ? 'min-h-[82px] py-3'
-              : 'min-h-[76px] py-3'
-          }
-        `}
-      >
-        {/* =========================================================
-            SCHOOL BRAND
-            ========================================================= */}
-
-        <Link
-          href="/"
-          className={`
-            flex
-            min-w-0
-            shrink
-            items-center
-            gap-2.5
-            sm:gap-3
-
-            ${
-              isDefault
-                ? 'max-w-[calc(100%-105px)] md:max-w-[280px] lg:max-w-[320px]'
-                : 'max-w-[calc(100%-105px)] md:max-w-[280px] lg:max-w-[320px]'
-            }
-          `}
-        >
-          {logoUrl && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={logoUrl}
-              alt={schoolName}
-              className={`
-                shrink-0
-                object-contain
-                ${
-                  isDefault
-                    ? 'h-12 w-12 sm:h-14 sm:w-14 md:h-12 md:w-12'
-                    : 'h-11 w-11 sm:h-12 sm:w-12'
-                }
-              `}
-            />
-          )}
-
-          <span className="min-w-0 flex-1">
-            {/* 
-              Long school names are allowed to wrap naturally.
-              The font scales down slightly on narrow screens.
-            */}
-            <span
-              className={`
-                block
-                font-display
-                font-extrabold
-                leading-[1.08]
-                tracking-[-0.025em]
-                ${schoolNameClass}
-
-                text-[clamp(15px,4.2vw,18px)]
-                sm:text-[18px]
-                md:text-[17px]
-                lg:text-[18px]
-              `}
-            >
-              {schoolName}
-            </span>
-
-            <span
-              className={`
-                mt-1
-                block
-                whitespace-nowrap
-                text-[9px]
-                font-bold
-                uppercase
-                tracking-[0.16em]
-                sm:text-[10px]
-                ${mottoClass}
-              `}
-            >
-              {motto || 'School Portal'}
-            </span>
-          </span>
-        </Link>
-
-        {/* =========================================================
-            MOBILE MENU BUTTON
-            ========================================================= */}
-
-        <button
-          type="button"
-          onClick={() => setOpen(!open)}
-          className={`
-            shrink-0
-            rounded-xl
-            px-5
-            py-3
-            text-sm
-            font-semibold
-            md:hidden
-
-            ${
-              isBranded
-                ? 'border border-white/30 text-white'
-                : 'border border-[var(--line)] text-[var(--ink)]'
-            }
-          `}
-          aria-label="Toggle navigation"
-          aria-expanded={open}
-        >
-          Menu
-        </button>
-
-        {/* =========================================================
-            DESKTOP NAVIGATION
-            ========================================================= */}
-
+      {/* =========================================================
+          MOBILE HEADER
+          ========================================================= */}
+      <div className="md:hidden">
         <div
           className="
-            hidden
-            min-w-0
-            flex-1
-            items-center
-            justify-end
-            gap-x-3
-            xl:gap-x-4
-            md:flex
+            flex min-h-[150px] w-full items-start
+            px-5 pt-7 pb-6
           "
         >
-          {schoolLinks.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className={linkClass(link.href)}
-            >
-              {link.label}
-            </Link>
-          ))}
+          {/* Logo */}
+          {logoUrl ? (
+            <div className="flex h-[76px] w-[76px] shrink-0 items-center justify-center overflow-hidden">
+              <img
+                src={logoUrl}
+                alt={`${schoolName} logo`}
+                className="max-h-full max-w-full object-contain"
+              />
+            </div>
+          ) : (
+            <div className="w-[76px] shrink-0" />
+          )}
 
-          <Link
-            href="/admissions"
+          {/* School identity */}
+          <div
             className="
-              btn
-              btn-primary
-              shrink-0
-              !px-4
-              !py-2
-              !text-[12px]
+              min-w-0 flex-1
+              pl-4 pr-3
             "
           >
-            Apply
-          </Link>
+            <Link
+              href="/"
+              className="block no-underline"
+              onClick={() => setMenuOpen(false)}
+            >
+              <div
+                className="
+                  font-[var(--font-manrope)]
+                  font-extrabold
+                  leading-[1.05]
+                  tracking-[-0.035em]
+                  text-[clamp(17px,4.8vw,23px)]
+                "
+              >
+                {schoolName}
+              </div>
+
+              {motto && (
+                <div
+                  className="
+                    mt-2
+                    max-w-full
+                    overflow-hidden
+                    text-ellipsis
+                    whitespace-nowrap
+                    font-[var(--font-inter)]
+                    text-[11px]
+                    font-medium
+                    uppercase
+                    tracking-[0.22em]
+                    text-[var(--muted)]
+                  "
+                >
+                  {motto}
+                </div>
+              )}
+            </Link>
+          </div>
+
+          {/* Mobile menu button */}
+          <button
+            type="button"
+            aria-label={menuOpen ? 'Close menu' : 'Open menu'}
+            aria-expanded={menuOpen}
+            onClick={() => setMenuOpen((value) => !value)}
+            className="
+              mt-0
+              flex h-[86px] w-[138px]
+              shrink-0
+              items-center justify-center
+              rounded-[16px]
+              border border-[var(--line)]
+              bg-transparent
+              px-6
+              font-[var(--font-manrope)]
+              text-[22px]
+              font-bold
+              text-[var(--ink)]
+              transition-colors
+              hover:bg-black/[0.03]
+            "
+          >
+            {menuOpen ? 'Close' : 'Menu'}
+          </button>
         </div>
-      </nav>
+
+        {/* Mobile menu */}
+        {menuOpen && (
+          <div className="border-t border-[var(--line)] bg-[var(--cream)] px-5 pb-6">
+            <nav className="flex flex-col">
+              {navItems.map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={() => setMenuOpen(false)}
+                  className="
+                    border-b border-[var(--line)]
+                    py-4
+                    font-[var(--font-inter)]
+                    text-[15px]
+                    font-medium
+                    text-[var(--ink)]
+                  "
+                >
+                  {item.label}
+                </Link>
+              ))}
+
+              <div className="mt-4 flex gap-3">
+                <Link
+                  href="/teachers"
+                  onClick={() => setMenuOpen(false)}
+                  className="
+                    flex-1
+                    border border-[var(--line)]
+                    px-4 py-3
+                    text-center
+                    text-sm
+                    font-semibold
+                    text-[var(--ink)]
+                  "
+                >
+                  Teachers
+                </Link>
+
+                <Link
+                  href="/admin"
+                  onClick={() => setMenuOpen(false)}
+                  className="
+                    flex-1
+                    border border-[var(--line)]
+                    px-4 py-3
+                    text-center
+                    text-sm
+                    font-semibold
+                    text-[var(--ink)]
+                  "
+                >
+                  Admin
+                </Link>
+
+                <Link
+                  href="/admissions/apply"
+                  onClick={() => setMenuOpen(false)}
+                  className="
+                    bg-[var(--brand-color)]
+                    px-5 py-3
+                    text-center
+                    text-sm
+                    font-bold
+                    text-white
+                  "
+                >
+                  Apply
+                </Link>
+              </div>
+            </nav>
+          </div>
+        )}
+      </div>
 
       {/* =========================================================
-          MOBILE NAVIGATION
+          DESKTOP HEADER
           ========================================================= */}
-
-      {open && (
+      <div className="hidden md:block">
+        {/* ---------------------------------------------------------
+            BRAND ROW
+            --------------------------------------------------------- */}
         <div
-          className={`
-            border-t
-            px-4
-            py-4
-            md:hidden
-
-            ${
-              isBranded
-                ? 'border-white/15'
-                : 'border-[var(--line)]'
-            }
-          `}
+          className="
+            mx-auto
+            flex
+            min-h-[76px]
+            w-full
+            max-w-[1440px]
+            items-center
+            px-8
+            lg:px-10
+            xl:px-12
+          "
         >
-          <div className="flex flex-col gap-1">
-            {schoolLinks.map((link) => {
-              const active = pathname === link.href;
+          {/* Logo */}
+          {logoUrl ? (
+            <Link
+              href="/"
+              className="
+                mr-4
+                flex
+                h-[54px]
+                w-[54px]
+                shrink-0
+                items-center
+                justify-center
+              "
+            >
+              <img
+                src={logoUrl}
+                alt={`${schoolName} logo`}
+                className="max-h-full max-w-full object-contain"
+              />
+            </Link>
+          ) : null}
 
-              return (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  onClick={() => setOpen(false)}
-                  className={`
-                    rounded-lg
-                    px-3
-                    py-2.5
-                    text-sm
+          {/* School name + motto */}
+          <div className="min-w-0 flex-1">
+            <Link href="/" className="block">
+              <div
+                className="
+                  font-[var(--font-manrope)]
+                  text-[18px]
+                  font-extrabold
+                  leading-[1.05]
+                  tracking-[-0.025em]
+                  text-[var(--ink)]
+                "
+              >
+                {schoolName}
+              </div>
+
+              {motto && (
+                <div
+                  className="
+                    mt-1
+                    font-[var(--font-inter)]
+                    text-[9px]
                     font-medium
-
-                    ${
-                      isBranded
-                        ? active
-                          ? 'bg-[var(--brand-500)] text-white'
-                          : 'text-white/85 hover:bg-white/10 hover:text-white'
-                        : active
-                          ? 'bg-[var(--brand-color)] text-white'
-                          : 'text-[var(--muted)] hover:bg-[var(--cream)]'
-                    }
-                  `}
+                    uppercase
+                    tracking-[0.2em]
+                    text-[var(--muted)]
+                  "
                 >
-                  {link.label}
-                </Link>
-              );
-            })}
+                  {motto}
+                </div>
+              )}
+            </Link>
+          </div>
+
+          {/* Desktop utility actions */}
+          <div className="ml-6 flex shrink-0 items-center gap-5">
+            <Link
+              href="/teachers"
+              className="
+                font-[var(--font-inter)]
+                text-[11px]
+                font-medium
+                text-[var(--muted)]
+                transition-colors
+                hover:text-[var(--ink)]
+              "
+            >
+              Teachers
+            </Link>
 
             <Link
-              href="/admissions"
-              onClick={() => setOpen(false)}
+              href="/admin"
               className="
-                mt-2
-                rounded-lg
-                bg-[var(--brand-500)]
-                px-3
-                py-2.5
-                text-center
-                text-sm
-                font-semibold
+                font-[var(--font-inter)]
+                text-[11px]
+                font-medium
+                text-[var(--muted)]
+                transition-colors
+                hover:text-[var(--ink)]
+              "
+            >
+              Admin
+            </Link>
+
+            <Link
+              href="/admissions/apply"
+              className="
+                relative
+                inline-flex
+                h-[32px]
+                items-center
+                justify-center
+                bg-[var(--brand-color)]
+                px-5
+                font-[var(--font-inter)]
+                text-[11px]
+                font-bold
                 text-white
+                transition-opacity
+                hover:opacity-90
               "
             >
               Apply
             </Link>
           </div>
         </div>
-      )}
+
+        {/* ---------------------------------------------------------
+            NAVIGATION ROW
+            --------------------------------------------------------- */}
+        <div
+          className="
+            border-t border-[var(--line)]
+            bg-[var(--cream)]
+          "
+        >
+          <div
+            className="
+              mx-auto
+              flex
+              min-h-[44px]
+              w-full
+              max-w-[1440px]
+              items-center
+              px-8
+              lg:px-10
+              xl:px-12
+            "
+          >
+            <nav className="flex min-w-0 flex-1 items-center gap-0">
+              {navItems.map((item, index) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={`
+                    relative
+                    flex
+                    h-[44px]
+                    shrink-0
+                    items-center
+                    px-3
+                    font-[var(--font-inter)]
+                    text-[11px]
+                    font-medium
+                    text-[var(--muted)]
+                    transition-colors
+                    hover:text-[var(--ink)]
+                    ${index === 0 ? 'pl-0' : ''}
+                  `}
+                >
+                  {item.label}
+
+                  {index === 0 && (
+                    <span
+                      className="
+                        absolute
+                        bottom-0
+                        left-3
+                        right-3
+                        h-[2px]
+                        bg-[var(--brand-color)]
+                      "
+                    />
+                  )}
+                </Link>
+              ))}
+            </nav>
+          </div>
+        </div>
+      </div>
+
+      {/* =========================================================
+          GOLD / BRAND ACCENT LINE
+          ========================================================= */}
+      <div
+        className="
+          h-[4px]
+          w-full
+          bg-[var(--gold)]
+        "
+      />
     </header>
   );
-}
+        }
