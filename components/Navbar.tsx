@@ -42,9 +42,16 @@ export default function Navbar({
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
 
+  const [hideHeader, setHideHeader] = useState(false);
+  const lastScrollY = useRef(0);
+
   const isModern = navbarStyle === 'modern';
   const isBranded = navbarStyle === 'branded';
+  const isDefault = navbarStyle === 'default';
 
+  /*
+   * Prevent the page from scrolling behind the mobile menu.
+   */
   useEffect(() => {
     document.body.style.overflow = open ? 'hidden' : '';
 
@@ -53,9 +60,10 @@ export default function Navbar({
     };
   }, [open]);
 
-  const [hideHeader, setHideHeader] = useState(false);
-  const lastScrollY = useRef(0);
-
+  /*
+   * Hide the navbar when scrolling down.
+   * Show it again when scrolling back up.
+   */
   useEffect(() => {
     lastScrollY.current = window.scrollY;
 
@@ -67,11 +75,18 @@ export default function Navbar({
       lastScrollY.current = currentY;
     };
 
-    window.addEventListener('scroll', handleScroll, { passive: true });
+    window.addEventListener('scroll', handleScroll, {
+      passive: true,
+    });
 
-    return () => window.removeEventListener('scroll', handleScroll);
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+    };
   }, []);
 
+  /*
+   * Dashboard pages do not use the public navbar.
+   */
   if (
     pathname?.startsWith('/admin') ||
     pathname?.startsWith('/teacher-dashboard')
@@ -186,28 +201,40 @@ export default function Navbar({
   const shouldHide = hideHeader && !open;
 
   /*
-   * DEFAULT / HILLMASTERS
+   * ============================================================
+   * NAVBAR COLOURS
+   * ============================================================
    *
-   * This intentionally preserves the existing design.
-   */
-  const defaultNavbar =
-    navbarStyle === 'default';
-
-  /*
-   * NAVBAR THEME
+   * DEFAULT
+   * -------
+   * Cream on desktop AND mobile.
+   *
+   * MODERN
+   * ------
+   * Paper/white on desktop AND mobile.
+   *
+   * BRANDED
+   * -------
+   * School brand colour on desktop AND mobile.
+   *
+   * The important part here is that the background is controlled
+   * by one value. There is no mobile CSS changing it.
    */
   const navbarBackground = isBranded
     ? 'var(--brand-700)'
     : isModern
       ? 'var(--paper)'
-      : 'color-mix(in srgb, var(--paper) 95%, transparent)';
+      : 'var(--cream)';
 
   const navbarBorder = isBranded
     ? '2px solid var(--brand-500)'
-    : defaultNavbar
+    : isDefault
       ? '3px solid var(--gold)'
       : '1px solid var(--line)';
 
+  /*
+   * Text colours.
+   */
   const schoolNameClass = isBranded
     ? 'text-white'
     : 'text-[var(--ink)]';
@@ -216,6 +243,9 @@ export default function Navbar({
     ? 'text-white/70'
     : 'text-[var(--muted)]';
 
+  /*
+   * Navigation link styling.
+   */
   const linkClass = (href: string) => {
     const active = pathname === href;
 
@@ -248,8 +278,16 @@ export default function Navbar({
         isBranded ? 'text-white' : 'text-[var(--ink)]'
       }`}
       style={{
-        background: navbarBackground,
+        /*
+         * IMPORTANT:
+         * This is intentionally an inline style so no responsive
+         * Tailwind/CSS rule can change the default navbar colour.
+         *
+         * Default = cream at ALL screen sizes.
+         */
+        backgroundColor: navbarBackground,
         borderBottom: navbarBorder,
+
         transform: shouldHide
           ? 'translateY(-100%)'
           : 'translateY(0)',
@@ -259,7 +297,7 @@ export default function Navbar({
         className={`wrap flex flex-wrap items-center justify-between ${
           isModern
             ? 'gap-x-4 gap-y-3 py-4'
-            : defaultNavbar
+            : isDefault
               ? 'gap-x-4 gap-y-[14px] py-[29px]'
               : 'gap-x-4 gap-y-3 py-5'
         }`}
@@ -268,7 +306,7 @@ export default function Navbar({
         <Link
           href="/"
           className={`flex w-full items-center gap-3 ${
-            defaultNavbar
+            isDefault
               ? 'flex-col text-center sm:w-auto sm:flex-row sm:items-center sm:text-left'
               : 'sm:w-auto'
           }`}
@@ -286,7 +324,7 @@ export default function Navbar({
 
           <span
             className={`flex flex-col leading-tight ${
-              defaultNavbar
+              isDefault
                 ? 'items-center sm:items-start'
                 : 'items-start'
             }`}
@@ -375,7 +413,11 @@ export default function Navbar({
           <Link
             href="/admissions"
             onClick={() => setOpen(false)}
-            className="mt-2 rounded-lg bg-[var(--brand-500)] px-3 py-2 text-center text-sm font-semibold text-white"
+            className={`mt-2 rounded-lg px-3 py-2 text-center text-sm font-semibold ${
+              isBranded
+                ? 'bg-[var(--brand-500)] text-white'
+                : 'bg-[var(--brand-color)] text-white'
+            }`}
           >
             Apply
           </Link>
@@ -383,4 +425,4 @@ export default function Navbar({
       )}
     </div>
   );
-   }
+  }
