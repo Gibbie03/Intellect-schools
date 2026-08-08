@@ -21,6 +21,7 @@ type School = {
   gold_color: string | null;
   tagline: string | null;
   motto: string | null;
+  hero_description: string | null;
   hero_image_url: string | null;
   contact_email: string | null;
   contact_phone: string | null;
@@ -59,6 +60,7 @@ const emptyForm = {
   goldColor: '',
   tagline: '',
   motto: '',
+  heroDescription: '',
   adminFullName: '',
   adminEmail: '',
   adminPassword: '',
@@ -98,6 +100,7 @@ export default function PlatformDashboard() {
     goldColor: '',
     tagline: '',
     motto: '',
+    heroDescription: '',
     heroImageUrl: '',
     contactEmail: '',
     contactPhone: '',
@@ -221,6 +224,7 @@ export default function PlatformDashboard() {
       goldColor: school.gold_color ?? '',
       tagline: school.tagline ?? '',
       motto: school.motto ?? '',
+      heroDescription: school.hero_description ?? '',
       heroImageUrl: school.hero_image_url ?? '',
       contactEmail: school.contact_email ?? '',
       contactPhone: school.contact_phone ?? '',
@@ -477,6 +481,13 @@ export default function PlatformDashboard() {
           value={form.tagline}
           onChange={(e) => setForm({ ...form, tagline: e.target.value })}
           className="w-full rounded-xl border p-3 md:col-span-2"
+        />
+        <textarea
+          placeholder="Hero Description (shown below the homepage headline)"
+          value={form.heroDescription}
+          onChange={(e) =>setForm({ ...form, heroDescription: e.target.value })}
+          className="w-full rounded-xl border p-3 md:col-span-2"
+          rows={4}
         />
         <p className="md:col-span-2 -mt-2 text-xs text-gray-500">
           Logo and hero image are uploaded from your device after the school is created &mdash; edit the school below
@@ -768,6 +779,13 @@ export default function PlatformDashboard() {
                             value={editForm.tagline}
                             onChange={(e) => setEditForm({ ...editForm, tagline: e.target.value })}
                             className="w-full rounded-xl border p-3 md:col-span-2"
+                          />
+                          <textarea
+                            placeholder="Hero Description (shown below the homepage headline)"
+                            value={editForm.heroDescription}
+                            onChange={(e) => setEditForm({ ...editForm, heroDescription: e.target.value })}
+                            className="w-full rounded-xl border p-3 md:col-span-2"
+                            rows={4}
                           />
                           <div className="w-full rounded-xl border p-3 md:col-span-2">
                             <label className="mb-2 block text-sm font-medium text-gray-700">
