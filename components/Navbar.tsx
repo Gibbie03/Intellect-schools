@@ -40,9 +40,11 @@ export default function Navbar({
   isLanding?: boolean;
 }) {
   const pathname = usePathname();
+
   const [open, setOpen] = useState(false);
 
   const [hideHeader, setHideHeader] = useState(false);
+
   const lastScrollY = useRef(0);
 
   const isModern = navbarStyle === 'modern';
@@ -50,7 +52,7 @@ export default function Navbar({
   const isDefault = navbarStyle === 'default';
 
   /*
-   * Prevent the page from scrolling behind the mobile menu.
+   * Prevent page scrolling when the mobile menu is open.
    */
   useEffect(() => {
     document.body.style.overflow = open ? 'hidden' : '';
@@ -61,31 +63,40 @@ export default function Navbar({
   }, [open]);
 
   /*
-   * Hide the navbar when scrolling down.
-   * Show it again when scrolling back up.
+   * Hide navbar when scrolling down.
    */
   useEffect(() => {
     lastScrollY.current = window.scrollY;
 
     const handleScroll = () => {
       const currentY = window.scrollY;
-      const goingDown = currentY > lastScrollY.current;
 
-      setHideHeader(goingDown && currentY > 120);
+      const goingDown =
+        currentY > lastScrollY.current;
+
+      setHideHeader(
+        goingDown && currentY > 120
+      );
+
       lastScrollY.current = currentY;
     };
 
-    window.addEventListener('scroll', handleScroll, {
-      passive: true,
-    });
+    window.addEventListener(
+      'scroll',
+      handleScroll,
+      { passive: true }
+    );
 
     return () => {
-      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener(
+        'scroll',
+        handleScroll
+      );
     };
   }, []);
 
   /*
-   * Dashboard pages do not use the public navbar.
+   * Admin and teacher dashboards have their own navigation.
    */
   if (
     pathname?.startsWith('/admin') ||
@@ -126,7 +137,9 @@ export default function Navbar({
             style={{ color: '#1c2444' }}
           >
             School
-            <span style={{ color: '#b7842b' }}>OS</span>
+            <span style={{ color: '#b7842b' }}>
+              OS
+            </span>
           </Link>
 
           <button
@@ -198,42 +211,43 @@ export default function Navbar({
 
   const links = schoolLinks;
 
-  const shouldHide = hideHeader && !open;
+  const shouldHide =
+    hideHeader && !open;
 
   /*
    * ============================================================
-   * NAVBAR COLOURS
+   * DEFAULT NAVBAR
    * ============================================================
    *
-   * DEFAULT
-   * -------
-   * Cream on desktop AND mobile.
+   * THIS IS THE IMPORTANT FIX.
    *
-   * MODERN
-   * ------
-   * Paper/white on desktop AND mobile.
+   * Default is always cream.
    *
-   * BRANDED
-   * -------
-   * School brand colour on desktop AND mobile.
+   * There is NO mobile override.
+   * There is NO burgundy mobile background.
    *
-   * The important part here is that the background is controlled
-   * by one value. There is no mobile CSS changing it.
+   * Desktop:
+   *     cream
+   *
+   * Mobile:
+   *     cream
+   *
+   * This keeps the same visual identity across screen sizes.
    */
-  const navbarBackground = isBranded
-    ? 'var(--brand-700)'
-    : isModern
-      ? 'var(--paper)'
-      : 'var(--cream)';
+  const navbarBackground = isDefault
+    ? 'var(--cream)'
+    : isBranded
+      ? 'var(--brand-700)'
+      : 'var(--paper)';
 
-  const navbarBorder = isBranded
-    ? '2px solid var(--brand-500)'
-    : isDefault
-      ? '3px solid var(--gold)'
+  const navbarBorder = isDefault
+    ? '3px solid var(--gold)'
+    : isBranded
+      ? '2px solid var(--brand-500)'
       : '1px solid var(--line)';
 
   /*
-   * Text colours.
+   * TEXT COLOURS
    */
   const schoolNameClass = isBranded
     ? 'text-white'
@@ -244,120 +258,215 @@ export default function Navbar({
     : 'text-[var(--muted)]';
 
   /*
-   * Navigation link styling.
+   * NAVIGATION LINK STYLES
    */
   const linkClass = (href: string) => {
-    const active = pathname === href;
+    const active =
+      pathname === href;
 
+    /*
+     * BRANDED
+     */
     if (isBranded) {
-      return `border-b-2 px-1 py-2 text-sm font-semibold transition-colors ${
-        active
-          ? 'border-[var(--brand-300)] text-white'
-          : 'border-transparent text-white/80 hover:border-[var(--brand-300)] hover:text-white'
-      }`;
+      return `
+        border-b-2
+        px-1
+        py-2
+        text-sm
+        font-semibold
+        transition-colors
+        ${
+          active
+            ? 'border-[var(--brand-300)] text-white'
+            : 'border-transparent text-white/80 hover:border-[var(--brand-300)] hover:text-white'
+        }
+      `;
     }
 
+    /*
+     * MODERN
+     */
     if (isModern) {
-      return `border-b-2 px-1 py-2 text-sm font-semibold transition-colors ${
-        active
-          ? 'border-[var(--brand-500)] text-[var(--brand-700)]'
-          : 'border-transparent text-[var(--muted)] hover:border-[var(--brand-300)] hover:text-[var(--brand-700)]'
-      }`;
+      return `
+        border-b-2
+        px-1
+        py-2
+        text-sm
+        font-semibold
+        transition-colors
+        ${
+          active
+            ? 'border-[var(--brand-500)] text-[var(--brand-700)]'
+            : 'border-transparent text-[var(--muted)] hover:border-[var(--brand-300)] hover:text-[var(--brand-700)]'
+        }
+      `;
     }
 
-    return `border-b-2 px-1 py-2 text-sm font-semibold transition-colors ${
-      active
-        ? 'border-[var(--brand-color-2)] text-[var(--ink)]'
-        : 'border-transparent text-[var(--muted)] hover:text-[var(--ink)]'
-    }`;
+    /*
+     * DEFAULT / CLASSICAL
+     */
+    return `
+      border-b-2
+      px-1
+      py-2
+      text-sm
+      font-semibold
+      transition-colors
+      ${
+        active
+          ? 'border-[var(--brand-color-2)] text-[var(--ink)]'
+          : 'border-transparent text-[var(--muted)] hover:text-[var(--ink)]'
+      }
+    `;
   };
 
+  /*
+   * ============================================================
+   * SCHOOL NAVBAR
+   * ============================================================
+   */
   return (
     <div
-      className={`sticky top-0 z-50 backdrop-blur transition-transform duration-300 ease-in-out ${
-        isBranded ? 'text-white' : 'text-[var(--ink)]'
-      }`}
+      className={`
+        sticky
+        top-0
+        z-50
+        backdrop-blur
+        transition-transform
+        duration-300
+        ease-in-out
+        ${
+          isBranded
+            ? 'text-white'
+            : 'text-[var(--ink)]'
+        }
+      `}
       style={{
-        /*
-         * IMPORTANT:
-         * This is intentionally an inline style so no responsive
-         * Tailwind/CSS rule can change the default navbar colour.
-         *
-         * Default = cream at ALL screen sizes.
-         */
-        backgroundColor: navbarBackground,
+        background: navbarBackground,
         borderBottom: navbarBorder,
-
         transform: shouldHide
           ? 'translateY(-100%)'
           : 'translateY(0)',
       }}
     >
       <nav
-        className={`wrap flex flex-wrap items-center justify-between ${
-          isModern
-            ? 'gap-x-4 gap-y-3 py-4'
-            : isDefault
+        className={`
+          wrap
+          flex
+          flex-wrap
+          items-center
+          justify-between
+          ${
+            isDefault
               ? 'gap-x-4 gap-y-[14px] py-[29px]'
-              : 'gap-x-4 gap-y-3 py-5'
-        }`}
+              : isModern
+                ? 'gap-x-4 gap-y-3 py-4'
+                : 'gap-x-4 gap-y-3 py-5'
+          }
+        `}
       >
-        {/* SCHOOL BRAND */}
+        {/* =====================================================
+            SCHOOL BRAND
+        ====================================================== */}
         <Link
           href="/"
-          className={`flex w-full items-center gap-3 ${
-            isDefault
-              ? 'flex-col text-center sm:w-auto sm:flex-row sm:items-center sm:text-left'
-              : 'sm:w-auto'
-          }`}
+          className={`
+            flex
+            w-full
+            items-center
+            gap-3
+            ${
+              isDefault
+                ? 'flex-col text-center sm:w-auto sm:flex-row sm:items-center sm:text-left'
+                : 'sm:w-auto'
+            }
+          `}
         >
           {logoUrl && (
             // eslint-disable-next-line @next/next/no-img-element
             <img
               src={logoUrl}
               alt={schoolName}
-              className={`w-auto shrink-0 object-contain ${
-                isModern ? 'h-10' : 'h-12'
-              }`}
+              className={`
+                w-auto
+                shrink-0
+                object-contain
+                ${
+                  isModern
+                    ? 'h-10'
+                    : 'h-12'
+                }
+              `}
             />
           )}
 
           <span
-            className={`flex flex-col leading-tight ${
-              isDefault
-                ? 'items-center sm:items-start'
-                : 'items-start'
-            }`}
+            className={`
+              flex
+              flex-col
+              leading-tight
+              ${
+                isDefault
+                  ? 'items-center sm:items-start'
+                  : 'items-start'
+              }
+            `}
           >
             <span
-              className={`font-display text-lg font-extrabold ${schoolNameClass}`}
+              className={`
+                font-display
+                text-lg
+                font-extrabold
+                ${schoolNameClass}
+              `}
             >
               {schoolName}
             </span>
 
             <span
-              className={`whitespace-nowrap text-[10px] font-bold uppercase tracking-[0.15em] ${mottoClass}`}
+              className={`
+                whitespace-nowrap
+                text-[10px]
+                font-bold
+                uppercase
+                tracking-[0.15em]
+                ${mottoClass}
+              `}
             >
               {motto || 'School Portal'}
             </span>
           </span>
         </Link>
 
-        {/* MOBILE BUTTON */}
+        {/* =====================================================
+            MOBILE MENU BUTTON
+        ====================================================== */}
         <button
           type="button"
           onClick={() => setOpen(!open)}
-          className={`ml-auto rounded-lg px-4 py-2.5 text-sm font-medium md:hidden ${
-            isBranded
-              ? 'border border-white/30 text-white'
-              : 'border border-[var(--line)] text-[var(--ink)]'
-          }`}
+          className={`
+            ml-auto
+            rounded-lg
+            px-4
+            py-2.5
+            text-sm
+            font-medium
+            md:hidden
+            ${
+              isBranded
+                ? 'border border-white/30 text-white'
+                : 'border border-[var(--line)] text-[var(--ink)]'
+            }
+          `}
           aria-label="Toggle navigation"
+          aria-expanded={open}
         >
           Menu
         </button>
 
-        {/* DESKTOP NAVIGATION */}
+        {/* =====================================================
+            DESKTOP NAVIGATION
+        ====================================================== */}
         <div className="hidden flex-wrap items-center justify-end gap-x-5 gap-y-2 md:flex">
           {links.map((link) => (
             <Link
@@ -378,32 +487,51 @@ export default function Navbar({
         </div>
       </nav>
 
-      {/* MOBILE NAVIGATION */}
+      {/* =======================================================
+          MOBILE NAVIGATION
+      ======================================================== */}
       {open && (
         <div
-          className={`flex flex-col gap-1 border-t px-6 py-4 md:hidden ${
-            isBranded
-              ? 'border-white/15'
-              : 'border-[var(--line)]'
-          }`}
+          className={`
+            flex
+            flex-col
+            gap-1
+            border-t
+            px-6
+            py-4
+            md:hidden
+            ${
+              isBranded
+                ? 'border-white/15'
+                : 'border-[var(--line)]'
+            }
+          `}
         >
           {links.map((link) => {
-            const active = pathname === link.href;
+            const active =
+              pathname === link.href;
 
             return (
               <Link
                 key={link.href}
                 href={link.href}
                 onClick={() => setOpen(false)}
-                className={`rounded-lg px-3 py-2 text-sm font-medium ${
-                  isBranded
-                    ? active
-                      ? 'bg-[var(--brand-500)] text-white'
-                      : 'text-white/85 hover:bg-white/10 hover:text-white'
-                    : active
-                      ? 'bg-[var(--brand-color)] text-white'
-                      : 'text-[var(--muted)] hover:bg-[var(--cream)]'
-                }`}
+                className={`
+                  rounded-lg
+                  px-3
+                  py-2
+                  text-sm
+                  font-medium
+                  ${
+                    isBranded
+                      ? active
+                        ? 'bg-[var(--brand-500)] text-white'
+                        : 'text-white/85 hover:bg-white/10 hover:text-white'
+                      : active
+                        ? 'bg-[var(--brand-color)] text-white'
+                        : 'text-[var(--muted)] hover:bg-[var(--cream)]'
+                  }
+                `}
               >
                 {link.label}
               </Link>
@@ -413,11 +541,7 @@ export default function Navbar({
           <Link
             href="/admissions"
             onClick={() => setOpen(false)}
-            className={`mt-2 rounded-lg px-3 py-2 text-center text-sm font-semibold ${
-              isBranded
-                ? 'bg-[var(--brand-500)] text-white'
-                : 'bg-[var(--brand-color)] text-white'
-            }`}
+            className="mt-2 rounded-lg bg-[var(--brand-500)] px-3 py-2 text-center text-sm font-semibold text-white"
           >
             Apply
           </Link>
@@ -425,4 +549,4 @@ export default function Navbar({
       )}
     </div>
   );
-  }
+            }
