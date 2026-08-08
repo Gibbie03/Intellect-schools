@@ -20,7 +20,7 @@ const navItems = [
   { label: 'Staff', href: '/staff' },
   { label: 'Gallery', href: '/gallery' },
   { label: 'Contact', href: '/contact' },
-  { label: 'Student Portal', href: '/student-portal' },
+  { label: 'Student Portal', href: '/portal' },
 ];
 
 export default function Navbar({
@@ -47,9 +47,7 @@ export default function Navbar({
           ========================================================= */}
       <div className="md:hidden">
 
-        {/* ---------------------------------------------------------
-            SCHOOL IDENTITY ROW
-            --------------------------------------------------------- */}
+        {/* SCHOOL IDENTITY ROW */}
         <div className="flex w-full items-center gap-3 px-4 py-4">
 
           {/* Logo */}
@@ -97,8 +95,6 @@ export default function Navbar({
                 {schoolName}
               </div>
 
-              {/* Motto intentionally wraps.
-                  Long school mottos are NOT truncated. */}
               {motto && (
                 <div
                   className="
@@ -120,9 +116,7 @@ export default function Navbar({
           </div>
         </div>
 
-        {/* ---------------------------------------------------------
-            MOBILE NAVIGATION ROW
-            --------------------------------------------------------- */}
+        {/* MOBILE NAVIGATION ROW */}
         <div
           className="
             flex
@@ -148,7 +142,6 @@ export default function Navbar({
             Navigation
           </div>
 
-          {/* Menu button */}
           <button
             type="button"
             aria-label={menuOpen ? 'Close menu' : 'Open menu'}
@@ -174,9 +167,7 @@ export default function Navbar({
           </button>
         </div>
 
-        {/* ---------------------------------------------------------
-            MOBILE MENU
-            --------------------------------------------------------- */}
+        {/* MOBILE MENU */}
         {menuOpen && (
           <div className="border-t border-[var(--line)] bg-[var(--cream)] px-4 pb-5">
             <nav className="flex flex-col">
@@ -203,8 +194,9 @@ export default function Navbar({
               {/* Extra actions */}
               <div className="mt-4 flex gap-2">
 
+                {/* TEACHER DASHBOARD */}
                 <Link
-                  href="/teachers"
+                  href="/teacher-dashboard"
                   onClick={() => setMenuOpen(false)}
                   className="
                     flex-1
@@ -221,6 +213,7 @@ export default function Navbar({
                   Teachers
                 </Link>
 
+                {/* ADMIN */}
                 <Link
                   href="/admin"
                   onClick={() => setMenuOpen(false)}
@@ -239,6 +232,7 @@ export default function Navbar({
                   Admin
                 </Link>
 
+                {/* APPLY */}
                 <Link
                   href="/admissions/apply"
                   onClick={() => setMenuOpen(false)}
@@ -267,9 +261,7 @@ export default function Navbar({
           ========================================================= */}
       <div className="hidden md:block">
 
-        {/* ---------------------------------------------------------
-            BRAND ROW
-            --------------------------------------------------------- */}
+        {/* BRAND ROW */}
         <div
           className="
             mx-auto
@@ -345,11 +337,12 @@ export default function Navbar({
             </Link>
           </div>
 
-          {/* Desktop utility actions */}
+          {/* DESKTOP UTILITY ACTIONS */}
           <div className="ml-5 flex shrink-0 items-center gap-4">
 
+            {/* TEACHER DASHBOARD */}
             <Link
-              href="/teachers"
+              href="/teacher-dashboard"
               className="
                 font-[var(--font-inter)]
                 text-[10px]
@@ -362,6 +355,7 @@ export default function Navbar({
               Teachers
             </Link>
 
+            {/* ADMIN */}
             <Link
               href="/admin"
               className="
@@ -376,6 +370,7 @@ export default function Navbar({
               Admin
             </Link>
 
+            {/* APPLY */}
             <Link
               href="/admissions/apply"
               className="
@@ -400,9 +395,7 @@ export default function Navbar({
           </div>
         </div>
 
-        {/* ---------------------------------------------------------
-            DESKTOP NAVIGATION ROW
-            --------------------------------------------------------- */}
+        {/* DESKTOP NAVIGATION ROW */}
         <div
           className="
             border-t
@@ -447,7 +440,6 @@ export default function Navbar({
                 >
                   {item.label}
 
-                  {/* Active Home indicator */}
                   {index === 0 && (
                     <span
                       className="
@@ -468,9 +460,7 @@ export default function Navbar({
         </div>
       </div>
 
-      {/* =========================================================
-          GOLD / BRAND ACCENT LINE
-          ========================================================= */}
+      {/* GOLD / BRAND ACCENT LINE */}
       <div
         className="
           h-[3px]
@@ -480,4 +470,4 @@ export default function Navbar({
       />
     </header>
   );
-          }
+              }
