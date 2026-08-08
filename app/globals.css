@@ -1,36 +1,44 @@
-@tailwind base;
+l@tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Everything below lives in the same cascade layer as Tailwind's own
-   @tailwind components -- left unlayered, these plain classes would always
-   beat Tailwind utility classes on the same element regardless of source
-   order (that's how CSS cascade layers work: unlayered rules outrank every
-   layered one, no matter the specificity). That silently broke every
-   className="wrap py-*"/"pt-*"/"pb-*" combo across the app: .wrap's own
-   `padding: 0 clamp(...)` shorthand was resetting padding-top/bottom back
-   to 0 no matter what utility was layered alongside it. */
 @layer components {
 
-/*
- * "Classical" design system -- the shared template every school's public
- * site (and admin/teacher dashboard) renders with. --brand-color and
- * --brand-color-2 are set per-request in app/layout.tsx from each school's
- * primary_color/secondary_color; everything else here is a fixed neutral
- * "paper" base shared across schools, with light tints derived from the
- * brand colors via color-mix() rather than needing extra DB fields.
- */
+/* =========================================================
+   SCHOOL OS DESIGN SYSTEM
+   ========================================================= */
+
 :root {
   color-scheme: light;
+
   --ink: #15201a;
   --cream: #faf6ee;
   --paper: #ffffff;
   --line: #e4ddd0;
   --muted: #6d7568;
   --gold: #c9a35a;
+
+  /* Generated per school in app/layout.tsx */
   --brand-tint: color-mix(in srgb, var(--brand-color) 12%, white);
   --brand-2-tint: color-mix(in srgb, var(--brand-color-2) 12%, white);
+
+  /* Semantic brand roles */
+  --color-primary: var(--brand-500);
+  --color-primary-hover: var(--brand-700);
+
+  --color-navbar: var(--brand-700);
+  --color-footer: var(--brand-900);
+  --color-hero: var(--brand-900);
+
+  --color-card: var(--brand-100);
+  --color-tag: var(--brand-300);
+  --color-link: var(--brand-500);
 }
+
+
+/* =========================================================
+   BASE
+   ========================================================= */
 
 body {
   background: var(--cream);
@@ -38,17 +46,43 @@ body {
   font-family: var(--font-inter), system-ui, sans-serif;
 }
 
-h1, h2, h3 {
+h1,
+h2,
+h3 {
   font-family: var(--font-manrope), system-ui, sans-serif;
   font-weight: 800;
   letter-spacing: -0.02em;
 }
 
+
+/* =========================================================
+   LAYOUT
+   ========================================================= */
+
 .wrap {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 0 clamp(24px, 5vw, 72px);
+  padding-left: clamp(24px, 5vw, 72px);
+  padding-right: clamp(24px, 5vw, 72px);
 }
+
+.split {
+  display: grid;
+  grid-template-columns: 1.05fr 0.95fr;
+  gap: 52px;
+  align-items: center;
+}
+
+.schools-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 22px;
+}
+
+
+/* =========================================================
+   UI KIT — TAGS
+   ========================================================= */
 
 .tag {
   display: inline-flex;
@@ -62,45 +96,70 @@ h1, h2, h3 {
   color: var(--brand-color-2);
   margin-bottom: 16px;
 }
+
 .tag-light {
   color: rgba(255, 255, 255, 0.92);
 }
 
+
+/* =========================================================
+   UI KIT — BUTTONS
+   ========================================================= */
+
 .btn {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 9px;
+
   font-family: var(--font-manrope), system-ui, sans-serif;
   font-weight: 700;
   font-size: 15px;
+
   padding: 15px 30px;
+
   cursor: pointer;
   border: none;
-  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 16px), calc(100% - 16px) 100%, 0 100%);
-  transition: filter 0.15s ease, background-color 0.15s ease, color 0.15s ease, transform 0.15s ease;
+
+  clip-path: polygon(
+    0 0,
+    100% 0,
+    100% calc(100% - 16px),
+    calc(100% - 16px) 100%,
+    0 100%
+  );
+
+  transition:
+    filter 0.15s ease,
+    background-color 0.15s ease,
+    color 0.15s ease,
+    transform 0.15s ease;
 }
+
 .btn:active {
   transform: translateY(1px);
 }
-/* clip-path clips outline/box-shadow along with the rest of the box, so a
-   default focus ring would be invisible on these buttons -- darken like
-   :hover instead, which stays visible within the clipped shape. */
+
 .btn-primary {
-  background: var(--brand-color);
+  background: var(--color-primary);
   color: #fff;
 }
+
 .btn-primary:hover,
 .btn-primary:focus-visible {
-  filter: brightness(0.88);
+  background: var(--color-primary-hover);
 }
+
 .btn-secondary {
   background: var(--brand-color-2);
   color: #fff;
 }
+
 .btn-secondary:hover,
 .btn-secondary:focus-visible {
   filter: brightness(0.88);
 }
+
 .btn-outline {
   clip-path: none;
   border: 1.5px solid var(--ink);
@@ -108,11 +167,13 @@ h1, h2, h3 {
   background: transparent;
   padding: 13.5px 28px;
 }
+
 .btn-outline:hover,
 .btn-outline:focus-visible {
   background: var(--ink);
   color: #fff;
 }
+
 .btn-ghost {
   clip-path: none;
   border: 1.5px solid rgba(255, 255, 255, 0.55);
@@ -120,31 +181,56 @@ h1, h2, h3 {
   background: transparent;
   padding: 13.5px 28px;
 }
+
 .btn-ghost:hover,
 .btn-ghost:focus-visible {
   background: rgba(255, 255, 255, 0.12);
 }
+
+
+/* =========================================================
+   UI KIT — CARDS
+   ========================================================= */
 
 .card {
   background: var(--paper);
   border-left: 4px solid var(--brand-color);
   padding: 26px;
 }
+
 .card-accent {
   border-left-color: var(--brand-color-2);
 }
 
+
+/* =========================================================
+   UI KIT — IMAGE FRAME
+   ========================================================= */
+
 .frame {
-  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 28px), calc(100% - 28px) 100%, 0 100%);
+  clip-path: polygon(
+    0 0,
+    100% 0,
+    100% calc(100% - 28px),
+    calc(100% - 28px) 100%,
+    0 100%
+  );
 }
+
 @media (prefers-reduced-motion: no-preference) {
   .frame img {
     transition: transform 0.4s ease;
   }
+
   .frame:hover img {
     transform: scale(1.045);
   }
 }
+
+
+/* =========================================================
+   UI KIT — PILLS / BADGES
+   ========================================================= */
 
 .pill {
   font-size: 11px;
@@ -154,11 +240,10 @@ h1, h2, h3 {
   letter-spacing: 0.04em;
 }
 
-.schools-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 22px;
-}
+
+/* =========================================================
+   UI KIT — STATS
+   ========================================================= */
 
 .stat-row {
   display: flex;
@@ -166,30 +251,34 @@ h1, h2, h3 {
   justify-content: center;
   gap: 16px;
 }
+
 .stat {
   flex: 1 1 180px;
   max-width: 240px;
+
   background: var(--paper);
   border: 1px solid var(--line);
   border-radius: 999px;
+
   padding: 20px 24px;
   text-align: center;
 }
 
-.split {
-  display: grid;
-  grid-template-columns: 1.05fr 0.95fr;
-  gap: 52px;
-  align-items: center;
-}
+
+/* =========================================================
+   UI KIT — TESTIMONIALS
+   ========================================================= */
 
 .testi-card {
   flex: none;
   width: min(78vw, 380px);
+
   background: rgba(255, 255, 255, 0.1);
   border: 1px solid rgba(255, 255, 255, 0.22);
+
   padding: 26px;
 }
+
 .testi-quote {
   font-family: var(--font-manrope), system-ui, sans-serif;
   font-weight: 700;
@@ -198,6 +287,7 @@ h1, h2, h3 {
   color: #fff;
   margin: 0;
 }
+
 .testi-name {
   color: rgba(255, 255, 255, 0.8);
   font-size: 13px;
@@ -205,121 +295,165 @@ h1, h2, h3 {
   font-weight: 600;
 }
 
+
+/* =========================================================
+   UI KIT — MARQUEE
+   ========================================================= */
+
 @keyframes marquee-scroll {
   from {
     transform: translateX(0);
   }
+
   to {
     transform: translateX(-50%);
   }
 }
+
 .marquee-track {
   display: flex;
   width: max-content;
   animation: marquee-scroll 32s linear infinite;
 }
+
 .marquee-track:hover {
   animation-play-state: paused;
 }
-/* Auto-scrolling text can trigger motion sickness for some users and is
-   genuinely hard to read while it's moving -- respect the OS-level
-   preference instead of forcing everyone to hover to pause it. */
-@media (prefers-reduced-motion: reduce) {
-  .marquee-track {
-    animation: none;
-    flex-wrap: wrap;
-    width: 100%;
-  }
+
+
+/* =========================================================
+   DASHBOARD
+   ========================================================= */
+
+.dash-shell {
+  display: grid;
+  grid-template-columns: 250px 1fr;
+  min-height: 100vh;
 }
+
+.dash-sidebar {
+  background: var(--color-footer);
+  border-right: 3px solid var(--gold);
+
+  padding: 24px 0;
+
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.side-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  padding: 10px 20px;
+
+  font-size: 13.5px;
+  font-weight: 600;
+
+  color: rgba(255, 255, 255, 0.75);
+
+  border-left: 3px solid transparent;
+  border-top: none;
+  border-bottom: none;
+  border-right: none;
+
+  background: none;
+
+  text-align: left;
+  cursor: pointer;
+  width: 100%;
+
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.side-link:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.side-link.active {
+  background: rgba(255, 255, 255, 0.06);
+  color: #fff;
+  border-left-color: var(--gold);
+}
+
+.dash-icon-btn {
+  width: 38px;
+  height: 38px;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  border: 1.5px solid var(--line);
+  background: var(--paper);
+
+  cursor: pointer;
+  color: var(--ink);
+}
+
+.dash-icon-btn:hover {
+  background: var(--cream);
+}
+
+.dash-mobile-toggle {
+  display: none;
+}
+
+.dash-overlay {
+  display: none;
+}
+
+
+/* =========================================================
+   RESPONSIVE
+   ========================================================= */
 
 @media (max-width: 900px) {
   .split {
     grid-template-columns: 1fr !important;
   }
 }
-.dash-shell {
-  display: grid;
-  grid-template-columns: 250px 1fr;
-  min-height: 100vh;
-}
-.dash-sidebar {
-  background: var(--footer-color, var(--ink));
-  border-right: 3px solid var(--gold);
-  padding: 24px 0;
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-.side-link {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 20px;
-  font-size: 13.5px;
-  font-weight: 600;
-  color: rgba(255, 255, 255, 0.75);
-  border-left: 3px solid transparent;
-  background: none;
-  border-top: none;
-  border-bottom: none;
-  border-right: none;
-  text-align: left;
-  cursor: pointer;
-  width: 100%;
-  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
-}
-.side-link:hover {
-  background: rgba(255, 255, 255, 0.06);
-}
-.side-link.active {
-  background: rgba(255, 255, 255, 0.06);
-  color: #fff;
-  border-left-color: var(--gold);
-}
-.dash-icon-btn {
-  width: 38px;
-  height: 38px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border: 1.5px solid var(--line);
-  background: var(--paper);
-  cursor: pointer;
-  color: var(--ink);
-}
-.dash-icon-btn:hover {
-  background: var(--cream);
-}
-.dash-mobile-toggle {
-  display: none;
-}
-.dash-overlay {
-  display: none;
-}
+
 @media (max-width: 840px) {
   .dash-shell {
     grid-template-columns: 1fr;
   }
+
   .dash-sidebar {
     position: fixed;
     inset: 0 auto 0 0;
+
     width: 250px;
+
     z-index: 60;
+
     transform: translateX(-100%);
     transition: transform 0.25s ease;
+
     box-shadow: 0 0 40px rgba(0, 0, 0, 0.3);
   }
+
   .dash-sidebar.open {
     transform: translateX(0);
   }
+
   .dash-mobile-toggle {
     display: inline-flex !important;
   }
+
   .dash-overlay.open {
     display: block;
+
     position: fixed;
     inset: 0;
+
     background: rgba(0, 0, 0, 0.45);
+
     z-index: 50;
   }
 }
@@ -330,16 +464,36 @@ h1, h2, h3 {
     align-items: stretch;
     gap: 12px;
   }
+
   .stat {
     max-width: none;
   }
-  /* The hero's solid-fill CTA button reads as an oversized green bar at
-     phone widths -- its outline sibling doesn't have this problem since an
-     unfilled border reads lighter regardless of size. Trim its padding only
-     here; desktop keeps the original design's 15px/30px. */
+
   .btn-primary,
   .btn-secondary {
     padding: 10px 22px;
+  }
+}
+
+
+/* =========================================================
+   ACCESSIBILITY / REDUCED MOTION
+   ========================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+  .marquee-track {
+    animation: none;
+    flex-wrap: wrap;
+    width: 100%;
+  }
+
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
   }
 }
 
