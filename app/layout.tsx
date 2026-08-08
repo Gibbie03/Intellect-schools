@@ -31,6 +31,7 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   const headersList = await headers();
   const school = await getSchoolFromHost(headersList.get('host'));
+  const navbarStyle = school?.navbar_style || 'default';
   const brandColor = school?.primary_color || '#15803d';
   // The classical template's accent moments (tags, card borders, active nav
   // underline, testimonial band) are designed against a distinct accent
@@ -88,6 +89,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
           schoolName={school?.name ?? 'SchoolOS'}
           logoUrl={school?.logo_url ?? null}
           motto={school?.motto ?? null}
+          navbarStyle={navbarStyle}
           isLanding={!school}
         />
         <div className="flex-1">{children}</div>
