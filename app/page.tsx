@@ -79,7 +79,7 @@ export default async function Home() {
           />
         )}
         <div className="wrap relative z-10 max-w-2xl">
-          <<h1 className="text-white" style={{ fontSize: 'clamp(34px, 5vw, 58px)', lineHeight: 1.08 }}>
+          <h1 className="text-white" style={{ fontSize: 'clamp(34px, 5vw, 58px)', lineHeight: 1.08 }}>
             {tagline}
           </h1>
           <p className="mt-5 max-w-[52ch] text-[17px] leading-[1.65] text-white/85">
